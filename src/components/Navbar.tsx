@@ -287,7 +287,7 @@ export default function Navbar() {
             className="relative pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)]"
           >
             <span className="text-xs sm:text-[13px] font-black tracking-wide whitespace-nowrap flex items-center gap-1.5 font-heading text-white group-hover:text-[#f9b03c] transition-colors">
-              🧭 ዋና ማውጫ ▾
+              ዋና ማውጫ ▾
             </span>
           </button>
         </div>
@@ -556,7 +556,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* ===================== 📱 MOBILE MENU PANEL ===================== */}
+          {/* =====================  MOBILE MENU PANEL ===================== */}
           <div key={`mobile-nav-${animationKey}`} className="xl:hidden pb-3 sm:pb-4 pt-2 space-y-3.5 max-w-lg mx-auto w-full flex flex-col items-center text-center">
             
             {/* Drag Bar Indicator */}
@@ -735,7 +735,7 @@ export default function Navbar() {
             className="pointer-events-auto bg-black/95 text-white border-x border-b border-[#f9b03c]/40 hover:border-[#f9b03c] text-xs font-black font-heading px-6 py-2 rounded-b-2xl shadow-[0_12px_25px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.95),0_0_25px_rgba(249,176,60,0.45)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
             title="ዋና ማውጫ ዝጋ / Close Menu"
           >
-            <span>🧭 ዋና ማውጫ ዝጋ ▴</span>
+            <span>ዋና ማውጫ ዝጋ ▴</span>
           </button>
         </div>
       )}

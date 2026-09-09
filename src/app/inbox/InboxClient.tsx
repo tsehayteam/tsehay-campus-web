@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import { useAuth } from '@/context/AuthContext';
+import { Check, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { 
   Conversation, 
@@ -291,7 +292,7 @@ function InboxContent() {
       if (exists) {
         return prev.map(c => c.id === activeConversationId ? {
           ...c,
-          lastMessage: trimmed || (attachedChatImage ? '📷 ምስል ተልኳል' : ''),
+          lastMessage: trimmed || (attachedChatImage ? 'ምስል ተልኳል' : ''),
           lastMessageTime: nowIso,
           lastMessageSenderId: currentUser.uid
         } : c);
@@ -313,7 +314,7 @@ function InboxContent() {
               isAdmin: Boolean(activeRecipient.isAdmin)
             }
           },
-          lastMessage: trimmed || (attachedChatImage ? '📷 ምስል ተልኳል' : ''),
+          lastMessage: trimmed || (attachedChatImage ? 'ምስል ተልኳል' : ''),
           lastMessageSenderId: currentUser.uid,
           lastMessageTime: nowIso,
           unreadCount: {}
@@ -590,7 +591,7 @@ function InboxContent() {
                         />
                         {details.isAdmin && (
                           <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] flex items-center justify-center shadow-md">
-                            ✓
+                            <Check className="w-2.5 h-2.5 text-white stroke-[3]" aria-hidden="true" />
                           </span>
                         )}
                       </div>
@@ -844,7 +845,7 @@ function InboxContent() {
                       onClick={() => setAttachedChatImage(null)}
                       className="text-xs text-red-400 hover:text-white cursor-pointer"
                     >
-                      ✕ አስወግድ
+                      አስወግድ
                     </button>
                   </div>
                 )}
@@ -915,7 +916,9 @@ function InboxContent() {
                 <i className="fa-solid fa-user-plus text-[#f9b03c]"></i>
                 <span>ውይይት የሚጀምሩበትን ሰው ይምረጡ</span>
               </h3>
-              <button onClick={() => setShowNewChatModal(false)} className="text-slate-400 hover:text-white text-xs cursor-pointer">✕</button>
+              <button onClick={() => setShowNewChatModal(false)} className="text-slate-400 hover:text-white text-xs cursor-pointer p-1">
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             <div className="space-y-2 max-h-80 overflow-y-auto no-scrollbar">

@@ -324,7 +324,7 @@ export default function Footer() {
                                     rel="noopener noreferrer" 
                                     className="hover:text-[#f9b03c] hover:translate-x-1 transition-all duration-200 flex items-start gap-2"
                                 >
-                                    <span>📍</span>
+                                    <i className="fa-solid fa-location-dot text-primary shrink-0" aria-hidden="true"></i>
                                     <span>ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ</span>
                                 </a>
                             </li>
@@ -333,7 +333,7 @@ export default function Footer() {
                                     href="tel:0980209090" 
                                     className="hover:text-[#f9b03c] hover:translate-x-1 transition-all duration-200 flex items-center gap-2"
                                 >
-                                    <span>📞</span>
+                                    <i className="fa-solid fa-phone text-primary shrink-0" aria-hidden="true"></i>
                                     <span>0980209090</span>
                                 </a>
                             </li>
@@ -344,7 +344,7 @@ export default function Footer() {
                                     rel="noreferrer" 
                                     className="hover:text-[#f9b03c] hover:translate-x-1 transition-all duration-200 flex items-center gap-2"
                                 >
-                                    <span>💬</span>
+                                    <i className="fa-brands fa-telegram text-primary shrink-0" aria-hidden="true"></i>
                                     <span>@TsehayTeam</span>
                                 </a>
                             </li>
@@ -353,7 +353,7 @@ export default function Footer() {
                                     href="mailto:info@tsehaycampus.com" 
                                     className="hover:text-[#f9b03c] hover:translate-x-1 transition-all duration-200 flex items-center gap-2"
                                 >
-                                    <span>✉️</span>
+                                    <i className="fa-solid fa-envelope text-primary shrink-0" aria-hidden="true"></i>
                                     <span>info@tsehaycampus.com</span>
                                 </a>
                             </li>

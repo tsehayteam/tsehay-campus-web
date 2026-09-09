@@ -18,6 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import TwoStageEventBookingModal from '@/components/TwoStageEventBookingModal';
+import { Ban } from 'lucide-react';
 import { parseVideoEmbedUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
 
 export default function UpcomingEventsSection() {
@@ -644,8 +645,9 @@ export default function UpcomingEventsSection() {
                           <span>ተመዝግበዋል</span>
                         </span>
                       ) : isSoldOut ? (
-                        <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md animate-pulse">
-                          ❌ አልቋል (Sold Out)
+                        <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md animate-pulse flex items-center gap-1">
+                          <Ban className="w-3 h-3 text-white" aria-hidden="true" />
+                          <span>አልቋል (Sold Out)</span>
                         </span>
                       ) : null}
                     </div>

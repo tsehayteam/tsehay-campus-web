@@ -341,7 +341,7 @@ export default function EventsClient() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c]/20 to-amber-500/10 border border-[#f9b03c]/40 text-[#f9b03c] text-xs font-black uppercase tracking-widest backdrop-blur-xl shadow-[0_0_20px_rgba(249,176,60,0.2)]">
             <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping" />
-            <span>🎟️ የቀጥታ ስልጠናዎች እና ዝግጅቶች (Live Events)</span>
+            <span>የቀጥታ ስልጠናዎች እና ዝግጅቶች (Live Events)</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-heading tracking-tight">
@@ -371,10 +371,10 @@ export default function EventsClient() {
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto justify-center">
               {[
                 { id: 'all', label: 'ሁሉም' },
-                { id: 'free', label: '🎁 ነፃ' },
-                { id: 'paid', label: '💎 ፕሪሚየም' },
-                { id: 'online', label: '🌐 Online' },
-                { id: 'in-person', label: '📍 In-Person' },
+                { id: 'free', label: 'ነፃ (Free)' },
+                { id: 'paid', label: 'ፕሪሚየም (Paid)' },
+                { id: 'online', label: 'Online' },
+                { id: 'in-person', label: 'In-Person' },
               ].map((item) => (
                 <button
                   key={item.id}
@@ -489,7 +489,7 @@ export default function EventsClient() {
                       <div className="text-[11px]">
                         <span className="text-slate-400 block text-[9px] uppercase tracking-wider">የቀሩ ወንበሮች</span>
                         <span className={`font-mono font-bold ${isSoldOut ? 'text-red-400' : 'text-emerald-400'}`}>
-                          {isSoldOut ? 'ሙሉ በሙሉ ተይዟል' : `🔥 ${remaining} ወንበር ቀርቷል`}
+                          {isSoldOut ? 'ሙሉ በሙሉ ተይዟል' : `${remaining} ወንበር ቀርቷል`}
                         </span>
                       </div>
 

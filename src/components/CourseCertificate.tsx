@@ -1,5 +1,6 @@
 'use client';
 import React, { useRef, useState, useEffect } from 'react';
+import { Lightbulb } from 'lucide-react';
 
 interface CourseCertificateProps {
   course: any;
@@ -54,7 +55,7 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
 
   const publicUrl = typeof window !== 'undefined' ? `${window.location.origin}/certificate/${certId}` : `https://tsehaycampus.com/certificate/${certId}`;
 
-  const linkedInCaption = `🎓 Exciting Milestone! I'm thrilled to announce that I have successfully completed the "${courseTitle}" masterclass from Tsehay Campus!\n\n💡 Throughout this intensive practical training, I gained deep hands-on skills, built real-world projects, and achieved mastery certification.\n\n🔗 View & Verify my official credential:\n${publicUrl}\n\n#TsehayCampus #ContinuousLearning #ProfessionalGrowth #DigitalSkills #Certification #Achievement`;
+  const linkedInCaption = `Exciting Milestone! I'm thrilled to announce that I have successfully completed the "${courseTitle}" masterclass from Tsehay Campus!\n\nThroughout this intensive practical training, I gained deep hands-on skills, built real-world projects, and achieved mastery certification.\n\nView & Verify my official credential:\n${publicUrl}\n\n#TsehayCampus #ContinuousLearning #ProfessionalGrowth #DigitalSkills #Certification #Achievement`;
 
   const handleCopyPublicLink = () => {
     if (typeof window !== 'undefined') {
@@ -373,7 +374,7 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
         </div>
       </div>
 
-      {/* 🚀 LINKEDIN SHARE POP-UP MODAL (Pre-filled Hook + Value + Payoff Caption) */}
+      {/*  LINKEDIN SHARE POP-UP MODAL (Pre-filled Hook + Value + Payoff Caption) */}
       {showLinkedInModal && (
         <div 
           className="fixed inset-0 z-[9999999] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300"
@@ -438,8 +439,9 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
               </button>
             </div>
 
-            <p className="text-[11px] text-slate-400 text-center leading-normal">
-              💡 "በ LinkedIn ላይ ለጥፍ" ሲጫኑ ጽሑፉ በራስ-ሰር ኮፒ ይደረጋል፤ በሊንክድኢን መስኮት ላይ <strong className="text-white">Ctrl + V (Paste)</strong> በማድረግ በቀላሉ ይለጥፉ!
+            <p className="text-[11px] text-slate-400 text-center leading-normal flex items-center justify-center gap-1.5">
+              <Lightbulb className="w-3.5 h-3.5 text-[#f9b03c] shrink-0" aria-hidden="true" />
+              <span>"በ LinkedIn ላይ ለጥፍ" ሲጫኑ ጽሑፉ በራስ-ሰር ኮፒ ይደረጋል፤ በሊንክድኢን መስኮት ላይ <strong className="text-white">Ctrl + V (Paste)</strong> በማድረግ በቀላሉ ይለጥፉ!</span>
             </p>
           </div>
         </div>

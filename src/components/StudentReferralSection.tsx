@@ -164,7 +164,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
   return (
     <div className="space-y-8 max-w-6xl mx-auto animate-in fade-in duration-300">
       
-      {/* 🌟 1. Flagship Hero Glassmorphism Referral Card */}
+      {/*  1. Flagship Hero Glassmorphism Referral Card */}
       <div 
         className="rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-10 relative overflow-hidden text-white"
         style={{
@@ -204,7 +204,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
             </p>
           </div>
 
-          {/* 🌟 2. Rewards Milestones Grid (Tsehay Campus Cards) */}
+          {/*  2. Rewards Milestones Grid (Tsehay Campus Cards) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
             
             {/* Milestone 1: 5 Invites = 1 Free Course */}
@@ -255,7 +255,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
                   className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-black text-xs transition shadow-md hover:brightness-110 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                 >
                   <i className="fa-solid fa-graduation-cap"></i>
-                  <span>{stats.milestones.freeCourseClaimed ? 'ሌላ ኮርስ ይምረጡ (Claim Again)' : '🎁 ነፃ ኮርስዎን ይውሰዱ (Claim Free Course)'}</span>
+                  <span>{stats.milestones.freeCourseClaimed ? 'ሌላ ኮርስ ይምረጡ (Claim Again)' : 'ነፃ ኮርስዎን ይውሰዱ (Claim Free Course)'}</span>
                 </button>
               ) : (
                 <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
@@ -315,7 +315,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
                   className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black text-xs transition shadow-md hover:brightness-110 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                 >
                   <i className="fa-solid fa-calendar-check"></i>
-                  <span>{stats.milestones.mentorshipClaimed ? 'ቀጠሮዎን እንደገና ያረጋግጡ' : '🚀 የግል ማማከር ቀጠሮ ያስይዙ (Book Mentorship)'}</span>
+                  <span>{stats.milestones.mentorshipClaimed ? 'ቀጠሮዎን እንደገና ያረጋግጡ' : 'የግል ማማከር ቀጠሮ ያስይዙ (Book Mentorship)'}</span>
                 </button>
               ) : (
                 <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
@@ -329,7 +329,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
 
           </div>
 
-          {/* 🌟 3. Interactive Progress Track (Overall 0 - 10 Invites) */}
+          {/*  3. Interactive Progress Track (Overall 0 - 10 Invites) */}
           <div className="bg-white/5 border border-white/10 rounded-2xl sm:rounded-3xl p-5 mb-8">
             <div className="flex justify-between items-center text-xs font-bold mb-2">
               <span className="text-slate-300 flex items-center gap-2">
@@ -350,12 +350,12 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
 
             <div className="flex justify-between text-[11px] font-bold text-slate-400">
               <span>0 (ጅማሬ)</span>
-              <span className={is5Reached ? 'text-[#f9b03c] font-black' : ''}>5 (🎁 1 ነፃ ኮርስ)</span>
-              <span className={is10Reached ? 'text-emerald-400 font-black' : ''}>10 (🚀 1-on-1 Mentorship)</span>
+              <span className={is5Reached ? 'text-[#f9b03c] font-black' : ''}>5 (1 ነፃ ኮርስ)</span>
+              <span className={is10Reached ? 'text-emerald-400 font-black' : ''}>10 (1-on-1 Mentorship)</span>
             </div>
           </div>
 
-          {/* 🌟 4. Personalized Referral Link & 1-Click Sharing Toolbar */}
+          {/*  4. Personalized Referral Link & 1-Click Sharing Toolbar */}
           <div className="space-y-4">
             <label className="block text-xs font-black text-slate-300 uppercase tracking-wider">
               የእርስዎ የግል መጋበዣ ሊንክ (Your Referral Link)
@@ -378,7 +378,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
                 className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-[0_0_25px_rgba(249,176,60,0.3)] hover:shadow-[0_0_35px_rgba(249,176,60,0.5)]"
               >
                 <i className={`fa-solid ${copied ? 'fa-check text-slate-950' : 'fa-copy'}`}></i>
-                <span>{copied ? '✓ ተገልብጧል (Copied)' : 'ሊንኩን ኮፒ አድርግ'}</span>
+                <span>{copied ? 'ተገልብጧል (Copied)' : 'ሊንኩን ኮፒ አድርግ'}</span>
               </button>
 
               <button
@@ -439,7 +439,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
         </div>
       </div>
 
-      {/* 🌟 5. Referred Students Activity Stream Table */}
+      {/*  5. Referred Students Activity Stream Table */}
       <div className="bg-white dark:bg-slate-800/90 rounded-3xl border border-gray-100 dark:border-slate-700/60 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
@@ -508,7 +508,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
         )}
       </div>
 
-      {/* 🌟 6. Claim Reward Modal */}
+      {/*  6. Claim Reward Modal */}
       {isClaimModalOpen && (
         <div 
           className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
@@ -524,7 +524,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
                 </div>
                 <div>
                   <h3 className="text-lg font-black font-heading">
-                    {claimType === 'free_course' ? '🎁 ነፃ ኮርስዎን ይውሰዱ' : '🚀 የ 1-on-1 Mentorship ቀጠሮ'}
+                    {claimType === 'free_course' ? 'ነፃ ኮርስዎን ይውሰዱ' : 'የ 1-on-1 Mentorship ቀጠሮ'}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {claimType === 'free_course' ? 'በ 5 ሪፈራል የተገኘ ነፃ የኮርስ ሽልማት' : 'በ 10 ሪፈራል የተገኘ የቀጥታ ማማከር'}

@@ -1377,11 +1377,11 @@ export default function AdminDashboard() {
       setNewCodeDesc('');
       setNewDiscountPercent(50);
       setNewTargetCourseId('all');
-      setReferralSuccessMsg(`የቅናሽ ኮድ [${cleanCode}] በተሳካ ሁኔታ ተፈጥሯል! 🎉`);
+      setReferralSuccessMsg(`የቅናሽ ኮድ [${cleanCode}] በተሳካ ሁኔታ ተፈጥሯል!`);
       setTimeout(() => setReferralSuccessMsg(''), 4000);
     } catch (err: any) {
       console.error("Error creating referral code:", err);
-      setReferralSuccessMsg(`የቅናሽ ኮድ [${cleanCode}] በተሳካ ሁኔታ ተፈጥሯል! 🎉`);
+      setReferralSuccessMsg(`የቅናሽ ኮድ [${cleanCode}] በተሳካ ሁኔታ ተፈጥሯል!`);
       setTimeout(() => setReferralSuccessMsg(''), 4000);
     } finally {
       setIsSavingReferral(false);
@@ -2071,11 +2071,11 @@ export default function AdminDashboard() {
         })
       });
 
-      setAiSettingsSavedMsg('የ Gemini AI ቁልፍ በተሳካ ሁኔታ ተቀምጧል! ✨');
+      setAiSettingsSavedMsg('የ Gemini AI ቁልፍ በተሳካ ሁኔታ ተቀምጧል!');
       setTimeout(() => setAiSettingsSavedMsg(''), 4000);
     } catch (err) {
       console.error("Error saving AI settings:", err);
-      setAiSettingsSavedMsg('የ Gemini AI ቁልፍ በተሳካ ሁኔታ ተቀምጧል! ✨');
+      setAiSettingsSavedMsg('የ Gemini AI ቁልፍ በተሳካ ሁኔታ ተቀምጧል!');
       setTimeout(() => setAiSettingsSavedMsg(''), 4000);
     } finally {
       setIsSavingAiSettings(false);
@@ -2665,7 +2665,7 @@ export default function AdminDashboard() {
     setCommunityPosts(prev => prev.map(p => p.id === post.id ? { ...p, isPinned: nextPinned } : p));
     try {
       await pinCommunityPost(post.id, nextPinned);
-      showToast(nextPinned ? '📌 ፖስቱ ወደ ላይ ተሰክቷል! (Post pinned)' : 'ፖስቱ ተነስቷል (Post unpinned)', 'success');
+      showToast(nextPinned ? 'ፖስቱ ወደ ላይ ተሰክቷል! (Post pinned)' : 'ፖስቱ ተነስቷል (Post unpinned)', 'success');
     } catch (err) {
       console.error('Pin community post error:', err);
     }
@@ -2827,7 +2827,7 @@ export default function AdminDashboard() {
           const optimized = canvas.toDataURL('image/jpeg', 0.88);
           setEventForm(prev => ({ ...prev, image: optimized }));
           setEventBannerError(false);
-          showToast("የቲኬት ባነር ምስል በተሳካ ሁኔታ ተመርጧል! ✓", 'success');
+          showToast("የቲኬት ባነር ምስል በተሳካ ሁኔታ ተመርጧል!", 'success');
         } else {
           setEventForm(prev => ({ ...prev, image: rawData }));
           setEventBannerError(false);
@@ -3158,7 +3158,7 @@ export default function AdminDashboard() {
             </div>
             
             <div className="inline-block px-3.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-[#f9b03c] text-xs font-black uppercase tracking-wider mb-2">
-              🔒 OTP VERIFICATION
+              OTP VERIFICATION
             </div>
 
             <h2 className="text-2xl font-black font-heading text-white tracking-tight">
@@ -3201,7 +3201,7 @@ export default function AdminDashboard() {
               ) : (
                 <>
                   <i className="fa-solid fa-paper-plane text-[#f9b03c]"></i>
-                  <span>📩 ኮድ ወደ ኢሜይል ላክ (Send OTP)</span>
+                  <span>ኮድ ወደ ኢሜይል ላክ (Send OTP)</span>
                 </>
               )}
             </button>
@@ -3254,7 +3254,7 @@ export default function AdminDashboard() {
               ) : (
                 <>
                   <i className="fa-solid fa-lock-open text-slate-950"></i>
-                  <span>🔓 አረጋግጥና ግባ (Verify & Enter Dashboard)</span>
+                  <span>አረጋግጥና ግባ (Verify & Enter Dashboard)</span>
                 </>
               )}
             </button>
@@ -3880,7 +3880,7 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-4">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md text-xs font-bold">🟢 Active</span>
+                                <span className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md text-xs font-bold flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>Active</span>
                                 {course.isPopular && <span className="bg-primary/20 text-primary px-2 py-0.5 rounded-md text-xs font-bold">Best Seller</span>}
                               </div>
                             </td>
@@ -4129,7 +4129,7 @@ export default function AdminDashboard() {
                     title="ለሞባይል የተዘጋጀ ሙሉ ገጽ ስካነር ክፈት"
                   >
                     <i className="fa-solid fa-mobile-screen-button"></i>
-                    <span>📱 የሞባይል ስካነር ክፈት (Mobile Fullscreen)</span>
+                    <span>የሞባይል ስካነር ክፈት (Mobile Fullscreen)</span>
                   </a>
                 </div>
 
@@ -4205,7 +4205,7 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-4 text-xs text-gray-700 dark:text-gray-300">
                               <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold">
-                                {event.isOnline ? '🌐 Virtual' : '📍 ' + event.location}
+                                {event.isOnline ? 'Virtual' : event.location}
                               </span>
                             </td>
                             <td className="p-4 text-xs">
@@ -4303,7 +4303,7 @@ export default function AdminDashboard() {
 
                 return (
                   <div className="space-y-6">
-                    {/* 🌟 1. KPI Metrics Grid for Event Tickets */}
+                    {/* 1. KPI Metrics Grid for Event Tickets */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="bg-white dark:bg-slate-800/90 border border-gray-100 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm">
                         <div className="flex items-center justify-between text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
@@ -4344,7 +4344,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {/* 🌟 2. Filter & Actions Toolbar */}
+                    {/* 2. Filter & Actions Toolbar */}
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm space-y-4">
                       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
                         {/* Search Input */}
@@ -4408,7 +4408,7 @@ export default function AdminDashboard() {
                               : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                           }`}
                         >
-                          ✅ ተገኝተዋል ({attendedTickets.length})
+                          ተገኝተዋል ({attendedTickets.length})
                         </button>
 
                         <button
@@ -4432,7 +4432,7 @@ export default function AdminDashboard() {
                               : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                           }`}
                         >
-                          🌐 ኦንላይን ({onlineTickets.length})
+                          ኦንላይን ({onlineTickets.length})
                         </button>
 
                         <button
@@ -4444,12 +4444,12 @@ export default function AdminDashboard() {
                               : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                           }`}
                         >
-                          📍 በአካል ({inPersonTickets.length})
+                          በአካል ({inPersonTickets.length})
                         </button>
                       </div>
                     </div>
 
-                    {/* 🌟 3. Comprehensive Attendees Table */}
+                    {/* 3. Comprehensive Attendees Table */}
                     <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
@@ -4528,7 +4528,7 @@ export default function AdminDashboard() {
                                           ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                                           : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
                                       }`}>
-                                        {ticket.isOnline ? '🌐 Virtual Live' : '📍 በአካል (In-Person)'}
+                                        {ticket.isOnline ? 'Virtual Live' : 'በአካል (In-Person)'}
                                       </span>
                                     </td>
 
@@ -4786,7 +4786,7 @@ export default function AdminDashboard() {
 
           {activeTab === 'students' && (
             <div className="space-y-6">
-              {/* 🌟 1. Student Summary KPI Stat Cards */}
+              {/* 1. Student Summary KPI Stat Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-slate-700 shadow-xs flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-xl shrink-0">
@@ -4840,7 +4840,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* 🌟 2. Search, Filter Chips & Export Toolbar */}
+              {/* 2. Search, Filter Chips & Export Toolbar */}
               <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 border border-gray-100 dark:border-slate-700 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
                 {/* Search Bar */}
                 <div className="relative flex-1 max-w-md">
@@ -4905,7 +4905,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* 🌟 3. Rich Students Table */}
+              {/* 3. Rich Students Table */}
               <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
                 {(() => {
                   const filtered = students.filter(s => {
@@ -5653,7 +5653,7 @@ export default function AdminDashboard() {
                                     <td className="p-4 text-sm text-gray-700 dark:text-gray-300 font-bold">
                                       {course?.title || payment.courseTitle || payment.courseId}
                                       {payment.referralCode && (
-                                        <span className="block text-[10px] text-amber-500 font-bold">🏷️ ኮድ: {payment.referralCode}</span>
+                                        <span className="block text-[10px] text-amber-500 font-bold">ኮድ: {payment.referralCode}</span>
                                       )}
                                     </td>
                                     <td className="p-4 font-black text-emerald-600 dark:text-emerald-400">
@@ -5755,7 +5755,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* 🌟 6. COMMUNITY MODERATION TAB (ማህበረሰብ ቁጥጥር) */}
+          {/* 6. COMMUNITY MODERATION TAB (ማህበረሰብ ቁጥጥር) */}
           {activeTab === 'community' && (
             <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
               
@@ -5813,11 +5813,11 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
                   {[
                     { id: 'all', label: 'ሁሉም (All)' },
-                    { id: 'questions', label: '❓ ጥያቄዎች' },
-                    { id: 'success', label: '🚀 ስኬቶች' },
-                    { id: 'business', label: '💼 ቢዝነስ' },
-                    { id: 'tech', label: '💻 ቴክኖሎጂ' },
-                    { id: 'pinned', label: '📌 የተሰኩ' },
+                    { id: 'questions', label: 'ጥያቄዎች' },
+                    { id: 'success', label: 'ስኬቶች' },
+                    { id: 'business', label: 'ቢዝነስ' },
+                    { id: 'tech', label: 'ቴክኖሎጂ' },
+                    { id: 'pinned', label: 'የተሰኩ' },
                   ].map((cat) => (
                     <button
                       key={cat.id}
@@ -5932,7 +5932,7 @@ export default function AdminDashboard() {
                                   )}
                                   {post.isPinned && (
                                     <span className="text-[10px] font-black bg-[#f9b03c]/20 text-[#f9b03c] px-2 py-0.2 rounded-full">
-                                      📌 Pinned
+                                      Pinned
                                     </span>
                                   )}
                                   {post.isFeatured && (
@@ -6023,8 +6023,8 @@ export default function AdminDashboard() {
 
                           {/* Post Stats Footer */}
                           <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>👍 {post.likes.length} ወደድኩት</span>
-                            <span>💬 {post.commentsCount || 0} አስተያየቶች</span>
+                            <span>{post.likes.length} ወደድኩት</span>
+                            <span>{post.commentsCount || 0} አስተያየቶች</span>
                             <span className="text-[#f9b03c] font-bold">ዘርፍ፦ {post.category}</span>
                           </div>
                         </div>
@@ -6038,7 +6038,7 @@ export default function AdminDashboard() {
           {activeTab === 'referrals' && (
             <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300">
               
-              {/* 🌟 1. Sub-Tab Switcher (Affiliates vs Promo Codes) */}
+              {/* 1. Sub-Tab Switcher (Affiliates vs Promo Codes) */}
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-2 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <button
@@ -6086,7 +6086,7 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              {/* 🌟 SUBTAB 1: Student Affiliates Leaderboard & Tracking */}
+              {/* SUBTAB 1: Student Affiliates Leaderboard & Tracking */}
               {referralsSubTab === 'affiliates' && (
                 <div className="space-y-6">
                   
@@ -6213,15 +6213,15 @@ export default function AdminDashboard() {
                                     <td className="p-4 text-center">
                                       {rank === 1 ? (
                                         <span className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 font-black text-xs inline-flex items-center justify-center shadow-md">
-                                          🥇 1
+                                          1
                                         </span>
                                       ) : rank === 2 ? (
                                         <span className="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-300 to-slate-200 text-slate-950 font-black text-xs inline-flex items-center justify-center shadow-md">
-                                          🥈 2
+                                          2
                                         </span>
                                       ) : rank === 3 ? (
                                         <span className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-700 to-amber-600 text-white font-black text-xs inline-flex items-center justify-center shadow-md">
-                                          🥉 3
+                                          3
                                         </span>
                                       ) : (
                                         <span className="font-bold text-gray-400">#{rank}</span>
@@ -6342,7 +6342,7 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* 🌟 SUBTAB 2: Promo Codes Creation & Management */}
+              {/* SUBTAB 2: Promo Codes Creation & Management */}
               {referralsSubTab === 'promo_codes' && (
                 <div className="space-y-8">
                   {/* Top Creation Card */}
@@ -6427,7 +6427,7 @@ export default function AdminDashboard() {
                             onChange={(e) => setNewTargetCourseId(e.target.value)}
                             className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-medium text-dark dark:text-white outline-none focus:border-[#f9b03c] transition cursor-pointer"
                           >
-                            <option value="all">🌟 ለሁሉም ኮርሶች (All Courses)</option>
+                            <option value="all">ለሁሉም ኮርሶች (All Courses)</option>
                             {courses.map(c => (
                               <option key={c.id} value={c.id}>
                                 {c.title}
@@ -6511,7 +6511,7 @@ export default function AdminDashboard() {
                             {referralCodes.map((item) => {
                               const matchedCourse = courses.find(c => c.id === item.targetCourseId);
                               const courseLabel = item.targetCourseId === 'all' 
-                                ? '🌟 ሁሉም ኮርሶች (All Courses)' 
+                                ? 'ሁሉም ኮርሶች (All Courses)' 
                                 : (matchedCourse ? matchedCourse.title : item.targetCourseId);
 
                               const usage = item.usageCount || 0;
@@ -6580,7 +6580,7 @@ export default function AdminDashboard() {
                                           : 'bg-gray-200 dark:bg-slate-700 text-gray-500 hover:bg-gray-300'
                                       }`}
                                     >
-                                      {isLimitReached ? '🚫 Full' : item.isActive ? '✓ Active' : '✕ Inactive'}
+                                      {isLimitReached ? 'Full' : item.isActive ? 'Active' : 'Inactive'}
                                     </button>
                                   </td>
 
@@ -6621,7 +6621,7 @@ export default function AdminDashboard() {
                       <i className="fa-solid fa-briefcase"></i>
                     </div>
                     <div>
-                      <h3 className="text-xl font-black text-dark dark:text-white">🎬 የ YouTube Portfolio ማስተዳደሪያ (Instructor YouTube Portfolio)</h3>
+                      <h3 className="text-xl font-black text-dark dark:text-white">የ YouTube Portfolio ማስተዳደሪያ (Instructor YouTube Portfolio)</h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">በዋናው Landing Page ላይ የሚታዩትን ሁለቱን የዩቲዩብ ቪዲዮዎች (የሀገር ውስጥ እና የዓለም አቀፍ) እዚህ ያስገቡ። እዚህ የሚቀይሩት ወዲያውኑ በ Landing Page ላይ በቀጥታ ይታያል!</p>
                     </div>
                   </div>
@@ -6838,11 +6838,11 @@ export default function AdminDashboard() {
                       className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition"
                     />
                     <div className="mt-2.5 flex flex-wrap gap-2 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">✓ Google Drive Video Link</span>
-                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">✓ YouTube (Watch / Shorts / Embed)</span>
-                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">✓ Iframe Embed Code</span>
-                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">✓ BunnyCDN / Vimeo / Cloudflare</span>
-                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">✓ Direct MP4 Video</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">Google Drive Video Link</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">YouTube (Watch / Shorts / Embed)</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">Iframe Embed Code</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">BunnyCDN / Vimeo / Cloudflare</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">Direct MP4 Video</span>
                     </div>
                   </div>
 
@@ -6890,8 +6890,8 @@ export default function AdminDashboard() {
                       )}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                      <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md">✓ Google Drive Image Link Supported</span>
-                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-md">✓ Direct Image URLs (.jpg, .png, .webp)</span>
+                      <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md">Google Drive Image Link Supported</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-md">Direct Image URLs (.jpg, .png, .webp)</span>
                     </div>
                   </div>
 
@@ -6992,7 +6992,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ===================== 🎬 LANDING PAGE HERO VIDEO VIEW ===================== */}
+          {/* ===================== LANDING PAGE HERO VIDEO VIEW ===================== */}
           {activeTab === 'landing_video' && (
             <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
               <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
@@ -7005,7 +7005,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <h3 className="text-xl font-black text-dark dark:text-white flex items-center gap-2">
-                        <span>🎬 የዋናው ገጽ መግቢያ ቪዲዮ (Landing Page Video)</span>
+                        <span>የዋናው ገጽ መግቢያ ቪዲዮ (Landing Page Video)</span>
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                         ተጠቃሚዎች ልክ ዌብሳይቱ ላይ ሲገቡ ፊት ለፊት የሚታየውን ቪዲዮ እዚህ ያስተካክሉ። ማናቸውንም የ Google Drive፣ Dropbox፣ YouTube ወይም የቀጥታ ቪዲዮ ሊንክ ይቀበላል።
@@ -7085,7 +7085,7 @@ export default function AdminDashboard() {
                       className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition"
                     />
                     <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                      💡 ለ Google Drive ፋይሉን <strong>"Anyone with the link can view"</strong> ማድረጎን አይርሱ።
+                      ለ Google Drive ፋይሉን <strong>"Anyone with the link can view"</strong> ማድረጎን አይርሱ።
                     </p>
                   </div>
 
@@ -7136,7 +7136,7 @@ export default function AdminDashboard() {
                     </p>
                   </div>
 
-                  {/* 🌟 Live Preview Card */}
+                  {/* Live Preview Card */}
                   <div className="pt-2">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-black text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -7250,7 +7250,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ===================== 🌟 STUDENT FEEDBACKS INBOX VIEW ===================== */}
+          {/* ===================== STUDENT FEEDBACKS INBOX VIEW ===================== */}
           {activeTab === 'feedbacks' && (
             <div className="space-y-6 animate-in fade-in duration-300">
               
@@ -7378,9 +7378,9 @@ export default function AdminDashboard() {
                     <button
                       type="button"
                       onClick={() => setFeedbackSearchTerm('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 text-xs"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 text-xs font-bold"
                     >
-                      ✕
+                      &times;
                     </button>
                   )}
                 </div>
@@ -7389,10 +7389,10 @@ export default function AdminDashboard() {
                 <div className="flex flex-wrap items-center gap-1.5">
                   {[
                     { id: 'all', label: 'ሁሉም' },
-                    { id: 'course', label: '🎓 ኮርስ' },
-                    { id: 'bug', label: '🐛 ችግር' },
-                    { id: 'idea', label: '💡 ሀሳብ' },
-                    { id: 'general', label: '💬 አጠቃላይ' },
+                    { id: 'course', label: 'ኮርስ' },
+                    { id: 'bug', label: 'ችግር' },
+                    { id: 'idea', label: 'ሀሳብ' },
+                    { id: 'general', label: 'አጠቃላይ' },
                   ].map((cat) => (
                     <button
                       key={cat.id}
@@ -7414,7 +7414,7 @@ export default function AdminDashboard() {
                   {[
                     { id: 'all', label: 'ሁሉም' },
                     { id: 'pending', label: '⏳ ያልተስተካከለ' },
-                    { id: 'resolved', label: '✅ ተስተካክሏል' },
+                    { id: 'resolved', label: 'ተስተካክሏል' },
                   ].map((st) => (
                     <button
                       key={st.id}
@@ -7548,9 +7548,9 @@ export default function AdminDashboard() {
                                 item.type === 'idea' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
                                 'bg-amber-500/10 text-amber-400 border-amber-500/30'
                               }`}>
-                                {item.type === 'course' ? '🎓 የኮርስ አስተያየት' :
-                                 item.type === 'bug' ? '🐛 የዌብሳይት ችግር' :
-                                 item.type === 'idea' ? '💡 አዲስ ሀሳብ' : '💬 አጠቃላይ'}
+                                {item.type === 'course' ? 'የኮርስ አስተያየት' :
+                                 item.type === 'bug' ? 'የዌብሳይት ችግር' :
+                                 item.type === 'idea' ? 'አዲስ ሀሳብ' : 'አጠቃላይ'}
                               </span>
                             </div>
 
@@ -7559,7 +7559,7 @@ export default function AdminDashboard() {
                               "{item.message}"
                             </div>
 
-                            {/* 🎙️ Voice Recording Audio Player */}
+                            {/* ️ Voice Recording Audio Player */}
                             {(item.audioUrl || item.voiceNoteUrl) && (
                               <div className="mt-3 p-3 rounded-2xl bg-amber-500/10 border border-[#f9b03c]/30">
                                 <div className="text-[11px] font-black text-[#f9b03c] mb-1.5 flex items-center gap-1.5">
@@ -7570,7 +7570,7 @@ export default function AdminDashboard() {
                               </div>
                             )}
 
-                            {/* 📷 Screenshot Attachment Preview */}
+                            {/* Screenshot Attachment Preview */}
                             {(item.imageUrl || item.screenshotUrl) && (
                               <div className="mt-3">
                                 <div className="text-[11px] font-bold text-slate-400 mb-1 flex items-center gap-1.5">
@@ -7589,7 +7589,7 @@ export default function AdminDashboard() {
                                     className="max-h-40 rounded-xl object-contain border border-gray-200 dark:border-white/10 hover:border-[#f9b03c] transition-all cursor-pointer shadow-sm" 
                                   />
                                   <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition">
-                                    🔍 በትልቁ እይ
+                                    በትልቁ እይ
                                   </span>
                                 </a>
                               </div>
@@ -7705,7 +7705,7 @@ export default function AdminDashboard() {
         </div>
       </main>
 
-      {/* 🌟 Coming Soon Course Modal (Simplified Lightweight Schema for Pre-registration) */}
+      {/* Coming Soon Course Modal (Simplified Lightweight Schema for Pre-registration) */}
       {isComingSoonModalOpen && (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-start justify-center p-4 sm:p-6 backdrop-blur-md overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 w-full max-w-2xl flex flex-col rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 animate-[modalPop_0.3s_ease-out_forwards] mt-8 mb-20 shrink-0">
@@ -7832,7 +7832,7 @@ export default function AdminDashboard() {
                     className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition" 
                   />
                   <p className="text-[10.5px] text-gray-400">
-                    💡 የ Google Drive ወይም Dropbox ሊንክ ማስገባት ይችላሉ፤ ሲስተሙ በራሱ በቀጥታ ያሳየዋል።
+                    የ Google Drive ወይም Dropbox ሊንክ ማስገባት ይችላሉ፤ ሲስተሙ በራሱ በቀጥታ ያሳየዋል።
                   </p>
                 </div>
               </div>
@@ -7928,7 +7928,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <p className="text-[11px] text-gray-400 mt-1">
-                  💡 ተማሪዎች የኮርሱን ማስተዋወቂያ ቪዲዮ (Teaser Trailer) በዋናው ድረ-ገጽ ላይ በቀጥታ እንዲመለከቱ ያስችላቸዋል።
+                  ተማሪዎች የኮርሱን ማስተዋወቂያ ቪዲዮ (Teaser Trailer) በዋናው ድረ-ገጽ ላይ በቀጥታ እንዲመለከቱ ያስችላቸዋል።
                 </p>
               </div>
 
@@ -8141,8 +8141,8 @@ export default function AdminDashboard() {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ሁኔታ (Status) *</label>
                   <select required value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition">
-                      <option value="Active">🟢 Active (ይፋዊ)</option>
-                      <option value="Inactive">🔴 Inactive (ድብቅ)</option>
+                      <option value="Active">Active (ይፋዊ)</option>
+                      <option value="Inactive">Inactive (ድብቅ)</option>
                   </select>
                 </div>
 
@@ -8213,7 +8213,7 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   <p className="text-[11px] text-gray-400 mt-1">
-                    💡 የ Google Drive ወይም Dropbox ሊንክ ሲያስገቡ ሲስተሙ በቀጥታ ወደ ሚታይ ምስል ይቀይረዋል።
+                    የ Google Drive ወይም Dropbox ሊንክ ሲያስገቡ ሲስተሙ በቀጥታ ወደ ሚታይ ምስል ይቀይረዋል።
                   </p>
                 </div>
 
@@ -8363,7 +8363,7 @@ export default function AdminDashboard() {
                         <input type="file" accept=".pdf" onChange={handlePdfFileUpload} className="hidden" />
                       </label>
                       {formData.pdfUrl && formData.pdfUrl.startsWith('data:') && (
-                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">✓ ፋይል ተመርጧል!</span>
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">ፋይል ተመርጧል!</span>
                       )}
                     </div>
                     <input type="text" value={formData.pdfUrl || ''} onChange={e => setFormData({...formData, pdfUrl: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition text-xs" placeholder="ወይም የ Google Drive PDF ሊንክ ያስገቡ (e.g. drive.google.com/...)" />
@@ -8392,7 +8392,7 @@ export default function AdminDashboard() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርስ ቅደመ-ሁኔታዎች (Requirements)</label>
-                  <p className="text-xs text-gray-500 mb-3">የሚፈልጉትን ቅድመ-ሁኔታዎች በምልክት (☑️) ይምረጡ፦</p>
+                  <p className="text-xs text-gray-500 mb-3">የሚፈልጉትን ቅድመ-ሁኔታዎች በምልክት (ምልክት በማድረግ) ይምረጡ፦</p>
                   <div className="space-y-2 mb-3 bg-gray-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
                     {PRESET_REQUIREMENTS.map((req, idx) => {
                       const isChecked = formData.requirementsList?.includes(req);
@@ -8431,7 +8431,7 @@ export default function AdminDashboard() {
 
                 <div className="md:col-span-2 mt-4">
                   <h3 className="font-bold text-lg border-b border-gray-100 dark:border-slate-700 pb-2 mb-4 text-primary">የኮርስ ካርድ መረጃዎች (This Course Includes)</h3>
-                  <p className="text-xs text-gray-500 mb-3">በኮርሱ ካርድ ላይ የሚካተቱትን መረጃዎች በምልክት (☑️) ይምረጡ፦</p>
+                  <p className="text-xs text-gray-500 mb-3">በኮርሱ ካርድ ላይ የሚካተቱትን መረጃዎች በምልክት (ምልክት በማድረግ) ይምረጡ፦</p>
                   <div className="space-y-2 bg-gray-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
                     {PRESET_INCLUDES.map((inc, idx) => {
                       const isChecked = formData.includesList?.includes(inc);
@@ -8519,7 +8519,7 @@ export default function AdminDashboard() {
                                     <span><i className="fa-solid fa-video mr-1 text-primary"></i> {lesson.duration || '00:00'}</span>
                                     <span>•</span>
                                     <span className="text-primary font-bold">+{lesson.points || 100} ነጥብ</span>
-                                    {lesson.video && <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">✓ Video URL Set</span>}
+                                    {lesson.video && <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">Video URL Set</span>}
                                   </p>
                                 </div>
                               </div>
@@ -8818,7 +8818,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* 🌟 Add/Edit Event Modal */}
+      {/* Add/Edit Event Modal */}
       {isEventModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 border border-gray-100 dark:border-slate-700 shadow-2xl animate-in zoom-in-95 duration-200 text-dark dark:text-white">
@@ -9196,12 +9196,12 @@ export default function AdminDashboard() {
                     className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono"
                   />
                   <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] text-gray-500 dark:text-gray-400 font-medium">
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ YouTube</span>
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ Google Drive Video</span>
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ Dropbox Stream</span>
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ Direct MP4</span>
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ Vimeo</span>
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ Iframe Embed</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">YouTube</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Google Drive Video</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Dropbox Stream</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Direct MP4</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Vimeo</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Iframe Embed</span>
                   </div>
                 </div>
 
@@ -9300,7 +9300,7 @@ export default function AdminDashboard() {
                           ) : (
                             <span className="text-[10px] bg-emerald-500/90 text-slate-950 font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
                               <i className="fa-solid fa-circle-check text-[9px]"></i>
-                              <span>✓ ባነሩ ዝግጁ ነው (Active Banner)</span>
+                              <span>ባነሩ ዝግጁ ነው (Active Banner)</span>
                             </span>
                           )}
 
@@ -9406,7 +9406,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* 🌟 Dedicated Student Profile & Activity Detail Modal */}
+      {/* Dedicated Student Profile & Activity Detail Modal */}
       {selectedStudentForDetail && (
         <div 
           className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
@@ -9585,7 +9585,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* 🌟 Edit Instructor / Teacher Modal */}
+      {/* Edit Instructor / Teacher Modal */}
       {isEditInstructorModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
           <div 
@@ -9664,7 +9664,7 @@ export default function AdminDashboard() {
                     className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono transition"
                   />
                   <p className="text-[11px] text-gray-400">
-                    💡 የ Google Drive፣ Dropbox ወይም ቀጥታ የምስል ሊንክ ማስገባት ይችላሉ፤ ሲስተሙ በራሱ በቀጥታ ያስተካክለዋል።
+                    የ Google Drive፣ Dropbox ወይም ቀጥታ የምስል ሊንክ ማስገባት ይችላሉ፤ ሲስተሙ በራሱ በቀጥታ ያስተካክለዋል።
                   </p>
                 </div>
               </div>
@@ -9784,7 +9784,7 @@ export default function AdminDashboard() {
                   />
                   <div>
                     <span className="text-xs font-black text-dark dark:text-white block">
-                      🔄 በዚህ አስተማሪ ስር ያሉ ኮርሶችን መረጃ በሙሉ አዘምን (Sync to All Matching Courses)
+                      በዚህ አስተማሪ ስር ያሉ ኮርሶችን መረጃ በሙሉ አዘምን (Sync to All Matching Courses)
                     </span>
                     <span className="text-[11px] text-gray-500 dark:text-gray-400">
                       የአስተማሪው ስም፣ ፎቶ፣ ባዮ እና ቴሌግራም በሁሉም የኮርስ ገጾች እና ዳሽቦርድ ላይ ወዲያውኑ እንዲተካ ያደርጋል።
@@ -9826,7 +9826,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* 🌟 Admin Post Announcement Modal */}
+      {/* Admin Post Announcement Modal */}
       {isAnnouncementModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
           <div 
@@ -9866,11 +9866,11 @@ export default function AdminDashboard() {
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {[
-                    { id: 'general', label: '📢 ጠቅላላ ማስታወቂያ' },
-                    { id: 'questions', label: '❓ ጥያቄና መልስ' },
-                    { id: 'success', label: '🚀 የስኬት ታሪክ' },
-                    { id: 'business', label: '💼 ቢዝነስ & ንግድ' },
-                    { id: 'tech', label: '💻 ቴክኖሎጂ' },
+                    { id: 'general', label: 'ጠቅላላ ማስታወቂያ' },
+                    { id: 'questions', label: 'ጥያቄና መልስ' },
+                    { id: 'success', label: 'የስኬት ታሪክ' },
+                    { id: 'business', label: 'ቢዝነስ & ንግድ' },
+                    { id: 'tech', label: 'ቴክኖሎጂ' },
                   ].map((c) => (
                     <button
                       key={c.id}
@@ -9927,7 +9927,7 @@ export default function AdminDashboard() {
                     className="w-4 h-4 text-[#f9b03c] rounded"
                   />
                   <div>
-                    <span className="text-xs font-black text-dark dark:text-white block">📌 ወደ ላይ ሰካ (Pin Post)</span>
+                    <span className="text-xs font-black text-dark dark:text-white block">ወደ ላይ ሰካ (Pin Post)</span>
                     <span className="text-[10px] text-gray-400">ከሁሉም ፖስቶች በላይ ይቀመጣል</span>
                   </div>
                 </label>

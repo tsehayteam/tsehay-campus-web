@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { parseVideoUrl, parseImageUrl, formatCloudStorageUrl } from '@/lib/videoParser';
+import { X, Lightbulb } from 'lucide-react';
 
 export const COURSE_CATEGORIES = [
   'E-Commerce',
@@ -94,7 +95,7 @@ export default function AdminCourseModal({
             onClick={onClose}
             className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -114,7 +115,7 @@ export default function AdminCourseModal({
             />
           </div>
 
-          {/* 🌟 6 Specific Updated Course Categories */}
+          {/*  6 Specific Updated Course Categories */}
           <div>
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
               የኮርሱ ዘርፍ (Category) *
@@ -251,8 +252,9 @@ export default function AdminCourseModal({
                 />
               </div>
             )}
-            <p className="text-[11px] text-slate-400 mt-1">
-              💡 Google Drive ወይም Dropbox ሊንኮችን ሲስተሙ በራሱ በቀጥታ ያሳያል።
+            <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5">
+              <Lightbulb className="w-3.5 h-3.5 text-[#f9b03c] shrink-0" />
+              <span>Google Drive ወይም Dropbox ሊንኮችን ሲስተሙ በራሱ በቀጥታ ያሳያል።</span>
             </p>
           </div>
 

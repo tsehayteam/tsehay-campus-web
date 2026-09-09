@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PaymentModal from '@/components/PaymentModal';
 import { useAuth } from '@/context/AuthContext';
+import { Smartphone, Building2, CreditCard } from 'lucide-react';
 
 interface MentorshipTier {
   id: string;
@@ -473,7 +474,7 @@ export default function MentorshipClient() {
           <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-black mb-4 shadow-[0_0_20px_rgba(249,176,60,0.2)]">
               <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
-              <span>✨ 1-ON-1 VIP MENTORSHIP & STRATEGY SESSION ✨</span>
+              <span>1-ON-1 VIP MENTORSHIP & STRATEGY SESSION</span>
             </div>
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-black font-heading text-white tracking-tight leading-tight mb-4 min-h-[90px] sm:min-h-[120px]">
               <span>{mTypedWhite}</span>{' '}
@@ -488,7 +489,7 @@ export default function MentorshipClient() {
             </p>
           </div>
 
-          {/* 🌟 SECTION 1: MENTORSHIP PACKAGES & PRICING */}
+          {/*  SECTION 1: MENTORSHIP PACKAGES & PRICING */}
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -578,7 +579,7 @@ export default function MentorshipClient() {
                           : 'bg-white/10 hover:bg-white/15 text-white border border-white/10'
                       }`}
                     >
-                      <span>{isSelected ? '✓ ተመርጧል (Selected)' : 'ይህንን ፓኬጅ ምረጥ'}</span>
+                      <span>{isSelected ? 'ተመርጧል (Selected)' : 'ይህንን ፓኬጅ ምረጥ'}</span>
                     </button>
                   </div>
                 );
@@ -725,7 +726,7 @@ export default function MentorshipClient() {
                     <div className="flex justify-between">
                       <span className="text-slate-400">የማማከር አይነት:</span>
                       <span className="font-bold text-[#38bdf8]">
-                        {confirmedBooking.meetingMode === 'in_person' ? '🏢 በአካል (In-Person Office - ቦሌ)' : '🌐 ኦንላይን (Online Video Call)'}
+                        {confirmedBooking.meetingMode === 'in_person' ? 'በአካል (In-Person Office - ቦሌ)' : 'ኦንላይን (Online Video Call)'}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -792,7 +793,7 @@ export default function MentorshipClient() {
                   <div className="space-y-4 mb-6">
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2 text-xs">
                       <span className="text-[11px] font-bold text-[#f9b03c] uppercase tracking-wider block border-b border-white/5 pb-1">
-                        👤 የተገልጋይ መረጃ (Client Information)
+                        የተገልጋይ መረጃ (Client Information)
                       </span>
                       <div className="flex justify-between pt-1">
                         <span className="text-slate-400">ሙሉ ስም (Full Name):</span>
@@ -810,7 +811,7 @@ export default function MentorshipClient() {
 
                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2 text-xs">
                       <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block border-b border-white/5 pb-1">
-                        💼 የማማከር ዝርዝር (Mentorship Details)
+                        የማማከር ዝርዝር (Mentorship Details)
                       </span>
                       <div className="flex justify-between pt-1">
                         <span className="text-slate-400">የተመረጠ ፓኬጅ:</span>
@@ -819,7 +820,7 @@ export default function MentorshipClient() {
                       <div className="flex justify-between">
                         <span className="text-slate-400">የማማከር አይነት:</span>
                         <span className="font-bold text-[#38bdf8]">
-                          {meetingMode === 'in_person' ? '🏢 በአካል (In-Person Office - ቦሌ፣ አዲስ አበባ)' : '🌐 ኦንላይን (Online Video Call - Google Meet)'}
+                          {meetingMode === 'in_person' ? 'በአካል (In-Person Office - ቦሌ፣ አዲስ አበባ)' : 'ኦንላይን (Online Video Call - Google Meet)'}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -854,7 +855,7 @@ export default function MentorshipClient() {
                       className="w-full py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 transition cursor-pointer flex items-center justify-center gap-2"
                     >
                       <i className="fa-solid fa-arrow-left"></i>
-                      <span>✏️ መረጃ አሻሽል (Edit Details)</span>
+                      <span>መረጃ አሻሽል (Edit Details)</span>
                     </button>
 
                     <button
@@ -920,12 +921,12 @@ export default function MentorshipClient() {
                           {getFormattedSelectedDate(selectedDate)}
                         </h4>
                         <span className="text-[11px] text-amber-200 font-bold block mt-0.5">
-                          ⏰ {selectedTime} | 💼 {selectedTier.name}
+                          {selectedTime} | {selectedTier.name}
                         </span>
                       </div>
                     </div>
                     <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/30 shrink-0 hidden sm:inline-block">
-                      ✓ ዝግጁ ነው
+                      ዝግጁ ነው
                     </span>
                   </div>
 
@@ -949,7 +950,7 @@ export default function MentorshipClient() {
                             <i className="fa-solid fa-video"></i>
                           </div>
                           <div>
-                            <h5 className="text-xs font-black text-white">🌐 ኦንላይን (Online Video)</h5>
+                            <h5 className="text-xs font-black text-white">ኦንላይን (Online Video)</h5>
                             <p className="text-[10px] text-slate-400">Google Meet / Telegram Video</p>
                           </div>
                         </div>
@@ -968,7 +969,7 @@ export default function MentorshipClient() {
                             <i className="fa-solid fa-building"></i>
                           </div>
                           <div>
-                            <h5 className="text-xs font-black text-white">🏢 በአካል (In-Person Office)</h5>
+                            <h5 className="text-xs font-black text-white">በአካል (In-Person Office)</h5>
                             <p className="text-[10px] text-slate-400">ቦሌ፣ አዲስ አበባ (Bole Office)</p>
                           </div>
                         </div>
@@ -1188,7 +1189,7 @@ export default function MentorshipClient() {
               <div className="flex justify-between">
                 <span className="text-slate-400">የማማከር አይነት:</span>
                 <span className="font-bold text-[#38bdf8]">
-                  {meetingMode === 'in_person' ? '🏢 በአካል (In-Person Office - ቦሌ)' : '🌐 ኦንላይን (Online Video)'}
+                  {meetingMode === 'in_person' ? 'በአካል (In-Person Office - ቦሌ)' : 'ኦንላይን (Online Video)'}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -1216,7 +1217,7 @@ export default function MentorshipClient() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-[#f9b03c] flex items-center justify-center text-lg font-black">
-                    📱
+                    <Smartphone className="w-5 h-5 text-[#f9b03c]" aria-hidden="true" />
                   </div>
                   <div>
                     <h4 className="text-xs font-black text-white">ቴሌብር / Telebirr & CBE Birr</h4>
@@ -1240,7 +1241,7 @@ export default function MentorshipClient() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg font-black">
-                    🏦
+                    <Building2 className="w-5 h-5 text-blue-400" aria-hidden="true" />
                   </div>
                   <div>
                     <h4 className="text-xs font-black text-white">የባንክ ማስተላለፊያ (Bank Transfer)</h4>
@@ -1264,7 +1265,7 @@ export default function MentorshipClient() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center text-lg font-black">
-                    💳
+                    <CreditCard className="w-5 h-5 text-blue-300" aria-hidden="true" />
                   </div>
                   <div>
                     <h4 className="text-xs font-black text-white">PayPal & International Cards</h4>
@@ -1280,7 +1281,7 @@ export default function MentorshipClient() {
             </div>
 
             <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 mb-5 text-xs space-y-2">
-              <p className="font-bold text-[#f9b03c] mb-1">📌 የክፍያ መረጃዎች (Account Details)፦</p>
+              <p className="font-bold text-[#f9b03c] mb-1">የክፍያ መረጃዎች (Account Details)፦</p>
               
               {paymentMethod === 'telebirr' && (
                 <div className="space-y-1 text-slate-300">

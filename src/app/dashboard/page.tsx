@@ -22,6 +22,7 @@ import FeedbackModal from '@/components/FeedbackModal';
 import { speakWithLanguageDetection } from '@/lib/ttsHelper';
 import { parseVideoUrl } from '@/lib/videoParser';
 import { supabase } from '@/lib/supabase/client';
+import { Crown, Check, Clock, X, Target, BookOpen, Sparkles, PartyPopper, Lightbulb, Rocket, Camera, FolderOpen, Palette } from 'lucide-react';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (
@@ -625,7 +626,7 @@ function StudentDashboardContent() {
     const imageToSend = lessonAiAttachedImage;
     if ((!queryText && !imageToSend) || isLessonAiLoading) return;
 
-    const userMsg = { role: 'user' as const, text: queryText || "📸 ፎቶ ተያይዟል", image: imageToSend || undefined };
+    const userMsg = { role: 'user' as const, text: queryText || "ፎቶ ተያይዟል (Photo attached)", image: imageToSend || undefined };
     setLessonAiMessages(prev => [...prev, userMsg]);
     setLessonAiQuery('');
     setLessonAiAttachedImage(null);
@@ -1472,8 +1473,8 @@ function StudentDashboardContent() {
 
     let userMsg = queryText;
     if (!userMsg) {
-      if (audioToSend) userMsg = "🎙️ የድምፅ መልዕክት (Voice Note)";
-      else if (imageToSend) userMsg = "📸 ፎቶ ተያይዟል";
+      if (audioToSend) userMsg = "የድምፅ መልዕክት (Voice Note)";
+      else if (imageToSend) userMsg = "ፎቶ ተያይዟል (Photo attached)";
     }
 
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1850,7 +1851,7 @@ function StudentDashboardContent() {
   return (
     <div className="min-h-screen bg-[#030509] text-slate-200 flex flex-col md:flex-row font-body relative overflow-x-hidden selection:bg-[#f9b03c]/30">
       
-      {/* 🌟 Floating Distraction-Free Focus Mode Exit Button (Icon Only - Zero Text, Bold Glowing/Pulsing Visual Feedback) */}
+      {/* Floating Distraction-Free Focus Mode Exit Button (Icon Only - Zero Text, Bold Glowing/Pulsing Visual Feedback) */}
       {isFocusMode && (
         <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[9999] animate-in fade-in zoom-in-95 duration-300">
           <button
@@ -1926,7 +1927,7 @@ function StudentDashboardContent() {
 
         <nav className="flex-1 overflow-y-auto py-2 md:py-3 px-3 space-y-1 font-body no-scrollbar w-full flex flex-col gap-2 items-stretch">
           
-          {/* 🌟 ULTRA-CLEAN CONSOLIDATED SINGLE MENU BUTTON (ACCORDION SLIDE-DOWN) */}
+          {/* ULTRA-CLEAN CONSOLIDATED SINGLE MENU BUTTON (ACCORDION SLIDE-DOWN) */}
           <div className="w-full mb-1">
             <button
               type="button"
@@ -1973,7 +1974,7 @@ function StudentDashboardContent() {
             </button>
           </div>
 
-          {/* 🌟 SMOOTH SLIDE-DOWN ACCORDION MENU CONTAINER */}
+          {/* SMOOTH SLIDE-DOWN ACCORDION MENU CONTAINER */}
           <div className={`space-y-1.5 w-full transition-all duration-500 ease-in-out flex flex-col gap-1.5 items-stretch ${
             isNavDrawerExpanded 
               ? 'max-h-[85vh] overflow-y-auto opacity-100 transform translate-y-0 py-1 no-scrollbar' 
@@ -2009,7 +2010,7 @@ function StudentDashboardContent() {
                 )}
               </button>
 
-              {/* 🌟 EMBEDDED COURSE CURRICULUM (ACCORDION DRAWER SHELF) */}
+              {/* EMBEDDED COURSE CURRICULUM (ACCORDION DRAWER SHELF) */}
               {currentView === 'classroom' && (
                 <div className="w-full pl-1 sm:pl-2 pr-1 pt-1 pb-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   {/* Curriculum Header & Shelf Toggle */}
@@ -2109,7 +2110,7 @@ function StudentDashboardContent() {
                                           disabled={!isUnlocked}
                                           onClick={() => {
                                             if (!isUnlocked) {
-                                              alert("🔒 ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                              alert("ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
                                               return;
                                             }
                                             const selectedLesson = { ...lesson, moduleIndex: mIdx, lessonIndex: lIdx };
@@ -2363,7 +2364,7 @@ function StudentDashboardContent() {
         </nav>
 
         <div className="hidden md:block p-4 w-full border-t border-white/[0.06]">
-          {/* 🌟 Student Profile & Settings Navigation (Logout cleanly managed inside Settings) */}
+          {/* Student Profile & Settings Navigation (Logout cleanly managed inside Settings) */}
           <div 
             onClick={() => setCurrentView('settings')}
             className="flex items-center justify-center lg:justify-start gap-3.5 p-2.5 rounded-2xl hover:bg-white/[0.06] transition cursor-pointer group border border-transparent hover:border-white/10"
@@ -2371,7 +2372,7 @@ function StudentDashboardContent() {
           >
             {isProStudent ? (
               <div className="relative shrink-0 flex items-center justify-center">
-                {/* 🌟 Rotating & Pulsing Glow Ring in Primary (#f9b03c) and Secondary (#3268ba) */}
+                {/* Rotating & Pulsing Glow Ring in Primary (#f9b03c) and Secondary (#3268ba) */}
                 <div 
                   className="absolute -inset-1 rounded-full bg-gradient-to-tr from-[#f9b03c] via-[#3268ba] to-[#f9b03c] opacity-90 blur-[1px]"
                   style={{ animation: 'spin 5s linear infinite' }}
@@ -2417,7 +2418,7 @@ function StudentDashboardContent() {
                   {isProStudent ? (
                     <span className="text-[#f9b03c] font-black flex items-center gap-1 drop-shadow-[0_0_8px_rgba(249,176,60,0.4)]">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping inline-block"></span>
-                      👑 {t('pro_member') || 'PRO አባል (Pro Member)'}
+                      <Crown className="w-3.5 h-3.5 text-[#f9b03c] inline mr-1" aria-hidden="true" />{t('pro_member') || 'PRO አባል (Pro Member)'}
                     </span>
                   ) : 'Free Member'}
                 </p>
@@ -2450,7 +2451,7 @@ function StudentDashboardContent() {
             
             <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 relative">
                 
-                {/* 🌟 Unified Points Counter Badge */}
+                {/* Unified Points Counter Badge */}
                 <div 
                   className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-[#f9b03c]/40 px-3 sm:px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(249,176,60,0.15)] cursor-help hover:scale-105 transition" 
                   title="የተከማቹ ፖይንቶች ከመቶ (Earned Points out of 100)"
@@ -2498,7 +2499,7 @@ function StudentDashboardContent() {
         
         {currentView === 'classroom' && (
           <div className={`${isFocusMode ? 'max-w-[1700px] w-full' : 'max-w-[1600px]'} mx-auto transition-all duration-500`}>
-            {/* 🌟 Top Course Title & Action Header (Completely hidden during Focus Mode to eliminate clutter) */}
+            {/* Top Course Title & Action Header (Completely hidden during Focus Mode to eliminate clutter) */}
             {!isFocusMode && (
               <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
@@ -2506,7 +2507,7 @@ function StudentDashboardContent() {
                       <p className="text-slate-400 font-body text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
                   </div>
 
-                  {/* 🌟 Standalone Glowing Focus Mode Toggle Button (Icon Button Only - Zero Text) */}
+                  {/* Standalone Glowing Focus Mode Toggle Button (Icon Button Only - Zero Text) */}
                   <div className="flex items-center gap-3">
                       <button
                           type="button"
@@ -2556,9 +2557,9 @@ function StudentDashboardContent() {
                                 </button>
                                 <button 
                                     onClick={() => setResumeToast(null)}
-                                    className="text-gray-400 hover:text-white text-xs px-1"
+                                    className="text-gray-400 hover:text-white text-xs px-1 flex items-center"
                                 >
-                                    ✕
+                                    <X className="w-3.5 h-3.5" aria-hidden="true" />
                                 </button>
                             </div>
                         )}
@@ -2573,7 +2574,7 @@ function StudentDashboardContent() {
                                className="absolute top-4 right-4 text-gray-400 hover:text-white text-sm font-bold w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer"
                                title="ዝጋ (Close)"
                              >
-                               ✕
+                               <X className="w-4 h-4" aria-hidden="true" />
                              </button>
                              <div className="w-14 h-14 bg-amber-400/20 text-primary rounded-full flex items-center justify-center text-2xl mb-3 border-2 border-primary animate-bounce">
                                  <i className="fa-solid fa-star"></i>
@@ -2743,7 +2744,7 @@ function StudentDashboardContent() {
                                             <i className={`fa-solid ${isCurrentCompleted ? 'fa-check' : 'fa-check'} text-[10px]`}></i>
                                         </span>
                                         <span className="font-extrabold tracking-wide">
-                                            {isCurrentCompleted ? (lang === 'am' ? 'ተጠናቋል ✓' : 'Completed ✓') : (lang === 'am' ? 'ጨርሻለሁ' : 'Mark Complete')}
+                                            {isCurrentCompleted ? (lang === 'am' ? 'ተጠናቋል' : 'Completed') : (lang === 'am' ? 'ጨርሻለሁ' : 'Mark Complete')}
                                         </span>
                                         {!isCurrentCompleted && (
                                             <span className="text-[10px] bg-primary text-dark font-black px-1.5 py-0.5 rounded-md ml-0.5 shadow-xs animate-pulse">
@@ -2938,7 +2939,7 @@ function StudentDashboardContent() {
                                                                     key={lidx} 
                                                                     onClick={() => {
                                                                         if (!isUnlocked) {
-                                                                            alert("🔒 ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                                                            alert("ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
                                                                             return;
                                                                         }
                                                                         const selectedLesson = {...lesson, moduleIndex: idx, lessonIndex: lidx};
@@ -3023,9 +3024,9 @@ function StudentDashboardContent() {
                                                     </button>
                                                     <button
                                                         onClick={() => setLessonSummary(null)}
-                                                        className="text-gray-400 hover:text-white text-xs px-1"
+                                                        className="text-gray-400 hover:text-white text-xs px-1 flex items-center"
                                                     >
-                                                        ✕
+                                                        <X className="w-3.5 h-3.5" aria-hidden="true" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -3080,7 +3081,7 @@ function StudentDashboardContent() {
                                                 <i className="fa-solid fa-star text-amber-500"></i>
                                                 <span>
                                                     {ratedCourses[activeCourse?.id] || (typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse?.id}`))
-                                                        ? 'ደረጃ ሰጥተዋል ✓'
+                                                        ? 'ደረጃ ሰጥተዋል'
                                                         : 'ሬቲንግ ስጥ'}
                                                 </span>
                                             </button>
@@ -3284,7 +3285,7 @@ function StudentDashboardContent() {
 
                                                                     {isHighlighted && (
                                                                         <span className="text-[10px] bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-black px-2.5 py-0.5 rounded-full shadow-md animate-bounce flex items-center gap-1">
-                                                                            ✨ አዲስ የተጨመረ ማስታወሻ
+                                                                            <Sparkles className="w-3 h-3 text-slate-950 inline mr-1" aria-hidden="true" /> አዲስ የተጨመረ ማስታወሻ
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -3364,7 +3365,7 @@ function StudentDashboardContent() {
                                                                 <span className="text-xs font-bold text-dark dark:text-white">እርስዎ የጠየቁት ጥያቄ፦</span>
                                                             </div>
                                                             <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${ticket.status === "replied" ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" : "bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30"}`}>
-                                                                {ticket.status === "replied" ? "✓ መልስ ተሰጥቷል" : "⏳ በመጠባበቅ ላይ"}
+                                                                {ticket.status === "replied" ? <span className="inline-flex items-center gap-1"><Check className="w-3 h-3 text-emerald-500" aria-hidden="true" /> መልስ ተሰጥቷል</span> : <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3 text-amber-500" aria-hidden="true" /> በመጠባበቅ ላይ</span>}
                                                             </span>
                                                         </div>
 
@@ -3528,7 +3529,7 @@ function StudentDashboardContent() {
                                                     className="px-7 py-3.5 bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-amber-400/25 hover:scale-105 transition flex items-center justify-center gap-2 mx-auto cursor-pointer"
                                                 >
                                                     <i className="fa-solid fa-list-check"></i>
-                                                    <span>🎯 ወደ ፈተናው ይሂዱ (Take Exam)</span>
+                                                    <span><Target className="w-4 h-4 text-slate-950 inline mr-1.5" aria-hidden="true" />ወደ ፈተናው ይሂዱ (Take Exam)</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -3544,7 +3545,7 @@ function StudentDashboardContent() {
 
         {currentView === 'courses' && (
           <div className="max-w-7xl mx-auto py-10">
-            {/* 🌟 Referral Incentive Banner in My Courses */}
+            {/* Referral Incentive Banner in My Courses */}
             <div 
               onClick={() => setCurrentView('referrals')}
               className="mb-8 p-5 sm:p-6 rounded-3xl border border-amber-400/40 bg-gradient-to-r from-amber-500/10 via-[#f9b03c]/10 to-blue-500/10 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer hover:border-[#f9b03c] transition-all group shadow-lg shadow-black/20"
@@ -3639,12 +3640,12 @@ function StudentDashboardContent() {
                                  <div className="flex justify-between items-start">
                                      <div>
                                          <span className="text-[11px] font-bold bg-primary/20 text-dark dark:text-primary px-3 py-1 rounded-full">
-                                             📚 {ticket.courseName || 'General Course'}
+                                             <BookOpen className="w-3.5 h-3.5 text-primary inline mr-1" aria-hidden="true" /> {ticket.courseName || 'General Course'}
                                          </span>
                                          <p className="text-[10px] text-gray-400 mt-1">{ticket.createdAt ? new Date(ticket.createdAt.seconds ? ticket.createdAt.seconds * 1000 : ticket.createdAt).toLocaleString() : ''}</p>
                                      </div>
                                      <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${ticket.status === 'replied' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'}`}>
-                                         {ticket.status === 'replied' ? '✓ መልስ ተሰጥቷል (Replied)' : '⏳ በመጠባበቅ ላይ (Pending)'}
+                                         {ticket.status === 'replied' ? <span className="inline-flex items-center gap-1"><Check className="w-3 h-3 text-emerald-600" aria-hidden="true" /> መልስ ተሰጥቷል (Replied)</span> : <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3 text-amber-600" aria-hidden="true" /> በመጠባበቅ ላይ (Pending)</span>}
                                      </span>
                                  </div>
 
@@ -3690,7 +3691,7 @@ function StudentDashboardContent() {
                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.08),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.12),transparent_50%)] pointer-events-none" />
                  <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
-                 {/* 🛡️ Custom Sleek Branded Confirmation Modal */}
+                 {/*️ Custom Sleek Branded Confirmation Modal */}
                  {showDashboardClearAiModal && (
                    <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
                      <div className="relative bg-white dark:bg-[#0b1222] border border-gray-200 dark:border-white/20 rounded-3xl p-6 w-full max-w-[320px] shadow-[0_20px_50px_rgba(0,0,0,0.9)] text-center space-y-4 animate-in zoom-in-95 duration-200">
@@ -3724,7 +3725,7 @@ function StudentDashboardContent() {
                    </div>
                  )}
 
-                  {/* 🗑️ 15-Day Recycle Bin Modal (Restore & Auto-Purge Manager) */}
+                  {/*️ 15-Day Recycle Bin Modal (Restore & Auto-Purge Manager) */}
                   {showAiTrashModal && (
                     <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
                       <div className="relative bg-white dark:bg-[#0b1222] border border-gray-200 dark:border-white/20 rounded-3xl p-5 sm:p-6 w-full max-w-lg shadow-[0_25px_60px_rgba(0,0,0,0.9)] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
@@ -3866,10 +3867,10 @@ function StudentDashboardContent() {
                          }}
                          className="bg-gray-100 dark:bg-slate-800 text-xs font-bold text-dark dark:text-[#f9b03c] border border-gray-200 dark:border-white/10 rounded-xl px-3 py-1.5 outline-none focus:border-[#f9b03c] transition max-w-[200px] truncate cursor-pointer"
                        >
-                         <option value="" className="bg-white dark:bg-slate-900 text-dark dark:text-white">🌐 አጠቃላይ (General Campus AI)</option>
+                         <option value="" className="bg-white dark:bg-slate-900 text-dark dark:text-white">አጠቃላይ (General Campus AI)</option>
                          {courses.map(c => (
                            <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900 text-dark dark:text-white">
-                             📚 {c.title}
+                             {c.title}
                            </option>
                          ))}
                        </select>
@@ -3944,7 +3945,7 @@ function StudentDashboardContent() {
                              {/* Action buttons under AI response */}
                              {!isUser && i > 0 && (
                                  <div className="flex items-center gap-2 mt-1.5 ml-9 flex-wrap">
-                                     {/* 🔊 Voice Audio Player Button */}
+                                     {/* Voice Audio Player Button */}
                                      <button 
                                         onClick={() => playAiVoiceResponse(m.text, i)}
                                         className={`text-[11px] font-bold px-3 py-1 rounded-xl border flex items-center gap-1.5 transition cursor-pointer active:scale-95 shadow-xs ${
@@ -3980,7 +3981,7 @@ function StudentDashboardContent() {
                                          className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 flex items-center gap-1 transition cursor-pointer"
                                      >
                                          <i className={`fa-solid ${copiedMsgIdx === i ? 'fa-check text-emerald-500' : 'fa-copy'}`}></i>
-                                         <span>{copiedMsgIdx === i ? '✓ ተገልብጧል' : 'ኮፒ'}</span>
+                                         <span>{copiedMsgIdx === i ? 'ተገልብጧል' : 'ኮፒ'}</span>
                                      </button>
 
                                       <button 
@@ -3999,7 +4000,7 @@ function StudentDashboardContent() {
                                           title={savedAiNotes[i] ? "ወደ ማስታወሻ ተመዝግቧል (Saved to Notes)" : "ወደ ማስታወሻ አድ አድርግ (Save to Notes)"}
                                       >
                                           <i className={`fa-solid ${savedAiNotes[i] ? "fa-circle-check text-emerald-600 dark:text-emerald-400 animate-bounce" : "fa-bookmark text-[10px]"}`}></i> 
-                                          <span>{savedAiNotes[i] ? "✓ ወደ ማስታወሻ ተመዝግቧል" : "ወደ ማስታወሻ አድ አድርግ"}</span>
+                                          <span>{savedAiNotes[i] ? "ወደ ማስታወሻ ተመዝግቧል" : "ወደ ማስታወሻ አድ አድርግ"}</span>
                                       </button>
 
                                       {savedAiNotes[i] && (
@@ -4040,7 +4041,7 @@ function StudentDashboardContent() {
                        <img src={aiAttachedImage} alt="Preview" className="w-12 h-12 object-cover rounded-xl border border-[#f9b03c]/50 shadow-sm" />
                        <div className="text-xs">
                          <span className="font-bold text-dark dark:text-white block">ፎቶ ተያይዟል (Attached Photo)</span>
-                         <span className="text-[10px] text-emerald-600 dark:text-emerald-400">✓ ለ AIው ትንታኔ ተዘጋጅቷል</span>
+                         <span className="text-[10px] text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1"><Check className="w-3 h-3 text-emerald-500" aria-hidden="true" /> ለ AIው ትንታኔ ተዘጋጅቷል</span>
                        </div>
                      </div>
                      <button 
@@ -4067,7 +4068,7 @@ function StudentDashboardContent() {
                       ))}
                   </div>
 
-                  {/* ✍️ Clean Single Persistent Input Bar (Photo, Text Input, Live Mic / Send) */}
+                  {/*️ Clean Single Persistent Input Bar (Photo, Text Input, Live Mic / Send) */}
                   <form onSubmit={(e) => handleSendAiMessage(e)} className="relative z-10 flex items-center gap-2">
                       {/* Photo Upload Button */}
                       <button
@@ -4087,7 +4088,7 @@ function StudentDashboardContent() {
                             onChange={e => setChatInput(e.target.value)}
                             placeholder={
                               isAiVoiceRecording
-                                ? "🔴 እያዳመጥኩ ነው... ይናገሩ (Listening... speak now)"
+                                ? "እያዳመጥኩ ነው... ይናገሩ (Listening... speak now)"
                                 : selectedAiCourse 
                                   ? `ስለ ${selectedAiCourse.title} ለ Tsehay AI ጥያቄዎን እዚህ ይጻፉ...` 
                                   : "ለ Tsehay AI ማንኛውንም ጥያቄ እዚህ ይጻፉ..."
@@ -4170,7 +4171,7 @@ function StudentDashboardContent() {
                   }}
                   className="px-6 py-3 bg-gradient-to-r from-amber-400 to-yellow-400 text-dark font-black text-xs sm:text-sm rounded-xl shadow-md hover:scale-105 transition cursor-pointer"
                 >
-                  🚀 ወደ መማሪያ ክፍል ይሂዱ
+                  <span className="inline-flex items-center gap-1.5"><Rocket className="w-4 h-4 text-slate-950" aria-hidden="true" /> ወደ መማሪያ ክፍል ይሂዱ</span>
                 </button>
               </div>
             ) : (
@@ -4196,7 +4197,7 @@ function StudentDashboardContent() {
           </div>
         )}
 
-        {/* 🌟 Refer a Friend (Tsehay Campus Growth Program View) */}
+        {/* Refer a Friend (Tsehay Campus Growth Program View) */}
         {currentView === 'referrals' && (
           <div className="py-6">
             <StudentReferralSection 
@@ -4284,7 +4285,7 @@ function StudentDashboardContent() {
                       <span>ፎቶ ይጫኑ (Upload Photo)</span>
                     </button>
 
-                    {/* 📸 AI Live Camera & Avatar Generator Button */}
+                    {/* AI Live Camera & Avatar Generator Button */}
                     <button
                       type="button"
                       onClick={() => {
@@ -4295,17 +4296,17 @@ function StudentDashboardContent() {
                       className="px-4 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 border border-purple-400/30"
                     >
                       <i className="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
-                      <span>✨ በ AI አቫተር ፍጠር (Camera/AI)</span>
+                      <span className="inline-flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-amber-300" aria-hidden="true" /> በ AI አቫተር ፍጠር (Camera/AI)</span>
                     </button>
 
-                    {/* 🇪🇹 Ethiopian Avatar Presets Toggle */}
+                    {/* Ethiopian Avatar Presets Toggle */}
                     <button
                       type="button"
                       onClick={() => setShowAvatarPresets(prev => !prev)}
                       className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-300 dark:border-slate-700"
                     >
                       <i className="fa-solid fa-masks-theater text-primary"></i>
-                      <span>🇪🇹 የሐበሻ አቫታሮች</span>
+                      <span>የሐበሻ አቫታሮች</span>
                     </button>
 
                     {settingsPhotoUrl && (
@@ -4329,21 +4330,21 @@ function StudentDashboardContent() {
                 </div>
               </div>
 
-              {/* 🇪🇹 Rich Ethiopian Avatars Presets Grid */}
+              {/* Rich Ethiopian Avatars Presets Grid */}
               {showAvatarPresets && (
                 <div className="pt-4 border-t border-slate-200 dark:border-slate-700/80 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <p className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                      <span>🇪🇹 የኢትዮጵያዊያን ተማሪዎች እና ፈጣሪዎች አቫታሮች</span>
+                      <span>የኢትዮጵያዊያን ተማሪዎች እና ፈጣሪዎች አቫታሮች</span>
                     </p>
 
                     {/* Gender / Category Filters */}
                     <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                       {[
                         { id: 'all', label: 'ሁሉም (All)' },
-                        { id: 'male', label: '👨 ወንድ' },
-                        { id: 'female', label: '👩 ሴት' },
-                        { id: '3d', label: '🤖 3D & AI' }
+                        { id: 'male', label: 'ወንድ (Male)' },
+                        { id: 'female', label: 'ሴት (Female)' },
+                        { id: '3d', label: '3D & AI' }
                       ].map(cat => (
                         <button
                           key={cat.id}
@@ -4522,7 +4523,7 @@ function StudentDashboardContent() {
         }}
       />
 
-      {/* 📸 AI Live Camera & Avatar Generator Modal */}
+      {/* AI Live Camera & Avatar Generator Modal */}
       {showAiAvatarModal && (
         <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
           {/* Hidden Canvas for Camera Snapshots */}
@@ -4546,7 +4547,7 @@ function StudentDashboardContent() {
                 </div>
                 <div>
                   <h4 className="font-black text-sm sm:text-base text-white flex items-center gap-1.5">
-                    <span>✨ የ AI አቫታር ፈጣሪ (AI Avatar Studio)</span>
+                    <span className="inline-flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-amber-300" aria-hidden="true" /> የ AI አቫታር ፈጣሪ (AI Avatar Studio)</span>
                   </h4>
                   <p className="text-[11px] text-slate-400">በካሜራ አንስተው ወይም ፎቶ አፕሎድ አድርገው በ AI አቫተር ያመንጩ</p>
                 </div>
@@ -4578,7 +4579,7 @@ function StudentDashboardContent() {
                   }`}
                 >
                   <i className="fa-solid fa-camera"></i>
-                  <span>📸 በካሜራ አንሳ (Live Selfie)</span>
+                  <span className="inline-flex items-center gap-1.5"><Camera className="w-4 h-4" aria-hidden="true" /> በካሜራ አንሳ (Live Selfie)</span>
                 </button>
 
                 <button
@@ -4594,7 +4595,7 @@ function StudentDashboardContent() {
                   }`}
                 >
                   <i className="fa-solid fa-upload"></i>
-                  <span>📁 ፎቶ ምረጥ (Upload)</span>
+                  <span className="inline-flex items-center gap-1.5"><FolderOpen className="w-4 h-4" aria-hidden="true" /> ፎቶ ምረጥ (Upload)</span>
                 </button>
               </div>
 
@@ -4671,14 +4672,14 @@ function StudentDashboardContent() {
               {capturedPhoto && (
                 <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-300">
-                    🎨 የ AI አቫታር ስታይል ይምረጡ (Select Style)፦
+                    <span className="inline-flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-primary" aria-hidden="true" /> የ AI አቫታር ስታይል ይምረጡ (Select Style)፦</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: '3d_cyber', name: '✨ 3D Cyber Habesha', desc: 'ዘመናዊ 3D ቴክኖሎጂ አቫታር' },
-                      { id: 'habesha_art', name: '🎨 Habesha Digital Art', desc: 'የሐበሻ ስነ-ጥበብ ዲጂታል አቫታር' },
-                      { id: 'digital_entrepreneur', name: '🕶️ VIP Entrepreneur', desc: 'ዘመናዊ የቢዝነስ ፈጣሪ' },
-                      { id: 'anime_habesha', name: '🌟 Anime Habesha', desc: 'የአኒሜ ካርቱን ስታይል' }
+                      { id: '3d_cyber', name: '3D Cyber Habesha', desc: 'ዘመናዊ 3D ቴክኖሎጂ አቫታር' },
+                      { id: 'habesha_art', name: 'Habesha Digital Art', desc: 'የሐበሻ ስነ-ጥበብ ዲጂታል አቫታር' },
+                      { id: 'digital_entrepreneur', name: 'VIP Entrepreneur', desc: 'ዘመናዊ የቢዝነስ ፈጣሪ' },
+                      { id: 'anime_habesha', name: 'Anime Habesha', desc: 'የአኒሜ ካርቱን ስታይል' }
                     ].map(st => (
                       <div
                         key={st.id}
@@ -4710,7 +4711,7 @@ function StudentDashboardContent() {
                     ) : (
                       <>
                         <i className="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
-                        <span>✨ በ AI አቫተር አዘጋጅ (Generate AI Avatar)</span>
+                        <span className="inline-flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-amber-300" aria-hidden="true" /> በ AI አቫተር አዘጋጅ (Generate AI Avatar)</span>
                       </>
                     )}
                   </button>
@@ -4721,7 +4722,7 @@ function StudentDashboardContent() {
               {generatedAiAvatarUrl && (
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/50 to-indigo-950/50 border border-purple-400/40 text-center space-y-3 animate-in zoom-in-95 duration-200">
                   <span className="inline-block text-[10px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30">
-                    🎉 አዲሱ የ AI አቫታርዎ ዝግጁ ነው!
+                    <span className="inline-flex items-center gap-1.5"><PartyPopper className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" /> አዲሱ የ AI አቫታርዎ ዝግጁ ነው!</span>
                   </span>
 
                   <div className="w-24 h-24 rounded-full overflow-hidden mx-auto border-2 border-primary shadow-[0_0_25px_rgba(249,176,60,0.4)]">
@@ -4777,7 +4778,7 @@ function StudentDashboardContent() {
                                 <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-black">ACTIVE</span>
                               </h4>
                               <p className="text-[11px] text-[#f9b03c] font-bold truncate max-w-xs sm:max-w-sm">
-                                  📚 {activeLesson?.title || activeCourse?.title}
+                                  <span className="inline-flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5 text-primary" aria-hidden="true" /> {activeLesson?.title || activeCourse?.title}</span>
                               </p>
                           </div>
                       </div>
@@ -4786,7 +4787,7 @@ function StudentDashboardContent() {
                           className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500 text-gray-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
                           title="ዝጋ (Close)"
                       >
-                          ✕
+                          <X className="w-4 h-4" aria-hidden="true" />
                       </button>
                   </div>
 
@@ -4803,13 +4804,13 @@ function StudentDashboardContent() {
                                       onClick={() => handleAskLessonAi(`ይህንን ትምህርት ("${activeLesson?.title || activeCourse?.title}") በምሳሌ በአጭሩ አስረዳኝ።`)}
                                       className="text-[11px] font-bold bg-white/5 hover:bg-[#f9b03c] text-gray-200 hover:text-slate-950 border border-white/10 px-3 py-1.5 rounded-full transition-all duration-150 active:scale-95 cursor-pointer"
                                   >
-                                      💡 በምሳሌ አስረዳኝ
+                                      <span className="inline-flex items-center gap-1"><Lightbulb className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" /> በምሳሌ አስረዳኝ</span>
                                   </button>
                                   <button
                                       onClick={() => handleAskLessonAi(`በዚህ ሌሰን ላይ የተማርነውን በገቢ ለመቀየር ምን ምን እርምጃዎችን መውሰድ አለብኝ?`)}
                                       className="text-[11px] font-bold bg-white/5 hover:bg-[#f9b03c] text-gray-200 hover:text-slate-950 border border-white/10 px-3 py-1.5 rounded-full transition-all duration-150 active:scale-95 cursor-pointer"
                                   >
-                                      🚀 ተግባራዊ እርምጃዎች
+                                      <span className="inline-flex items-center gap-1"><Rocket className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" /> ተግባራዊ እርምጃዎች</span>
                                   </button>
                               </div>
                           </div>
@@ -4868,13 +4869,13 @@ function StudentDashboardContent() {
                     <div className="relative z-10 px-4 py-2 bg-[#0c1326] border-t border-white/10 flex items-center justify-between animate-in fade-in">
                       <div className="flex items-center gap-2.5">
                         <img src={lessonAiAttachedImage} alt="Preview" className="w-10 h-10 object-cover rounded-xl border border-[#f9b03c]/50" />
-                        <span className="text-xs font-bold text-white">📸 ፎቶ ተያይዟል</span>
+                        <span className="text-xs font-bold text-white inline-flex items-center gap-1.5"><Camera className="w-3.5 h-3.5 text-primary" aria-hidden="true" /> ፎቶ ተያይዟል</span>
                       </div>
                       <button 
                         onClick={() => setLessonAiAttachedImage(null)}
                         className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs cursor-pointer hover:bg-red-500 hover:text-white transition"
                       >
-                        ✕
+                        <X className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                     </div>
                   )}
@@ -4940,7 +4941,7 @@ function StudentDashboardContent() {
           </div>
       )}
 
-      {/* 💡 Floating Feedback Trigger Button (Hidden in Classroom to eliminate clutter) */}
+      {/* Floating Feedback Trigger Button (Hidden in Classroom to eliminate clutter) */}
       {currentView !== 'classroom' && (
         <div className="fixed bottom-22 sm:bottom-24 right-4 sm:right-6 z-40">
           <button
@@ -4950,7 +4951,7 @@ function StudentDashboardContent() {
             title="ለ ፀሐይ ካምፓስ አስተያየት ይስጡ (Send Feedback)"
           >
             <span className="w-6 h-6 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] group-hover:bg-[#f9b03c] group-hover:text-slate-950 flex items-center justify-center text-xs font-black transition-colors shadow-xs">
-              💡
+              <Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
             </span>
             <span className="font-heading font-black text-xs text-white group-hover:text-[#f9b03c] transition-colors pr-1">
               አስተያየት
@@ -4959,7 +4960,7 @@ function StudentDashboardContent() {
         </div>
       )}
 
-      {/* 💡 Feedback Modal */}
+      {/* Feedback Modal */}
       <FeedbackModal 
         isOpen={showFeedbackModal} 
         onClose={() => setShowFeedbackModal(false)} 

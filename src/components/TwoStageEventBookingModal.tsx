@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { TsehayEvent, EventTicket, formatEventBannerUrl, DEFAULT_EVENT_BANNER } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { validateReferralCode, recordReferralUsage } from '@/lib/referralService';
+import { Check } from 'lucide-react';
 
 interface TwoStageEventBookingModalProps {
   isOpen: boolean;
@@ -141,7 +142,7 @@ export default function TwoStageEventBookingModal({
       if (result.isValid) {
         setAppliedCode(code);
         setDiscountPercent(result.discountPercent);
-        setPromoMessage({ text: result.message || `✓ ${result.discountPercent}% ቅናሽ ተተግብሯል!`, isError: false });
+        setPromoMessage({ text: result.message || `${result.discountPercent}% ቅናሽ ተተግብሯል!`, isError: false });
       } else {
         setAppliedCode(null);
         setDiscountPercent(0);
@@ -332,7 +333,7 @@ export default function TwoStageEventBookingModal({
         if (e.target === e.currentTarget && !isProcessing) onClose();
       }}
     >
-      {/* 🌟 360° Rotating Cybernetic Border Beam Wrapper */}
+      {/*  360° Rotating Cybernetic Border Beam Wrapper */}
       <div className="relative p-[2px] rounded-[2rem] overflow-hidden max-w-lg w-full m-auto shadow-[0_25px_90px_rgba(0,0,0,0.95)] animate-in zoom-in-95 duration-200">
         
         {/* Ambient Glow Beam */}
@@ -383,7 +384,7 @@ export default function TwoStageEventBookingModal({
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
                 step === 1 ? 'bg-[#f9b03c] text-slate-950' : 'bg-emerald-500 text-white'
               }`}>
-                {step === 2 ? '✓' : '1'}
+                {step === 2 ? <Check className="w-3 h-3 stroke-[3]" aria-hidden="true" /> : '1'}
               </span>
               <span>የተሳታፊ መረጃ</span>
             </div>
@@ -415,7 +416,7 @@ export default function TwoStageEventBookingModal({
               />
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] text-[#f9b03c] font-black uppercase tracking-wider truncate">
-                  {event.isOnline ? '🌐 Online Stream' : `📍 ${event.location}`}
+                  {event.isOnline ? 'Online Stream' : event.location}
                 </p>
                 <h4 className="font-bold text-white text-xs sm:text-sm line-clamp-1 leading-snug">
                   {event.title}
@@ -528,7 +529,7 @@ export default function TwoStageEventBookingModal({
                   </div>
                 )}
 
-                {/* 🌟 Promo / Discount Coupon Code Box */}
+                {/*  Promo / Discount Coupon Code Box */}
                 <div className="bg-[#121a2d]/80 p-3 sm:p-3.5 rounded-2xl border border-gray-800/90 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-gray-300">
                     <span className="flex items-center gap-1.5">
@@ -536,7 +537,7 @@ export default function TwoStageEventBookingModal({
                       <span>የቅናሽ ኩፖን (Discount / Coupon Code)</span>
                     </span>
                     {appliedCode && (
-                      <span className="text-[11px] text-emerald-400 font-bold">✓ ተተግብሯል ({discountPercent}% OFF)</span>
+                      <span className="text-[11px] text-emerald-400 font-bold">ተተግብሯል ({discountPercent}% OFF)</span>
                     )}
                   </div>
 
@@ -755,7 +756,7 @@ export default function TwoStageEventBookingModal({
                     ) : isFreeAfterDiscount ? (
                       <>
                         <i className="fa-solid fa-gift text-sm"></i>
-                        <span>በነፃ ትኬት ቁረጥ (100% Free Pass) 🎉</span>
+                        <span>በነፃ ትኬት ቁረጥ (100% Free Pass)</span>
                       </>
                     ) : (
                       <>

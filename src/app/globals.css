@@ -2400,3 +2400,16 @@ img, video, canvas {
   }
 }
 
+/* ⚡ 60 FPS Viewport & Scroll Performance Optimizations */
+.optimize-viewport-render {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 700px;
+}
+
+.hardware-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+

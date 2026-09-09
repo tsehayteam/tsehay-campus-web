@@ -59,7 +59,7 @@ export default function AboutClient({
                 {/* Flowing Gradient Border */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/50 via-[#3268ba]/50 to-[#f9b03c]/50 rounded-3xl opacity-60 group-hover:opacity-100 transition duration-500 blur-xs" />
                 
-                {/* ✨ 4 Sparkling Corner Flares */}
+                {/*  4 Sparkling Corner Flares */}
                 <div className="absolute -top-1.5 -left-1.5 z-20 pointer-events-none">
                   <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75"></span>
                   <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
@@ -361,7 +361,7 @@ export default function AboutClient({
             </div>
 
             {/* =========================================================================
-                🌟 CRITICAL FIX: ULTRA-MINIMALIST SINGLE VIDEO REELS SLIDER (INFINITE LOOP)
+                 CRITICAL FIX: ULTRA-MINIMALIST SINGLE VIDEO REELS SLIDER (INFINITE LOOP)
                ========================================================================= */}
             <div className="space-y-8 pt-4">
               <div className="text-center max-w-3xl mx-auto">
@@ -379,7 +379,7 @@ export default function AboutClient({
             </div>
 
             {/* =========================================================================
-                🌟 SINGLE CLEAN COMMUNITY PHOTO (NO TEXT OVERLAYS)
+                 SINGLE CLEAN COMMUNITY PHOTO (NO TEXT OVERLAYS)
                ========================================================================= */}
             <div className="space-y-8 pt-8 border-t border-white/5">
               <div className="text-center max-w-3xl mx-auto">

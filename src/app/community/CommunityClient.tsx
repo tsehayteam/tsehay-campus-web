@@ -453,7 +453,7 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
     if (e) e.preventDefault();
     if (!effectiveUser || !activeDmUser || !dmConversationId) return;
 
-    const messageText = overrideAudio ? '🎤 የድምፅ መልእክት (Voice Message)' : dmInput.trim();
+    const messageText = overrideAudio ? 'የድምፅ መልእክት (Voice Message)' : dmInput.trim();
     if (!messageText && !overrideAudio) return;
 
     setDmInput('');
@@ -922,11 +922,11 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
 
                             {post.isAdmin ? (
                               <span className="bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 text-[9.5px] font-black px-2 py-0.2 rounded-full">
-                                👑 ADMIN
+                                ADMIN
                               </span>
                             ) : post.isPro ? (
                               <span className="bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/40 text-[9.5px] font-black px-2 py-0.2 rounded-full">
-                                ★ PRO
+                                PRO
                               </span>
                             ) : null}
 
@@ -1183,7 +1183,11 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
                 <div>
                   <h4 className="font-heading font-black text-sm text-white flex items-center gap-1.5">
                     <span>{activeDmUser.name}</span>
-                    {activeDmUser.isPro && <span className="text-[10px] text-[#f9b03c] font-black">★ PRO</span>}
+                    {activeDmUser.isPro && (
+                      <span className="text-[9px] bg-[#f9b03c]/20 border border-[#f9b03c]/30 text-[#f9b03c] px-1.5 py-0.2 rounded font-black tracking-wider uppercase">
+                        PRO
+                      </span>
+                    )}
                   </h4>
                   <span className="text-[11px] text-emerald-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>

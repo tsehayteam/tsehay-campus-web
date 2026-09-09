@@ -14,6 +14,7 @@ import TypingCourseTitle from '@/components/TypingCourseTitle';
 import FormattedAiText from '@/components/FormattedAiText';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses, formatCleanCategory } from '@/lib/courseCache';
 import { parseVideoEmbedUrl } from '@/lib/videoParser';
+import { Crown, Sparkles } from 'lucide-react';
 
 function CoursePreviewContent() {
   const routeParams = useParams();
@@ -385,17 +386,19 @@ function CoursePreviewContent() {
                 </div>
 
                 {isFree ? (
-                  <span className="bg-[#3268ba] text-white text-xs font-black px-3.5 py-1.5 rounded-full shadow-[0_0_15px_rgba(50,104,186,0.4)] border border-white/20">
-                    ★ FREE
+                  <span className="bg-[#3268ba] text-white text-xs font-black px-3.5 py-1.5 rounded-full shadow-[0_0_15px_rgba(50,104,186,0.4)] border border-white/20 inline-flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-white" aria-hidden="true" />
+                    <span>FREE</span>
                   </span>
                 ) : (
-                  <span className="bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-xs font-black px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(249,176,60,0.5)]">
-                    👑 PREMIUM
+                  <span className="bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-xs font-black px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(249,176,60,0.5)] inline-flex items-center gap-1.5">
+                    <Crown className="w-3.5 h-3.5 text-slate-950" aria-hidden="true" />
+                    <span>PREMIUM</span>
                   </span>
                 )}
               </div>
 
-              {/* 🌟 Cinematic Typing Title with Alternating Dual Glow Pulse */}
+              {/*  Cinematic Typing Title with Alternating Dual Glow Pulse */}
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-black font-heading tracking-tight leading-[1.15] text-white min-h-[70px] sm:min-h-[90px]">
                 <TypingCourseTitle title={course.title} />
               </h1>

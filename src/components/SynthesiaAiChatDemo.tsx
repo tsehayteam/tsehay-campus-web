@@ -17,7 +17,7 @@ export interface QuestionScenario {
 export const SCENARIOS: QuestionScenario[] = [
   {
     id: 'youtube',
-    category: '🎬 ዩቲዩብ (YouTube)',
+    category: 'ዩቲዩብ (YouTube)',
     badge: 'Viral Hook Strategy',
     icon: 'fa-brands fa-youtube',
     question: 'የዩቲዩብ ቪዲዮዎቼን ሰዎች እስከመጨረሻው እንዲያዩት ምን ላድርግ?',
@@ -27,7 +27,7 @@ export const SCENARIOS: QuestionScenario[] = [
   },
   {
     id: 'shein',
-    category: '📦 ሺን ኢምፖርት (Shein)',
+    category: 'ሺን ኢምፖርት (Shein)',
     badge: 'Low Cost Cargo Secret',
     icon: 'fa-solid fa-boxes-packing',
     question: 'ከሼን (Shein) ሳስመጣ የካርጎ ወጪ እንዳይበዛብኝ ምን ላድርግ?',
@@ -37,7 +37,7 @@ export const SCENARIOS: QuestionScenario[] = [
   },
   {
     id: 'marketing',
-    category: '📈 ዲጂታል ማርኬቲንግ (Ads)',
+    category: 'ዲጂታል ማርኬቲንግ (Ads)',
     badge: '70% Cost Reduction',
     icon: 'fa-solid fa-chart-line',
     question: 'በፌስቡክ ማስታወቂያ (FB Ads) አነስተኛ ወጪ አውጥቼ ብዙ ሽያጭ እንዴት ላግኝ?',
@@ -333,9 +333,9 @@ export default function SynthesiaAiChatDemo({ isActive = true }: SynthesiaAiChat
         </div>
 
         <div className="text-[10px] sm:text-[11px] font-mono text-[#f9b03c] font-bold">
-          {phase === 'typing_question' && '✍️ የተማሪ ጥያቄ...'}
-          {phase === 'thinking' && '🧠 AI እያሰላሰለ ነው...'}
-          {phase === 'typing_response' && '⚡ Tsehay AI ምላሽ...'}
+          {phase === 'typing_question' && 'የተማሪ ጥያቄ...'}
+          {phase === 'thinking' && 'AI እያሰላሰለ ነው...'}
+          {phase === 'typing_response' && 'Tsehay AI ምላሽ...'}
           {phase === 'done' && '⏱️ የሚቀጥለው ስትራቴጂ...'}
         </div>
       </div>

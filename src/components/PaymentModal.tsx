@@ -293,10 +293,10 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
         if (e.target === e.currentTarget && !isPaying) handleClose(); 
       }}
     >
-      {/* 🌟 Rotating Glowing Border Beam Wrapper (ሽክርክር የሚል የመስመር ብርሃን) */}
+      {/*  Rotating Glowing Border Beam Wrapper (ሽክርክር የሚል የመስመር ብርሃን) */}
       <div className="relative p-[2px] rounded-[2rem] overflow-hidden max-w-lg w-full m-auto shadow-[0_25px_90px_rgba(0,0,0,0.95)] animate-[paymentModalPop_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards] group">
         
-        {/* 💫 360° Rotating Cybernetic Border Beam (ሽክርክር የሚል የመስመር ብርሃን) */}
+        {/*  360° Rotating Cybernetic Border Beam (ሽክርክር የሚል የመስመር ብርሃን) */}
         <div 
           className="absolute -inset-[200%] z-0 rounded-full animate-[spinLightBeam_5s_linear_infinite]"
           style={{
@@ -305,7 +305,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           }}
         />
 
-        {/* 🌟 Ambient Glow Diffusion Aura */}
+        {/*  Ambient Glow Diffusion Aura */}
         <div 
           className="absolute -inset-[200%] z-0 rounded-full animate-[spinLightBeam_5s_linear_infinite] opacity-60 pointer-events-none"
           style={{
@@ -314,7 +314,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           }}
         />
 
-        {/* 🌟 Inner Centered Modal Card */}
+        {/*  Inner Centered Modal Card */}
         <div 
           className="bg-[#0b0f19] text-white w-full max-h-[90vh] flex flex-col relative z-10 rounded-[calc(2rem-2px)] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
@@ -361,7 +361,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
               </div>
             </div>
 
-            {/* 🌟 Promo Code Box */}
+            {/*  Promo Code Box */}
             <div className="bg-[#121a2d]/80 p-3.5 sm:p-4 rounded-2xl border border-gray-800/90 space-y-2">
               <div className="flex items-center justify-between text-xs font-bold text-gray-300">
                 <span className="flex items-center gap-1.5">
@@ -369,7 +369,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                   <span>የቅናሽ ኮድ (Promo Code)</span>
                 </span>
                 {appliedCode && (
-                  <span className="text-[11px] text-emerald-400 font-bold">✓ ተተግብሯል ({discountPercent}% OFF)</span>
+                  <span className="text-[11px] text-emerald-400 font-bold">ተተግብሯል ({discountPercent}% OFF)</span>
                 )}
               </div>
 
@@ -532,7 +532,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
               ) : isFreeAfterDiscount ? (
                 <>
                   <i className="fa-solid fa-gift text-lg buy-icon-animated"></i>
-                  <span className="font-black">በነፃ ይመዝገቡ (Enroll 100% Free) 🎉</span>
+                  <span className="font-black">በነፃ ይመዝገቡ (Enroll 100% Free)</span>
                 </>
               ) : (
                 <>

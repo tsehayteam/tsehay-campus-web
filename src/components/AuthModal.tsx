@@ -477,7 +477,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         }
       }
 
-      setResendSuccessMessage("🎉 ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል! እንኳን ደህና መጡ!");
+      setResendSuccessMessage("ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል! እንኳን ደህና መጡ!");
       setTimeout(() => {
         setIsOtpMode(false);
         if (authedUser) {
@@ -976,7 +976,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
             {isOtpMode
               ? 'የ 6-አሃዝ ማረጋገጫ ኮድ'
               : isResetMode
-              ? (resetStep === 'request' ? 'የይለፍ ቃል መቀየሪያ' : resetStep === 'otp' ? 'የ 6-አሃዝ ማረጋገጫ ኮድ' : resetStep === 'new_password' ? 'አዲስ የይለፍ ቃል ይፍጠሩ' : 'ተጠናቋል! 🎉')
+              ? (resetStep === 'request' ? 'የይለፍ ቃል መቀየሪያ' : resetStep === 'otp' ? 'የ 6-አሃዝ ማረጋገጫ ኮድ' : resetStep === 'new_password' ? 'አዲስ የይለፍ ቃል ይፍጠሩ' : 'ተጠናቋል!')
               : pendingGoogleAuth 
               ? 'ምዝገባዎን ያጠናቅቁ' 
               : isSignupMode 
@@ -992,7 +992,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
               : pendingGoogleAuth 
               ? 'በ Google ተገናኝተዋል! የቀሩትን መረጃዎች ሞልተው ምዝገባዎን ያጠናቅቁ' 
               : isSignupMode 
-              ? (signupStep === 1 ? 'ደረጃ 1፡ ስለ እርስዎ ይንገሩን 👋' : signupStep === 2 ? 'ደረጃ 2፡ የ Gmail እና የይለፍ ቃል 🔐' : 'ደረጃ 3፡ የመጨረሻ ማጠቃለያ 🚀')
+              ? (signupStep === 1 ? 'ደረጃ 1፡ ስለ እርስዎ ይንገሩን' : signupStep === 2 ? 'ደረጃ 2፡ የ Gmail እና የይለፍ ቃል' : 'ደረጃ 3፡ የመጨረሻ ማጠቃለያ')
               : 'በ Google ወይም በ Gmail እና የይለፍ ቃል ይግቡ'}
           </p>
         </div>
@@ -1001,7 +1001,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         <div className="p-5 sm:p-7 overflow-y-auto custom-modal-scroll flex-1">
           
           {/* =========================================================================
-              🌟 0. DEDICATED PASSWORD RESET FLOW (Request -> OTP -> New Password -> Success)
+               0. DEDICATED PASSWORD RESET FLOW (Request -> OTP -> New Password -> Success)
               ========================================================================= */}
           {isResetMode ? (
             <div className="space-y-5 animate-in fade-in zoom-in-95 duration-300 py-1">
@@ -1389,7 +1389,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                 </div>
               )}
 
-              {/* 🌟 Smart Auto-Detection Status Toast */}
+              {/*  Smart Auto-Detection Status Toast */}
               {smartUserStatus && (
                 <div className={`p-3 rounded-2xl mb-4 text-xs font-bold flex items-center justify-between gap-2.5 animate-in fade-in duration-200 ${
                   smartUserStatus.exists
@@ -1400,8 +1400,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                     <i className={`fa-solid ${smartUserStatus.exists ? 'fa-user-check text-[#f9b03c]' : 'fa-sparkles text-blue-400'}`}></i>
                     <span className="truncate">
                       {smartUserStatus.exists
-                        ? `👋 እንኳን ደህና መጡ${smartUserStatus.displayName ? ` ${smartUserStatus.displayName}` : ''}! የይለፍ ቃልዎን ያስገቡ`
-                        : '✨ አዲስ ተጠቃሚ — በ 10 ሰከንዶች ውስጥ አካውንትዎን ይፍጠሩ'}
+                        ? `እንኳን ደህና መጡ${smartUserStatus.displayName ? ` ${smartUserStatus.displayName}` : ''}! የይለፍ ቃልዎን ያስገቡ`
+                        : 'አዲስ ተጠቃሚ — በ 10 ሰከንዶች ውስጥ አካውንትዎን ይፍጠሩ'}
                     </span>
                   </div>
                   {isCheckingEmail && (
@@ -1511,7 +1511,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
               {/* Form Container */}
               <form onSubmit={isResetMode ? handlePasswordReset : handleSubmit} className="space-y-4 px-1">
                 
-                {/* 🌟 1. SIGN-UP MULTI-STEP FLOW */}
+                {/*  1. SIGN-UP MULTI-STEP FLOW */}
                 {isSignupMode && !pendingGoogleAuth && !isResetMode ? (
                   <div key={`step-${signupStep}`} className={slideDirection === 'next' ? 'animate-in fade-in slide-in-from-right-4 duration-300 space-y-4' : 'animate-in fade-in slide-in-from-left-4 duration-300 space-y-4'}>
                     
@@ -1731,7 +1731,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                             ) : (
                               <>
                                 <i className="fa-solid fa-user-plus"></i>
-                                <span>ምዝገባውን አጠናቅቅ 🎉</span>
+                                <span>ምዝገባውን አጠናቅቅ</span>
                               </>
                             )}
                           </button>

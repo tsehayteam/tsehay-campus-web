@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default function MaintenancePage() {
   return (
     <main className="min-h-screen bg-[#030509] text-white flex flex-col justify-between relative overflow-hidden select-none font-sans">
-      {/* 🌌 Dynamic Ambient Background Glows */}
+      {/*  Dynamic Ambient Background Glows */}
       <div 
         aria-hidden="true" 
         className="absolute top-[-15%] left-[-10%] w-[650px] h-[650px] rounded-full bg-[#f9b03c]/15 blur-[160px] pointer-events-none animate-pulse duration-[7000ms]" 
@@ -28,7 +28,7 @@ export default function MaintenancePage() {
         className="absolute top-[40%] left-[30%] w-[450px] h-[450px] rounded-full bg-amber-500/5 blur-[140px] pointer-events-none" 
       />
 
-      {/* 🕸️ Subtle Blueprint/Matrix Grid Overlay */}
+      {/* ️ Subtle Blueprint/Matrix Grid Overlay */}
       <div 
         aria-hidden="true"
         className="absolute inset-0 opacity-[0.035] pointer-events-none" 
@@ -38,7 +38,7 @@ export default function MaintenancePage() {
         }} 
       />
 
-      {/* 🌟 Top Navigation / Status Header */}
+      {/*  Top Navigation / Status Header */}
       <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 sm:py-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#3268ba] p-[2px] shadow-[0_0_25px_rgba(249,176,60,0.35)]">
@@ -67,10 +67,10 @@ export default function MaintenancePage() {
         </div>
       </header>
 
-      {/* 🚀 Main Hero Section */}
+      {/*  Main Hero Section */}
       <section className="relative z-10 w-full max-w-4xl mx-auto px-6 py-8 sm:py-12 flex flex-col items-center text-center">
         
-        {/* 💫 3D Animated Gyroscope & Centered Logo Container */}
+        {/*  3D Animated Gyroscope & Centered Logo Container */}
         <div className="relative mb-6 group">
           {/* Pulsing Outer Glow Ring */}
           <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-[#f9b03c]/30 via-[#3268ba]/30 to-[#f9b03c]/30 blur-xl opacity-75 animate-pulse group-hover:opacity-100 transition duration-1000"></div>
@@ -117,7 +117,7 @@ export default function MaintenancePage() {
           የበለጠ ጥራት ያለው እና የተሻለ አገልግሎት ለመስጠት ዌብሳይታችንን በማሻሻል ላይ እንገኛለን። በቅርቡ እንመለሳለን!
         </p>
 
-        {/* 🛠️ Glassmorphism Diagnostic & Progress Card */}
+        {/* ️ Glassmorphism Diagnostic & Progress Card */}
         <div className="w-full max-w-2xl bg-[#090e1b]/80 backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.7)] mb-10">
           
           <div className="flex items-center justify-between mb-3 text-left">
@@ -169,7 +169,7 @@ export default function MaintenancePage() {
           </div>
         </div>
 
-        {/* 📞 Contact & Direct Channel Actions */}
+        {/*  Contact & Direct Channel Actions */}
         <div className="flex flex-wrap items-center justify-center gap-4 w-full">
           <a
             href="https://t.me/EyoubSahle"
@@ -193,7 +193,7 @@ export default function MaintenancePage() {
         </div>
       </section>
 
-      {/* 📌 Clean Footer Section */}
+      {/*  Clean Footer Section */}
       <footer className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 font-medium">
         <p>© {new Date().getFullYear()} Tsehay Campus. መብቱ በህግ የተጠበቀ ነው።</p>
         <div className="flex items-center gap-6">

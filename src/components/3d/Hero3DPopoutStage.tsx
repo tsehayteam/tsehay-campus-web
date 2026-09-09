@@ -528,7 +528,7 @@ export default function Hero3DPopoutStage({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* 🌟 3D Holographic Backdrop Aura */}
+      {/*  3D Holographic Backdrop Aura */}
       <div 
         className="absolute -inset-6 sm:-inset-10 rounded-[3rem] opacity-70 pointer-events-none transition-transform duration-500 ease-out"
         style={{
@@ -538,7 +538,7 @@ export default function Hero3DPopoutStage({
         }}
       />
 
-      {/* 🚀 Main 3D Anamorphic Tilt Rig */}
+      {/*  Main 3D Anamorphic Tilt Rig */}
       <div
         ref={stageRef}
         className="relative w-full rounded-[2rem] sm:rounded-[2.5rem] transition-transform duration-300 ease-out shadow-[0_30px_100px_rgba(0,0,0,0.9)]"
@@ -655,7 +655,7 @@ export default function Hero3DPopoutStage({
           />
 
 
-          {/* 🌟 3D Glassmorphic Flash Pop Feedback Animation */}
+          {/*  3D Glassmorphic Flash Pop Feedback Animation */}
           {flashAction && (
             <div 
               key={flashAction + '_' + Date.now()}
@@ -714,7 +714,7 @@ export default function Hero3DPopoutStage({
         </div>
 
         {/* ------------------------------------------------------------------ */}
-        {/* 🎆 ANAMORPHIC DEPTH BADGES (Floating smoothly outside the frame)   */}
+        {/*  ANAMORPHIC DEPTH BADGES (Floating smoothly outside the frame)   */}
         {/* ------------------------------------------------------------------ */}
 
         {/* 1. BOTTOM-LEFT POP-OUT: ACCREDITED CERTIFICATE BADGE (Strictly Contained Inside Box Boundaries) */}
@@ -731,7 +731,7 @@ export default function Hero3DPopoutStage({
           </div>
           <div className="text-left pr-1 sm:pr-2 min-w-0">
             <p className="text-[8px] xs:text-[9px] sm:text-[10px] text-amber-300/90 font-mono font-bold uppercase tracking-wider leading-none mb-0.5 sm:mb-1 flex items-center gap-1 truncate">
-              {t('practical_learning_badge') || '🎓 ከተግባራዊ ትምህርት ጋር'}
+              {t('practical_learning_badge') || 'ከተግባራዊ ትምህርት ጋር'}
             </p>
             <p className="text-white font-black text-[10px] xs:text-xs sm:text-sm tracking-tight drop-shadow-md truncate">
               {t('recognized_cert') || 'እውቅና ያለው ሰርተፍኬት'}
@@ -762,7 +762,7 @@ export default function Hero3DPopoutStage({
         </div>
       </div>
 
-      {/* 🌟 FULL-SCREEN CINEMATIC VIDEO LIGHTBOX (100% Full-Screen Deep Void Black) */}
+      {/*  FULL-SCREEN CINEMATIC VIDEO LIGHTBOX (100% Full-Screen Deep Void Black) */}
       <CinematicVideoModal
         isOpen={isModalOpen}
         onClose={() => {

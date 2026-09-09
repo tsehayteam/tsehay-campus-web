@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { Check, X } from 'lucide-react';
 
 interface CourseRatingModalProps {
   isOpen: boolean;
@@ -99,13 +100,13 @@ export default function CourseRatingModal({
           className="absolute top-4 right-4 text-gray-400 hover:text-dark dark:hover:text-white text-sm font-bold w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center transition cursor-pointer hover:bg-gray-200"
           title="ዝጋ (Close)"
         >
-          ✕
+          <X className="w-4 h-4" />
         </button>
 
         {isSubmitted ? (
           <div className="py-8 text-center space-y-3 animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center text-3xl mx-auto">
-              ✓
+            <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <Check className="w-8 h-8 stroke-[2.5]" aria-hidden="true" />
             </div>
             <h3 className="text-xl font-black text-dark dark:text-white">እናመሰግናለን!</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 font-bold">የሰጡት ሬቲንግ እና አስተያየት በተሳካ ሁኔታ ተመዝግቧል።</p>
@@ -148,11 +149,11 @@ export default function CourseRatingModal({
             </div>
 
             <div className="text-center font-black text-xs sm:text-sm text-amber-600 dark:text-amber-400">
-              {rating === 5 && '🌟 በጣም እጅግ ጥሩ (5/5)'}
-              {rating === 4 && '👍 በጣም ጥሩ (4/5)'}
-              {rating === 3 && '👌 ጥሩ (3/5)'}
-              {rating === 2 && '😐 መካከለኛ (2/5)'}
-              {rating === 1 && '👎 ማስተካከያ ይፈልጋል (1/5)'}
+              {rating === 5 && 'በጣም እጅግ ጥሩ (5/5)'}
+              {rating === 4 && 'በጣም ጥሩ (4/5)'}
+              {rating === 3 && 'ጥሩ (3/5)'}
+              {rating === 2 && 'መካከለኛ (2/5)'}
+              {rating === 1 && 'ማስተካከያ ይፈልጋል (1/5)'}
             </div>
 
             <div>

@@ -196,7 +196,7 @@ export default function InstructorYouTubePortfolio({ initialData }: InstructorYo
         await sleep(350);
 
         // --- SEQUENCE 3: Practical proof of success ---
-        const text3 = "ከዜሮ ተነስተው በዩቲዩብ ስኬታማ መሆን እንደሚቻል በተግባር የሚያሳዩ ቻናሎች! 🚀";
+        const text3 = "ከዜሮ ተነስተው በዩቲዩብ ስኬታማ መሆን እንደሚቻል በተግባር የሚያሳዩ ቻናሎች!";
         setPencilAction('writing');
         for (let i = 1; i <= text3.length; i++) {
           if (isCancelled) return;
@@ -426,18 +426,18 @@ export default function InstructorYouTubePortfolio({ initialData }: InstructorYo
               <span className="inline-flex items-center ml-0.5 select-none align-middle">
                 {pencilAction === 'erasing' ? (
                   <span className="inline-flex items-center gap-1 text-sm bg-pink-500/10 text-pink-400 border border-pink-500/20 px-2 py-0.5 rounded-full animate-pulse shadow-sm">
-                    <span className="inline-block text-base animate-bounce">🧹</span>
+                    
                     <span className="text-[11px] font-black">በማረም ላይ...</span>
                   </span>
                 ) : pencilAction === 'thinking' ? (
                   <span className="inline-flex items-center gap-1 text-sm bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full animate-pulse shadow-sm">
-                    <span className="inline-block text-base animate-spin">🤔</span>
+                    
                     <span className="text-[11px] font-black">ቆይ ቆይ...</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center">
                     <span className="inline-block text-base sm:text-lg text-[#f9b03c] animate-bounce origin-bottom drop-shadow-[0_0_8px_rgba(249,176,60,0.8)]">
-                      ✏️
+                      
                     </span>
                     <span className="inline-block w-0.5 h-4 ml-0.5 bg-[#f9b03c] animate-ping"></span>
                   </span>

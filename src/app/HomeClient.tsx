@@ -569,7 +569,7 @@ export default function HomeClient({
             </div>
           </div>
 
-          {/* 🌟 1. HERO VIDEO ENHANCEMENT: Perfectly integrated below headline, spanning wide, central */}
+          {/*  1. HERO VIDEO ENHANCEMENT: Perfectly integrated below headline, spanning wide, central */}
           <div className="w-full flex items-center justify-center my-4 sm:my-6">
             <Hero3DPopoutStage videoSrc={initialLandingVideo} initialThumbnail={initialLandingVideoThumbnail} />
           </div>
@@ -969,7 +969,7 @@ export default function HomeClient({
                                   ) : (
                                     <>
                                       <i className="fa-solid fa-star text-xs text-[#f9b03c] drop-shadow-[0_0_6px_#f9b03c]"></i>
-                                      <span className="font-black text-[#f9b03c] tracking-wide">★ {course.ratingAvg || '4.9'}</span>
+                                      <span className="font-black text-[#f9b03c] tracking-wide">{course.ratingAvg || '4.9'}</span>
                                     </>
                                   )}
                                 </div>

@@ -395,7 +395,7 @@ export default function CertificateGeneratorPage() {
         )}
 
         {/* =========================================================================
-            ✨ LIVE PRINTABLE CERTIFICATE PREVIEW CONTAINER
+             LIVE PRINTABLE CERTIFICATE PREVIEW CONTAINER
             ========================================================================= */}
         <div ref={containerRef} className="w-full flex justify-center items-center overflow-hidden py-4">
           <div

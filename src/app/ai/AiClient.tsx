@@ -206,8 +206,8 @@ export default function AiClient() {
       id: 'welcome-1',
       role: 'ai',
       text: lang === 'en'
-        ? 'Hello! Welcome to **Tsehay AI Workspace**! ☀️\n\nI am your 24/7 personal tutor and business advisor for Tsehay Campus. Feel free to ask any question regarding our masterclasses (YouTube Secrets, Shein Import, Digital Marketing, Coding), practical action roadmaps, or enrollment via text, screenshot, or voice! 🚀'
-        : 'ሰላም! እንኳን ወደ **Tsehay AI Workspace** በደህና መጡ! ☀️\n\nእኔ የፀሐይ ካምፓስ የ 24/7 የግል መምህር እና አማካሪ ነኝ። ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ፣ ኮዲንግ)፣ ተግባራዊ እርምጃዎች ወይም ስለ ምዝገባ ማንኛውንም ጥያቄ በጽሑፍ፣ በስክሪንሾት ወይም በድምፅ መጠየቅ ይችላሉ! 🚀',
+        ? 'Hello! Welcome to **Tsehay AI Workspace**! \n\nI am your 24/7 personal tutor and business advisor for Tsehay Campus. Feel free to ask any question regarding our masterclasses (YouTube Secrets, Shein Import, Digital Marketing, Coding), practical action roadmaps, or enrollment via text, screenshot, or voice! '
+        : 'ሰላም! እንኳን ወደ **Tsehay AI Workspace** በደህና መጡ!\n\nእኔ የፀሐይ ካምፓስ የ 24/7 የግል መምህር እና አማካሪ ነኝ። ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ፣ ኮዲንግ)፣ ተግባራዊ እርምጃዎች ወይም ስለ ምዝገባ ማንኛውንም ጥያቄ በጽሑፍ፣ በስክሪንሾት ወይም በድምፅ መጠየቅ ይችላሉ!',
       timestamp: lang === 'en' ? 'Just now' : 'አሁን'
     }
   ]);
@@ -256,8 +256,8 @@ export default function AiClient() {
           id: 'welcome-1',
           role: 'ai',
           text: lang === 'en'
-            ? 'Hello! Welcome to **Tsehay AI Workspace**! ☀️\n\nI am your 24/7 personal tutor and business advisor for Tsehay Campus. Feel free to ask any question regarding our masterclasses (YouTube Secrets, Shein Import, Digital Marketing, Coding), practical action roadmaps, or enrollment via text, screenshot, or voice! 🚀'
-            : 'ሰላም! እንኳን ወደ **Tsehay AI Workspace** በደህና መጡ! ☀️\n\nእኔ የፀሐይ ካምፓስ የ 24/7 የግል መምህር እና አማካሪ ነኝ። ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ፣ ኮዲንግ)፣ ተግባራዊ እርምጃዎች ወይም ስለ ምዝገባ ማንኛውንም ጥያቄ በጽሑፍ፣ በስክሪንሾት ወይም በድምፅ መጠየቅ ይችላሉ! 🚀',
+            ? 'Hello! Welcome to **Tsehay AI Workspace**!\n\nI am your 24/7 personal tutor and business advisor for Tsehay Campus. Feel free to ask any question regarding our masterclasses (YouTube Secrets, Shein Import, Digital Marketing, Coding), practical action roadmaps, or enrollment via text, screenshot, or voice!'
+            : 'ሰላም! እንኳን ወደ **Tsehay AI Workspace** በደህና መጡ!\n\nእኔ የፀሐይ ካምፓስ የ 24/7 የግል መምህር እና አማካሪ ነኝ። ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ፣ ኮዲንግ)፣ ተግባራዊ እርምጃዎች ወይም ስለ ምዝገባ ማንኛውንም ጥያቄ በጽሑፍ፣ በስክሪንሾት ወይም በድምፅ መጠየቅ ይችላሉ!',
           timestamp: lang === 'en' ? 'Just now' : 'አሁን'
         }];
       }
@@ -414,7 +414,7 @@ export default function AiClient() {
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
-      text: userText || (audioUrl ? (lang === 'en' ? '🎤 Voice message' : '🎤 የድምፅ መልእክት') : ''),
+      text: userText || (audioUrl ? (lang === 'en' ? 'Voice message' : 'የድምፅ መልእክት') : ''),
       image: currentImage || undefined,
       audioUrl: audioUrl,
       timestamp: lang === 'en' ? 'Just now' : 'አሁን'
@@ -502,8 +502,8 @@ export default function AiClient() {
         role: 'ai',
         text:
           lang === 'en'
-            ? 'Conversation cleared! You can ask a new question. ✨'
-            : 'ውይይቱ ጸድቷል! አዲስ ጥያቄዎን መጠየቅ ይችላሉ። ✨',
+            ? 'Conversation cleared! You can ask a new question.'
+            : 'ውይይቱ ጸድቷል! አዲስ ጥያቄዎን መጠየቅ ይችላሉ።',
         timestamp: lang === 'en' ? 'Just now' : 'አሁን'
       }
     ]);
@@ -511,13 +511,13 @@ export default function AiClient() {
 
   return (
     <div className="min-h-screen bg-[#030509] text-white flex flex-col pt-20 sm:pt-24 selection:bg-[#f9b03c] selection:text-black relative overflow-hidden">
-      {/* 🌟 Ambient Atmospheric Glows */}
+      {/*  Ambient Atmospheric Glows */}
       <div className="fixed top-12 left-1/4 w-[550px] h-[550px] bg-[#f9b03c]/12 rounded-full blur-[150px] pointer-events-none -z-10 animate-pulse" style={{ animationDuration: '6s' }} />
       <div className="fixed bottom-10 right-1/4 w-[600px] h-[600px] bg-[#3268ba]/15 rounded-full blur-[160px] pointer-events-none -z-10" />
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[750px] bg-amber-500/5 rounded-full blur-[200px] pointer-events-none -z-10" />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col pb-4">
-        {/* 🛸 Top Futuristic Command Header */}
+        {/*  Top Futuristic Command Header */}
         <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-3xl bg-[#090f1d]/80 border border-white/10 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
           <div className="flex items-center gap-3.5">
             <div className="relative">
@@ -555,11 +555,11 @@ export default function AiClient() {
                 className="w-full sm:w-auto bg-[#0d162b] border border-white/15 text-slate-200 text-xs rounded-xl px-3.5 py-2 font-bold focus:outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition cursor-pointer shadow-inner pr-8"
               >
                 <option value="all" className="bg-[#090f1d] text-white">
-                  {lang === 'en' ? '🌐 All Topics & Inquiries' : '🌐 አጠቃላይ ጥያቄዎች (All Topics)'}
+                  {lang === 'en' ? 'All Topics & Inquiries' : 'አጠቃላይ ጥያቄዎች (All Topics)'}
                 </option>
                 {courses.map((course) => (
                   <option key={course.id} value={course.id} className="bg-[#090f1d] text-white">
-                    📚 {course.title}
+                    {course.title}
                   </option>
                 ))}
               </select>
@@ -577,19 +577,19 @@ export default function AiClient() {
           </div>
         </div>
 
-        {/* 💡 Prompts Carousel / Deck */}
+        {/*  Prompts Carousel / Deck */}
         {messages.length <= 1 && (
           <div className="mb-4 sm:mb-6 animate-in fade-in duration-500">
             <div className="flex items-center justify-between gap-2 mb-2.5">
               <div className="text-xs text-[#f9b03c] font-black uppercase tracking-wider flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
-                <span>{lang === 'en' ? '💡 Quick Starters & FAQs' : '💡 ፈጣን ጥያቄዎች እና FAQs'}</span>
+                <span>{lang === 'en' ? 'Quick Starters & FAQs' : 'ፈጣን ጥያቄዎች እና FAQs'}</span>
               </div>
               
               <div className="flex items-center gap-2">
                 <span className="blink-indicator text-[#f9b03c] text-[11px] font-black flex items-center gap-1.5">
                   <i className="fa-solid fa-arrows-left-right text-[10px]"></i>
-                  <span>{lang === 'en' ? 'Swipe Horizontally ➔' : 'ወደ ጎን ያንሸራትቱ ➔'}</span>
+                  <span>{lang === 'en' ? 'Swipe Horizontally' : 'ወደ ጎን ያንሸራትቱ'}</span>
                 </span>
                 <div className="flex items-center gap-1">
                   <button
@@ -644,7 +644,7 @@ export default function AiClient() {
           </div>
         )}
 
-        {/* 💬 Chat Messages Feed with Glowing Scrollbar & Indicators */}
+        {/*  Chat Messages Feed with Glowing Scrollbar & Indicators */}
         <div 
           ref={messagesContainerRef}
           onScroll={handleScrollMessages}
@@ -712,7 +712,7 @@ export default function AiClient() {
                     <div className="flex items-center gap-3">
                       <span>{m.timestamp}</span>
 
-                      {/* 🔊 Voice Audio Reader Button */}
+                      {/*  Voice Audio Reader Button */}
                       {isAi && (
                         <button
                           type="button"
@@ -805,7 +805,7 @@ export default function AiClient() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 🚀 Futuristic Input Dock */}
+        {/*  Futuristic Input Dock */}
         <div className="bg-[#090f1d]/90 backdrop-blur-3xl border border-[#f9b03c]/25 rounded-3xl p-3 sm:p-4 mb-6 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
           {/* Horizontally Scrollable AI Quick Starters / FAQ chips directly above input */}
           <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-white/5">

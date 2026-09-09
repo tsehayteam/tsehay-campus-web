@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
                 }}
               >
                 <span style={{ color: '#f9b03c', fontSize: '14px', fontWeight: '900', letterSpacing: '2px' }}>
-                  ★ TSEHAY CAMPUS OFFICIAL CREDENTIAL ★
+                  TSEHAY CAMPUS OFFICIAL CREDENTIAL
                 </span>
               </div>
               <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#f9b03c', margin: 0, textTransform: 'uppercase' }}>
@@ -124,7 +124,9 @@ export async function GET(req: NextRequest) {
                   height: '74px',
                 }}
               >
-                <span style={{ color: '#f9b03c', fontSize: '18px' }}>✓</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f9b03c" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
                 <span style={{ color: '#f9b03c', fontSize: '8px', fontWeight: '900' }}>VERIFIED</span>
               </div>
 

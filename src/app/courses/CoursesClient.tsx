@@ -380,13 +380,13 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
           <div className="relative z-30 bg-gradient-to-r from-amber-500 via-[#f9b03c] to-amber-500 text-slate-950 font-black text-xs sm:text-sm py-2.5 px-4 text-center shadow-lg animate-in slide-in-from-top-4 duration-500">
             <div className="max-w-4xl mx-auto flex items-center justify-center gap-2">
               <i className="fa-solid fa-gift text-sm sm:text-base animate-bounce"></i>
-              <span>እንኳን ደህና መጡ! ከጓደኛዎ በተላከ ጥቆማ ስለገቡ በሁሉም ኮርሶች ላይ ልዩ ቅናሽ ያገኛሉ! 🎉</span>
+              <span>እንኳን ደህና መጡ! ከጓደኛዎ በተላከ ጥቆማ ስለገቡ በሁሉም ኮርሶች ላይ ልዩ ቅናሽ ያገኛሉ!</span>
             </div>
           </div>
         )}
 
         {/* =========================================================================
-            🌟 HERO SECTION: BOLD SYNTHESIA-GRADE HEADLINE & SEARCH BAR
+             HERO SECTION: BOLD SYNTHESIA-GRADE HEADLINE & SEARCH BAR
            ========================================================================= */}
         <section className="pt-28 pb-12 sm:pt-36 sm:pb-16 relative z-10">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -455,7 +455,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
         </section>
         
         {/* =========================================================================
-            🌟 COURSE GRID WITH PREMIUM GLASSMORPHISM CARDS
+             COURSE GRID WITH PREMIUM GLASSMORPHISM CARDS
            ========================================================================= */}
         <section className="py-12 sm:py-20 relative z-10 flex-1">
           <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -603,7 +603,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
                                 ) : (
                                   <>
                                     <i className="fa-solid fa-star text-xs text-[#f9b03c] drop-shadow-[0_0_6px_#f9b03c]"></i>
-                                    <span className="font-black text-[#f9b03c] tracking-wide">★ {course.ratingAvg || '4.9'}</span>
+                                    <span className="font-black text-[#f9b03c] tracking-wide">{course.ratingAvg || '4.9'}</span>
                                   </>
                                 )}
                               </div>

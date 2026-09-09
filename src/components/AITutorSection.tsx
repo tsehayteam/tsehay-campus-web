@@ -25,36 +25,36 @@ export interface PromptScenario {
 export const PROMPT_SCENARIOS: PromptScenario[] = [
   {
     id: 'shein',
-    category: '🛍️ የሼን ኢምፖርት',
+    category: 'የሼን ኢምፖርት (Shein Import)',
     icon: 'fa-solid fa-boxes-packing',
     badge: '50% Cargo Saving',
     question: 'በሼን ኢምፖርት እንዴት ትርፋማ ልሁን?',
     summary: 'የካርጎ ወጪን በ 50% የሚቀንሱ፣ በ Flash Sale ቅናሾች የመግዛትና ያለ ካፒታል በ Pre-Order የመስራት ስልቶች።',
-    response: `📦 የሼን ኢምፖርት 3ቱ የትርፋማነት ሚስጥሮች፦\n\n1. ከፍተኛ ዋጋ ያላቸውን ቀላል እቃዎች መምረጥ (High Value-to-Weight Ratio) — የካርጎ ወጪን በ 50% ይቀንሳል።\n2. በ Flash Sale እና በ Points ቅናሽ መጠቀም — የግዢ ወጪን በ 30-40% ዝቅ ያደርጋል።\n3. በቅድመ-ትዕዛዝ (Pre-Order) ሞዴል ያለ ካፒታል መስራት።\n\n💡 ዝርዝር የካርጎ ኤጀንት ግንኙነቶችንና የክፍያ መንገዶችን በኮርሱ ውስጥ እንሰራለን!`,
+    response: `የሼን ኢምፖርት 3ቱ የትርፋማነት ሚስጥሮች፦\n\n1. ከፍተኛ ዋጋ ያላቸውን ቀላል እቃዎች መምረጥ (High Value-to-Weight Ratio) — የካርጎ ወጪን በ 50% ይቀንሳል።\n2. በ Flash Sale እና በ Points ቅናሽ መጠቀም — የግዢ ወጪን በ 30-40% ዝቅ ያደርጋል።\n3. በቅድመ-ትዕዛዝ (Pre-Order) ሞዴል ያለ ካፒታል መስራት።\n\nዝርዝር የካርጎ ኤጀንት ግንኙነቶችንና የክፍያ መንገዶችን በኮርሱ ውስጥ እንሰራለን!`,
     courseTag: 'የሼን ኢምፖርት ቢዝነስ',
     courseSlug: 'shein-import-business',
     accentColor: '#f9b03c'
   },
   {
     id: 'youtube',
-    category: '🎥 ዩቲዩብ እና ኮንተንት',
+    category: 'ዩቲዩብ እና ኮንተንት (YouTube & Content)',
     icon: 'fa-brands fa-youtube',
     badge: 'Viral Hook Strategy',
     question: 'የዩቲዩብ ቪዲዮ እይታዎችን እንዴት ላሳድግ?',
     summary: 'ቫይራል የመነሻ 3 ሰከንዶች (The 3-Second Hook)፣ ማራኪ ከፍተኛ CTR ተምኔል እና የተመልካች ቆይታ ማሳደጊያ ስልቶች።',
-    response: `🎬 የዩቲዩብ ቪዲዮዎችን ቫይራል የማድረጊያ 3 ቁልፍ ስልቶች፦\n\n1. ጠንካራ የመነሻ 3 ሰከንዶች (The 3-Second Hook) — ተመልካች ሳያሳልፍ ሙሉውን እንዲያይ ያደርጋል።\n2. ከፍተኛ CTR የሚያመጣ ማራኪ ተምኔል (High-Contrast Thumbnail + Mystery Text)።\n3. የተመልካች ቆይታ (Audience Retention) በየ 6 ሰከንዱ በስክሪን ቅንብር ማደስ።\n\n💡 በዩቲዩብ ማስተርክላሳችን የሞንታዥ እና የሞኒታይዜሽን ስትራቴጂዎችን ደረጃ በደረጃ ይማራሉ!`,
+    response: `የዩቲዩብ ቪዲዮዎችን ቫይራል የማድረጊያ 3 ቁልፍ ስልቶች፦\n\n1. ጠንካራ የመነሻ 3 ሰከንዶች (The 3-Second Hook) — ተመልካች ሳያሳልፍ ሙሉውን እንዲያይ ያደርጋል።\n2. ከፍተኛ CTR የሚያመጣ ማራኪ ተምኔል (High-Contrast Thumbnail + Mystery Text)።\n3. የተመልካች ቆይታ (Audience Retention) በየ 6 ሰከንዱ በስክሪን ቅንብር ማደስ።\n\nበዩቲዩብ ማስተርክላሳችን የሞንታዥ እና የሞኒታይዜሽን ስትራቴጂዎችን ደረጃ በደረጃ ይማራሉ!`,
     courseTag: 'የዩቲዩብ ስኬት ሚስጥሮች',
     courseSlug: 'youtube-secrets-masterclass',
     accentColor: '#ef4444'
   },
   {
     id: 'marketing',
-    category: '📈 ዲጂታል ማርኬቲንግ',
+    category: 'ዲጂታል ማርኬቲንግ (Digital Marketing)',
     icon: 'fa-solid fa-chart-line',
     badge: 'Client Acquisition',
     question: 'በዲጂታል ማርኬቲንግ የመጀመሪያ ደንበኛዬን እንዴት ላግኝ?',
     summary: 'ለአካባቢ ቢዝነሶች ነፃ ማስታወቂያ በመስራት፣ በ Facebook & TikTok Ads ትክክለኛውን ገዢ በማነጣጠር እና ወደ ወርሃዊ ውል የመቀየር ዘዴዎች።',
-    response: `📈 የመጀመሪያ ደንበኛን በፍጥነት የማግኛ 3 የድርጊት እርምጃዎች፦\n\n1. ለአካባቢዎ ላሉ 3 ትናንሽ ቢዝነሶች ነፃ አጭር የቪዲዮ ማስታወቂያ (Proof of Concept) መስራት።\n2. በ Facebook & TikTok Ads ትክክለኛውን ገዢ (Target Audience) ማነጣጠር።\n3. ውጤቱን በቁጥር በማሳየት (ROI Case Study) ወደ ወርሃዊ የክፍያ ውል መቀየር።\n\n💡 በዲጂታል ማርኬቲንግ ኮርሳችን ላይ የተረጋገጡ የማስታወቂያ ሴቲንጎችን በቀጥታ ተግባር እንሰራለን!`,
+    response: `የመጀመሪያ ደንበኛን በፍጥነት የማግኛ 3 የድርጊት እርምጃዎች፦\n\n1. ለአካባቢዎ ላሉ 3 ትናንሽ ቢዝነሶች ነፃ አጭር የቪዲዮ ማስታወቂያ (Proof of Concept) መስራት።\n2. በ Facebook & TikTok Ads ትክክለኛውን ገዢ (Target Audience) ማነጣጠር።\n3. ውጤቱን በቁጥር በማሳየት (ROI Case Study) ወደ ወርሃዊ የክፍያ ውል መቀየር።\n\nበዲጂታል ማርኬቲንግ ኮርሳችን ላይ የተረጋገጡ የማስታወቂያ ሴቲንጎችን በቀጥታ ተግባር እንሰራለን!`,
     courseTag: 'ዲጂታል ማርኬቲንግ እና ሶሻል ሚዲያ',
     courseSlug: 'digital-marketing',
     accentColor: '#3b82f6'
@@ -260,7 +260,7 @@ export default function AITutorSection() {
 
     setTimeout(() => {
       setIsThinking(false);
-      const generatedResp = `⚡ ለ "${queryText}" የተሰጠ ፈጣን የስትራቴጂ ትንተና፦\n\n1. ግልጽ የደንበኛ ፍላጎት (Target Niche) ይለዩ።\n2. አነስተኛ ወጪ ባለው ዲጂታል ቻናል (Telegram / TikTok) ቀጥታ ይሞክሩ።\n3. የሽያጭ ሂደቱን በ AI አውቶሜሽን በማቀናጀት ስራዎን ያፋጥኑ።\n\n💡 ዝርዝር ተግባራዊ ትምህርቱን በእኛ ኮርሶች ውስጥ ያገኛሉ!`;
+      const generatedResp = `ለ "${queryText}" የተሰጠ ፈጣን የስትራቴጂ ትንተና፦\n\n1. ግልጽ የደንበኛ ፍላጎት (Target Niche) ይለዩ።\n2. አነስተኛ ወጪ ባለው ዲጂታል ቻናል (Telegram / TikTok) ቀጥታ ይሞክሩ።\n3. የሽያጭ ሂደቱን በ AI አውቶሜሽን በማቀናጀት ስራዎን ያፋጥኑ።\n\nዝርዝር ተግባራዊ ትምህርቱን በእኛ ኮርሶች ውስጥ ያገኛሉ!`;
       setDisplayedResponse(generatedResp);
       setPhase('idle');
     }, 750);
@@ -273,7 +273,7 @@ export default function AITutorSection() {
       className={`terafab-ai-box relative py-20 lg:py-28 overflow-hidden bg-[#030509] border-y border-white/10 select-none ${isSectionVisible ? 'is-visible' : ''}`}
     >
       
-      {/* 🌟 1. Visual Atmosphere & Layered 3D Ambient Glow */}
+      {/*  1. Visual Atmosphere & Layered 3D Ambient Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none opacity-40"></div>
       
       {/* Golden Orange Glow (#f9b03c / 15%) */}
@@ -297,7 +297,7 @@ export default function AITutorSection() {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#f9b03c]"></span>
               </span>
               <span className="text-xs font-black tracking-wide text-[#f9b03c] font-heading">
-                ✨ 24/7 የግል AI መምህርህ (Next-Gen AI Tutor)
+                24/7 የግል AI መምህርህ (Next-Gen AI Tutor)
               </span>
             </div>
 
@@ -351,7 +351,7 @@ export default function AITutorSection() {
               {/* Benefit 3 */}
               <div className="terafab-ai-item delay-6 flex items-start gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-emerald-500/40 transition-all duration-300 shadow-sm group">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500/20 to-teal-400/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-sm shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)] group-hover:scale-110 transition-transform">
-                  <span className="text-sm">🇪🇹</span>
+                  
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-white font-heading">
@@ -624,12 +624,12 @@ export default function AITutorSection() {
 
         </div>
 
-        {/* ===================== 🌟 2. 3-COLUMN FAQ QUESTION GRID (STAGGERED DELAYS) ===================== */}
+        {/* =====================  2. 3-COLUMN FAQ QUESTION GRID (STAGGERED DELAYS) ===================== */}
         <div className="pt-6 border-t border-white/10">
           
           <div className="terafab-ai-item delay-5 text-center max-w-2xl mx-auto mb-8 space-y-2">
             <span className="text-[11px] font-black uppercase tracking-widest text-[#f9b03c] font-heading">
-              💡 በብዛት የሚጠየቁ ጥያቄዎች • AI FAQ Knowledge Base
+              በብዛት የሚጠየቁ ጥያቄዎች • AI FAQ Knowledge Base
             </span>
             <h3 className="text-2xl sm:text-3xl font-black font-heading text-white">
               ተማሪዎቻችን Tsehay AI ን በብዛት የሚጠይቋቸው ርዕሶች

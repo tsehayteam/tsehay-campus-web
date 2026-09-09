@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { EventTicket } from '@/lib/eventCache';
+import { CheckCircle2, AlertTriangle, XCircle, X } from 'lucide-react';
 
 export default function AdminGateScannerPage() {
   const router = useRouter();
@@ -205,7 +206,7 @@ export default function AdminGateScannerPage() {
         playSound('valid');
         setActiveResult({
           status: 'valid',
-          message: '🟢 ትክክለኛ ቲኬት! ተሳታፊውን ማሳለፍ ይችላሉ (Access Granted)',
+          message: 'ትክክለኛ ቲኬት! ተሳታፊውን ማሳለፍ ይችላሉ (Access Granted)',
           ticket: data.ticket,
         });
 
@@ -229,7 +230,7 @@ export default function AdminGateScannerPage() {
         playSound('already_used');
         setActiveResult({
           status: 'already_used',
-          message: '🔴 ይህ ቲኬት ቀደም ሲል ጥቅም ላይ ውሏል! (Already Scanned)',
+          message: 'ይህ ቲኬት ቀደም ሲል ጥቅም ላይ ውሏል! (Already Scanned)',
           ticket: data.ticket,
           usedAt: data.ticket?.usedAt,
         });
@@ -254,7 +255,7 @@ export default function AdminGateScannerPage() {
         playSound('invalid');
         setActiveResult({
           status: 'invalid',
-          message: '❌ ልክ ያልሆነ ቲኬት! (Invalid or Fake Ticket)',
+          message: 'ልክ ያልሆነ ቲኬት! (Invalid or Fake Ticket)',
         });
 
         setSessionStats((prev) => ({
@@ -345,7 +346,7 @@ export default function AdminGateScannerPage() {
           </div>
         </div>
 
-        {/* 📷 Live Camera Scanner Viewport */}
+        {/*  Live Camera Scanner Viewport */}
         <div className="relative rounded-3xl overflow-hidden border-2 border-white/15 bg-slate-950 aspect-[4/3] sm:aspect-[16/11] shadow-2xl flex items-center justify-center">
           {/* Video stream element */}
           <video
@@ -375,7 +376,7 @@ export default function AdminGateScannerPage() {
             </div>
           )}
 
-          {/* 🌟 Futuristic Scanner Target Overlay with Animated Laser Line */}
+          {/*  Futuristic Scanner Target Overlay with Animated Laser Line */}
           {isCameraActive && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
               <div className="w-56 h-56 sm:w-64 sm:h-64 border-2 border-dashed border-[#f9b03c]/70 rounded-3xl relative shadow-[0_0_50px_rgba(249,176,60,0.25)] flex items-center justify-center">
@@ -400,7 +401,7 @@ export default function AdminGateScannerPage() {
           )}
         </div>
 
-        {/* 🌟 SCAN RESULT POPUP BANNER & ATTENDEE BADGE */}
+        {/*  SCAN RESULT POPUP BANNER & ATTENDEE BADGE */}
         {activeResult && (
           <div
             className={`rounded-3xl border p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-300 ${
@@ -413,9 +414,15 @@ export default function AdminGateScannerPage() {
           >
             {/* Status Heading */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">
-                  {activeResult.status === 'valid' ? '🟢' : activeResult.status === 'already_used' ? '🔴' : '❌'}
+              <div className="flex items-center gap-2.5">
+                <span className="shrink-0">
+                  {activeResult.status === 'valid' ? (
+                    <CheckCircle2 className="w-6 h-6 text-emerald-400" aria-hidden="true" />
+                  ) : activeResult.status === 'already_used' ? (
+                    <AlertTriangle className="w-6 h-6 text-amber-400" aria-hidden="true" />
+                  ) : (
+                    <XCircle className="w-6 h-6 text-rose-400" aria-hidden="true" />
+                  )}
                 </span>
                 <span className="font-heading font-black text-sm text-white">
                   {activeResult.message}
@@ -423,9 +430,10 @@ export default function AdminGateScannerPage() {
               </div>
               <button
                 onClick={() => setActiveResult(null)}
-                className="text-xs text-slate-400 hover:text-white px-2 py-1 bg-white/10 rounded-lg cursor-pointer"
+                className="text-xs text-slate-400 hover:text-white px-2 py-1 bg-white/10 rounded-lg cursor-pointer flex items-center gap-1"
               >
-                ✕ ዝጋ
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>ዝጋ</span>
               </button>
             </div>
 
@@ -506,7 +514,7 @@ export default function AdminGateScannerPage() {
           </button>
         </form>
 
-        {/* 📋 Recent Gate Scans Log */}
+        {/*  Recent Gate Scans Log */}
         {scanHistory.length > 0 && (
           <div className="bg-[#080d1e]/80 border border-white/10 rounded-3xl p-4 space-y-3">
             <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center justify-between">
@@ -520,8 +528,14 @@ export default function AdminGateScannerPage() {
                   className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-xs"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="text-sm">
-                      {item.status === 'valid' ? '🟢' : item.status === 'already_used' ? '🔴' : '❌'}
+                    <span className="shrink-0">
+                      {item.status === 'valid' ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-hidden="true" />
+                      ) : item.status === 'already_used' ? (
+                        <AlertTriangle className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-rose-400" aria-hidden="true" />
+                      )}
                     </span>
                     <div>
                       <p className="font-bold text-white leading-tight">{item.name}</p>

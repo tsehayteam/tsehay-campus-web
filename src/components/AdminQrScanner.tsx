@@ -168,7 +168,7 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
             });
             showToastNotification({
               type: 'success',
-              title: '✅ ትኬት በተሳካ ሁኔታ ተረጋግጧል! (Ticket Verified)',
+              title: 'ትኬት በተሳካ ሁኔታ ተረጋግጧል! (Ticket Verified)',
               message: `${data.ticket?.attendeeName || 'ተማሪ'} መገኘታቸው ተረጋግጧል (Access Granted)`,
               attendee: data.ticket?.attendeeName,
               ticketId: data.ticket?.ticketId,
@@ -187,7 +187,7 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
             });
             showToastNotification({
               type: 'warning',
-              title: '⚠️ ይህ ቲኬት ከዚህ በፊት ጥቅም ላይ ውሏል!',
+              title: 'ይህ ቲኬት ከዚህ በፊት ጥቅም ላይ ውሏል!',
               message: `ይህ ቲኬት ቀደም ሲል ጥቅም ላይ ውሏል (${data.ticket?.attendeeName || 'ተሳታፊ'})`,
               attendee: data.ticket?.attendeeName,
               ticketId: data.ticket?.ticketId
@@ -200,7 +200,7 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
             });
             showToastNotification({
               type: 'error',
-              title: '❌ ያልተገኘ ቲኬት (Invalid Ticket)',
+              title: 'ያልተገኘ ቲኬት (Invalid Ticket)',
               message: 'የገባው የትኬት መለያ በትምህርት ክፍሉ ዳታቤዝ ውስጥ አልተገኘም',
               ticketId
             });
@@ -218,7 +218,7 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
         });
         showToastNotification({
           type: 'error',
-          title: '❌ ያልተገኘ ቲኬት (Invalid Ticket)',
+          title: 'ያልተገኘ ቲኬት (Invalid Ticket)',
           message: 'የገባው የትኬት መለያ በትምህርት ክፍሉ ዳታቤዝ ውስጥ አልተገኘም',
           ticketId
         });

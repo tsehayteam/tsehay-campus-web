@@ -141,12 +141,12 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
       });
       const data = await res.json();
       if (data.success && (data.emailSent || data.success)) {
-        setEmailStatus('✅ ትኬቱ ወደ ኢሜይልዎ ተልኳል!');
+        setEmailStatus('ትኬቱ ወደ ኢሜይልዎ ተልኳል!');
       } else {
-        setEmailStatus('✅ ትኬቱ ወደ ኢሜይልዎ ተልኳል!');
+        setEmailStatus('ትኬቱ ወደ ኢሜይልዎ ተልኳል!');
       }
     } catch (e) {
-      setEmailStatus('✅ ትኬቱ ወደ ኢሜይልዎ ተልኳል!');
+      setEmailStatus('ትኬቱ ወደ ኢሜይልዎ ተልኳል!');
     } finally {
       setIsSendingEmail(false);
     }
@@ -154,14 +154,14 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
 
   const handleShareTelegram = () => {
     const text = encodeURIComponent(
-      `🎟️ የፀሐይ ካምፓስ ዝግጅት ትኬት ተቆርጧል!\n\n📌 ዝግጅት፡ ${ticket.eventTitle}\n📅 ቀን፡ ${ticket.eventDate} @ ${ticket.eventTime}\n📍 ቦታ፡ ${ticket.eventLocation}\n👤 ተሳታፊ፡ ${ticket.attendeeName}\n🔑 የትኬት ቁጥር፡ ${ticket.ticketId}\n\n🔗 https://tsehaycampus.com`
+      `[Tsehay Campus] የዝግጅት ትኬት ተቆርጧል!\n\n• ዝግጅት፡ ${ticket.eventTitle}\n• ቀን፡ ${ticket.eventDate} @ ${ticket.eventTime}\n• ቦታ፡ ${ticket.eventLocation}\n• ተሳታፊ፡ ${ticket.attendeeName}\n• የትኬት ቁጥር፡ ${ticket.ticketId}\n\nhttps://tsehaycampus.com`
     );
     window.open(`https://t.me/share/url?url=https://tsehaycampus.com&text=${text}`, '_blank');
   };
 
   const handleShareWhatsApp = () => {
     const text = encodeURIComponent(
-      `🎟️ የፀሐይ ካምፓስ ዝግጅት ትኬት ተቆርጧል!\n\n📌 ዝግጅት፡ ${ticket.eventTitle}\n📅 ቀን፡ ${ticket.eventDate} @ ${ticket.eventTime}\n📍 ቦታ፡ ${ticket.eventLocation}\n👤 ተሳታፊ፡ ${ticket.attendeeName}\n🔑 የትኬት ቁጥር፡ ${ticket.ticketId}\n\n🔗 https://tsehaycampus.com`
+      `[Tsehay Campus] የዝግጅት ትኬት ተቆርጧል!\n\n• ዝግጅት፡ ${ticket.eventTitle}\n• ቀን፡ ${ticket.eventDate} @ ${ticket.eventTime}\n• ቦታ፡ ${ticket.eventLocation}\n• ተሳታፊ፡ ${ticket.attendeeName}\n• የትኬት ቁጥር፡ ${ticket.ticketId}\n\nhttps://tsehaycampus.com`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
@@ -397,12 +397,13 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
 
           {/* Email Status Alert */}
           {emailStatus && (
-            <div className={`mt-3 p-3 rounded-xl text-xs text-center font-bold animate-in fade-in zoom-in-95 duration-200 ${
-              emailStatus.startsWith('✅') 
+            <div className={`mt-3 p-3 rounded-xl text-xs text-center font-bold animate-in fade-in zoom-in-95 duration-200 flex items-center justify-center gap-1.5 ${
+              emailStatus.includes('ተልኳል') 
                 ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-lg shadow-emerald-500/10' 
                 : 'bg-amber-400/10 border border-amber-400/30 text-amber-200'
             }`}>
-              {emailStatus}
+              {emailStatus.includes('ተልኳል') && <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-hidden="true" />}
+              <span>{emailStatus}</span>
             </div>
           )}
 

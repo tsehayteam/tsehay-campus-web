@@ -172,11 +172,11 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
                   })}
                 </div>
                 <span className="text-[11px] font-black text-[#f9b03c] mt-1.5 block">
-                  {rating === 5 ? '🌟 እጅግ በጣም ምርጥ (5/5 Excellent)' : 
-                   rating === 4 ? '👍 በጣም ጥሩ (4/5 Very Good)' : 
-                   rating === 3 ? '👌 ጥሩ (3/5 Good)' : 
-                   rating === 2 ? '😐 መሻሻል አለበት (2/5 Needs Improvement)' : 
-                   '👎 ደካማ (1/5 Poor)'}
+                  {rating === 5 ? 'እጅግ በጣም ምርጥ (5/5 Excellent)' : 
+                   rating === 4 ? 'በጣም ጥሩ (4/5 Very Good)' : 
+                   rating === 3 ? 'ጥሩ (3/5 Good)' : 
+                   rating === 2 ? 'መሻሻል አለበት (2/5 Needs Improvement)' : 
+                   'ደካማ (1/5 Poor)'}
                 </span>
               </div>
 
@@ -187,10 +187,10 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {[
-                    { id: 'course', label: '🎓 የኮርስ አስተያየት', desc: 'Course' },
-                    { id: 'bug', label: '🐛 የዌብሳይት ችግር', desc: 'Bug' },
-                    { id: 'idea', label: '💡 አዲስ ሀሳብ', desc: 'New Idea' },
-                    { id: 'general', label: '💬 አጠቃላይ', desc: 'General' },
+                    { id: 'course', label: 'የኮርስ አስተያየት', desc: 'Course' },
+                    { id: 'bug', label: 'የዌብሳይት ችግር', desc: 'Bug' },
+                    { id: 'idea', label: 'አዲስ ሀሳብ', desc: 'New Idea' },
+                    { id: 'general', label: 'አጠቃላይ', desc: 'General' },
                   ].map((item) => (
                     <button
                       key={item.id}

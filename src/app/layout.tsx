@@ -217,7 +217,7 @@ export default function RootLayout({
         <LanguageProvider>
           <AuthProvider>
             <SmoothScrollAndScrollyProvider>
-              {/* 🌟 Lusion.co-Level Solar Gravity Atmosphere & Synesthetic Audio Engine */}
+              {/*  Lusion.co-Level Solar Gravity Atmosphere & Synesthetic Audio Engine */}
               <TsehayExperienceProvider />
               
               <div id="tsehay-page-wrapper" className="w-full min-h-screen">

@@ -31,7 +31,7 @@ const translations: Record<string, Record<Language, string>> = {
   },
   'explore_courses': { am: 'ኮርሶችን ያስሱ', en: 'Explore Courses' },
   'learn_about_us': { am: 'ስለ እኛ ይመልከቱ', en: 'Learn about us' },
-  'practical_learning_badge': { am: '🎓 ከተግባራዊ ትምህርት ጋር', en: '🎓 WITH PRACTICAL LEARNING' },
+  'practical_learning_badge': { am: 'ከተግባራዊ ትምህርት ጋር', en: 'WITH PRACTICAL LEARNING' },
   'recognized_cert': { am: 'እውቅና ያለው ሰርተፍኬት', en: 'ACCREDITED CERTIFICATE' },
   'recognized': { am: 'Recognized', en: 'Recognized' },
   'students': { am: 'ተማሪዎች', en: 'STUDENTS' },

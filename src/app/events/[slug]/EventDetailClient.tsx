@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import TwoStageEventBookingModal from '@/components/TwoStageEventBookingModal';
 import ShareEventModal from '@/components/ShareEventModal';
+import { Globe, MapPin, Ban } from 'lucide-react';
 import { 
   TsehayEvent, 
   EventTicket, 
@@ -532,13 +533,24 @@ export default function EventDetailClient() {
                 <span>ይፋዊ የቀጥታ ዝግጅት • Official Event</span>
               </span>
 
-              <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-bold">
-                {event.isOnline ? '🌐 Virtual Live Stream (Online)' : `📍 በአካል (${event.location})`}
+              <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-bold inline-flex items-center gap-1.5">
+                {event.isOnline ? (
+                  <>
+                    <Globe className="w-3.5 h-3.5 text-sky-400" aria-hidden="true" />
+                    <span>Virtual Live Stream (Online)</span>
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+                    <span>በአካል ({event.location})</span>
+                  </>
+                )}
               </span>
 
               {isSoldOut && (
-                <span className="px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-black uppercase tracking-wider animate-pulse shadow-lg">
-                  ❌ ትኬቱ አልቋል (Sold Out)
+                <span className="px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-black uppercase tracking-wider animate-pulse shadow-lg inline-flex items-center gap-1.5">
+                  <Ban className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+                  <span>ትኬቱ አልቋል (Sold Out)</span>
                 </span>
               )}
             </div>

@@ -444,7 +444,7 @@ export default function CertificateVerificationPage() {
     }
   };
 
-  const linkedInShareText = `🎓 Official Certificate of Completion from Tsehay Campus!\n\nI have successfully completed and verified the "${certificateData?.courseTitle}" masterclass.\n\n🔗 Verify Official Credential:\n${publicVerifyUrl}\n\n#TsehayCampus #VerifiedCertificate #ProfessionalGrowth #Ethiopia`;
+  const linkedInShareText = `Official Certificate of Completion from Tsehay Campus!\n\nI have successfully completed and verified the "${certificateData?.courseTitle}" masterclass.\n\nVerify Official Credential:\n${publicVerifyUrl}\n\n#TsehayCampus #VerifiedCertificate #ProfessionalGrowth #Ethiopia`;
 
   const handleCopyCaption = () => {
     if (typeof window !== 'undefined') {
@@ -517,7 +517,7 @@ export default function CertificateVerificationPage() {
             </p>
           </div>
 
-          {/* 🔍 Glassmorphic Verification Hub (Camera QR Scanner + Code Input) */}
+          {/*  Glassmorphic Verification Hub (Camera QR Scanner + Code Input) */}
           <div className="max-w-3xl mx-auto mb-12 sm:mb-16">
             <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0d1627]/90 via-[#09101d]/90 to-[#040810]/95 border border-cyan-400/30 shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(6,182,212,0.15)] backdrop-blur-2xl relative overflow-hidden">
               
@@ -525,7 +525,7 @@ export default function CertificateVerificationPage() {
               <div className="absolute -top-20 -right-20 w-56 h-56 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
               <div className="absolute -bottom-20 -left-20 w-56 h-56 bg-[#f9b03c]/10 rounded-full blur-3xl pointer-events-none"></div>
 
-              {/* 📷 Highlighted Action: Live Camera Scanner Quick Launcher */}
+              {/*  Highlighted Action: Live Camera Scanner Quick Launcher */}
               <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-cyan-500/15 via-blue-500/10 to-[#f9b03c]/15 border border-cyan-400/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
                 <div className="flex items-center gap-3.5 text-left">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 flex items-center justify-center text-xl font-black shrink-0 shadow-[0_0_20px_rgba(6,182,212,0.4)]">
@@ -667,7 +667,7 @@ export default function CertificateVerificationPage() {
             </div>
           </div>
 
-          {/* ✅ Verified Status Banner & Certificate Control Hub */}
+          {/*  Verified Status Banner & Certificate Control Hub */}
           {certificateData && !isNotFound && (
             <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-950/70 via-slate-900/90 to-cyan-950/70 border border-emerald-500/40 backdrop-blur-2xl shadow-[0_15px_45px_rgba(0,0,0,0.8),0_0_30px_rgba(16,185,129,0.2)] flex flex-col md:flex-row items-center justify-between gap-5">
               <div className="flex items-center gap-4 text-left w-full md:w-auto">
@@ -771,7 +771,7 @@ export default function CertificateVerificationPage() {
             </div>
           )}
 
-          {/* 🎓 AUTHENTIC HIGH-DEFINITION DEMO CERTIFICATE FRAME */}
+          {/*  AUTHENTIC HIGH-DEFINITION DEMO CERTIFICATE FRAME */}
           <div className="max-w-4xl mx-auto mb-16 select-none">
             <div
               ref={certificateRef}
@@ -899,7 +899,7 @@ export default function CertificateVerificationPage() {
             </div>
           </div>
 
-          {/* 🌟 Professional Glassmorphic Credential Metadata Breakdown */}
+          {/*  Professional Glassmorphic Credential Metadata Breakdown */}
           <div className="max-w-4xl mx-auto rounded-3xl bg-gradient-to-b from-slate-900/80 via-slate-950/80 to-[#040810]/90 border border-white/10 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] mb-14">
             <h3 className="text-base sm:text-lg font-black text-white font-heading mb-6 flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm border border-cyan-400/30">
@@ -953,7 +953,7 @@ export default function CertificateVerificationPage() {
             </div>
           </div>
 
-          {/* 🌟 Why Verification Matters / Trust Section (Glassmorphic Cards) */}
+          {/*  Why Verification Matters / Trust Section (Glassmorphic Cards) */}
           <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
             <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/10 hover:border-cyan-400/40 backdrop-blur-2xl shadow-lg transition-all group">
               <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
@@ -995,7 +995,7 @@ export default function CertificateVerificationPage() {
         </div>
       </main>
 
-      {/* 📷 LIVE CAMERA QR SCANNER MODAL */}
+      {/*  LIVE CAMERA QR SCANNER MODAL */}
       {isScannerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-gradient-to-b from-slate-900 via-[#0a1120] to-[#040810] border-2 border-cyan-400/50 rounded-3xl p-5 sm:p-6 shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_50px_rgba(6,182,212,0.3)] relative overflow-hidden flex flex-col">

@@ -5,6 +5,7 @@ import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import WaitlistModal from '@/components/WaitlistModal';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 import { COMING_SOON_COURSES, getComingSoonCourses, ComingSoonCourse } from '@/lib/courseCache';
+import { Sparkles } from 'lucide-react';
 
 interface ComingSoonCoursesSectionProps {
   id?: string;
@@ -40,8 +41,10 @@ export default function ComingSoonCoursesSection({
           <div className="flex flex-col items-center text-center mb-14 sm:mb-18 gap-3 scrolly-reveal">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-[#3268ba]/15 border border-[#f9b03c]/30 px-5 py-2 rounded-full shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-md">
               <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-ping"></span>
-              <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">
-                ✨ አዳዲስ ስልጠናዎች • COMING SOON ✨
+              <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c] flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#f9b03c]" aria-hidden="true" />
+                <span>አዳዲስ ስልጠናዎች • COMING SOON</span>
+                <Sparkles className="w-3.5 h-3.5 text-[#f9b03c]" aria-hidden="true" />
               </span>
             </div>
             <h2 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
