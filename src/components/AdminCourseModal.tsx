@@ -9,7 +9,8 @@ export const COURSE_CATEGORIES = [
   'Content Creation',
   'Marketing',
   'Brokerage',
-  'Film Making',
+  'Real Estate',
+  'Filmmaking',
   'Career Development',
 ] as const;
 

@@ -304,7 +304,9 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
     { id: 'YouTube', label: 'YouTube', icon: 'fa-youtube' },
     { id: 'ContentCreation', label: 'Content Creation', icon: 'fa-clapperboard' },
     { id: 'VideoEditing', label: 'Video Editing', icon: 'fa-film' },
+    { id: 'Filmmaking', label: 'Filmmaking', icon: 'fa-video' },
     { id: 'Marketing', label: 'Digital Marketing', icon: 'fa-bullhorn' },
+    { id: 'RealEstate', label: 'Real Estate', icon: 'fa-house-chimney' },
     { id: 'Brokerage', label: 'Brokerage', icon: 'fa-building' },
     { id: 'Career', label: 'Career', icon: 'fa-briefcase' },
   ];
@@ -317,8 +319,10 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
     if (tabId === 'YouTube' && (catLower.includes('youtube') || catLower.includes('ዩቲዩብ'))) return true;
     if (tabId === 'ContentCreation' && (catLower.includes('content') || catLower.includes('ይዘት'))) return true;
     if (tabId === 'VideoEditing' && (catLower.includes('video editing') || catLower.includes('ኤዲቲንግ') || catLower.includes('editing') || catLower.includes('capcut'))) return true;
+    if (tabId === 'Filmmaking' && (catLower.includes('filmmaking') || catLower.includes('film making') || catLower.includes('ፊልም'))) return true;
     if (tabId === 'Marketing' && (catLower.includes('marketing') || catLower.includes('ማርኬቲንግ') || catLower.includes('ads'))) return true;
-    if (tabId === 'Brokerage' && (catLower.includes('brokerage') || catLower.includes('real estate') || catLower.includes('ደላላ') || catLower.includes('ብሮከሬጅ'))) return true;
+    if (tabId === 'RealEstate' && (catLower.includes('real estate') || catLower.includes('ሪል እስቴት') || catLower.includes('ሪልእስቴት'))) return true;
+    if (tabId === 'Brokerage' && (catLower.includes('brokerage') || catLower.includes('ደላላ') || catLower.includes('ብሮከሬጅ'))) return true;
     if (tabId === 'Career' && (catLower.includes('career') || catLower.includes('ስራ') || catLower.includes('leadership') || catLower.includes('ካሪየር'))) return true;
     return catLower.includes(tabId.toLowerCase());
   };

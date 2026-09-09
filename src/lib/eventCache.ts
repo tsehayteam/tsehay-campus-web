@@ -260,10 +260,19 @@ export function getRemainingSeats(event: TsehayEvent): number {
 
 export const USER_TICKETS_CACHE_KEY = 'tsehay_user_event_tickets';
 
-export function getCachedUserTickets(): Record<string, EventTicket> {
-  if (typeof window === 'undefined') return {};
+export function getUserTicketsCacheKey(userId?: string | null): string | null {
+  if (!userId) return null;
+  const clean = userId.trim();
+  if (!clean || clean.startsWith('guest_') || clean.startsWith('anon_')) return null;
+  return `${USER_TICKETS_CACHE_KEY}_${clean}`;
+}
+
+export function getCachedUserTickets(userId?: string | null): Record<string, EventTicket> {
+  if (typeof window === 'undefined' || !userId) return {};
+  const cacheKey = getUserTicketsCacheKey(userId);
+  if (!cacheKey) return {};
   try {
-    const raw = localStorage.getItem(USER_TICKETS_CACHE_KEY);
+    const raw = localStorage.getItem(cacheKey);
     if (raw) {
       return JSON.parse(raw);
     }
@@ -271,16 +280,31 @@ export function getCachedUserTickets(): Record<string, EventTicket> {
   return {};
 }
 
-export function saveCachedUserTicket(ticket: EventTicket): void {
+export function saveCachedUserTicket(ticket: EventTicket, userId?: string | null): void {
   if (typeof window === 'undefined' || !ticket) return;
+  const effectiveUserId = userId || ticket.userId;
+  const cacheKey = getUserTicketsCacheKey(effectiveUserId);
+  if (!cacheKey) return;
   try {
-    const existing = getCachedUserTickets();
+    const existing = getCachedUserTickets(effectiveUserId);
     const eventKey = ticket.eventId || ticket.eventSlug || ticket.ticketId;
     existing[eventKey] = ticket;
     if (ticket.eventId) existing[ticket.eventId] = ticket;
     if (ticket.eventSlug) existing[ticket.eventSlug] = ticket;
-    localStorage.setItem(USER_TICKETS_CACHE_KEY, JSON.stringify(existing));
-    window.dispatchEvent(new CustomEvent('tsehay_user_ticket_saved', { detail: { ticket } }));
+    localStorage.setItem(cacheKey, JSON.stringify(existing));
+    window.dispatchEvent(new CustomEvent('tsehay_user_ticket_saved', { detail: { ticket, userId: effectiveUserId } }));
+  } catch (e) {}
+}
+
+export function clearCachedUserTickets(userId?: string | null): void {
+  if (typeof window === 'undefined') return;
+  if (userId) {
+    const key = getUserTicketsCacheKey(userId);
+    if (key) localStorage.removeItem(key);
+  }
+  // Clear any legacy un-scoped key
+  try {
+    localStorage.removeItem(USER_TICKETS_CACHE_KEY);
   } catch (e) {}
 }
 

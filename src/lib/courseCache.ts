@@ -709,6 +709,9 @@ export interface ComingSoonCourse {
   instructor?: string;
   image: string;
   banner?: string;
+  video?: string;
+  videoUrl?: string;
+  previewVideoUrl?: string;
   highlightBadge?: string;
   benefits?: string[];
   expectedDate?: string;
@@ -736,22 +739,32 @@ export function formatCleanCategory(rawCat: string = ''): string {
     return 'Content Creation';
   }
   
-  // 3. Brokerage
-  if (lower.includes('brokerage') || lower.includes('real estate') || lower.includes('ደላላ') || lower.includes('ብሮከሬጅ') || lower.includes('ቤት')) {
+  // 3. Real Estate
+  if (lower.includes('real estate') || lower.includes('ሪል እስቴት') || lower.includes('ሪልእስቴት') || lower.includes('ቤት')) {
+    return 'Real Estate';
+  }
+  
+  // 4. Filmmaking / Film Making
+  if (lower.includes('filmmaking') || lower.includes('film making') || lower.includes('ፊልም')) {
+    return 'Filmmaking';
+  }
+
+  // 5. Brokerage
+  if (lower.includes('brokerage') || lower.includes('ደላላ') || lower.includes('ብሮከሬጅ')) {
     return 'Brokerage';
   }
   
-  // 4. E-Commerce
+  // 6. E-Commerce
   if (lower.includes('ecommerce') || lower.includes('e-commerce') || lower.includes('shein') || lower.includes('ሼን') || lower.includes('ኢምፖርት')) {
     return 'E-Commerce';
   }
   
-  // 5. Video Editing
+  // 7. Video Editing
   if (lower.includes('video editing') || lower.includes('ኤዲቲንግ') || lower.includes('editing')) {
     return 'Video Editing';
   }
   
-  // 6. Career
+  // 8. Career
   if (lower.includes('career') || lower.includes('leadership') || lower.includes('ስራ') || lower.includes('ካሪየር')) {
     return 'Career';
   }
@@ -851,26 +864,42 @@ export const COMING_SOON_COURSES: ComingSoonCourse[] = [
 export function getComingSoonCourses(): ComingSoonCourse[] {
   if (typeof window !== 'undefined') {
     try {
-      const cached = getCachedCourses();
-      if (Array.isArray(cached) && cached.length > 0) {
-        const dynamicCS = cached.filter(c => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
-        if (dynamicCS.length > 0) {
-          const map = new Map<string, ComingSoonCourse>();
-          COMING_SOON_COURSES.forEach(c => map.set(c.id, c));
-          dynamicCS.forEach(c => {
-            const id = c.id || c.slug;
-            const existing = map.get(id) || {};
-            const cleanImg = formatDriveImageUrl(c.image || existing.image) || c.image || existing.image;
-            const cleanBanner = formatDriveImageUrl(c.banner || c.image || existing.banner) || c.banner || c.image || existing.banner;
-            map.set(id, { 
-              ...existing, 
-              ...c,
-              image: cleanImg,
-              banner: cleanBanner
-            } as ComingSoonCourse);
-          });
-          return Array.from(map.values());
+      let dynamicCS: any[] = [];
+      const specificCSCache = localStorage.getItem('tsehay_coming_soon_cache');
+      if (specificCSCache) {
+        try {
+          const parsed = JSON.parse(specificCSCache);
+          if (Array.isArray(parsed) && parsed.length > 0) dynamicCS = parsed;
+        } catch (e) {}
+      }
+
+      if (dynamicCS.length === 0) {
+        const cached = getCachedCourses();
+        if (Array.isArray(cached) && cached.length > 0) {
+          dynamicCS = cached.filter(c => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
         }
+      }
+
+      if (dynamicCS.length > 0) {
+        const map = new Map<string, ComingSoonCourse>();
+        COMING_SOON_COURSES.forEach(c => map.set(c.id, c));
+        dynamicCS.forEach(c => {
+          const id = c.id || c.slug;
+          const existing = map.get(id) || {} as any;
+          const cleanImg = formatDriveImageUrl(c.image || existing.image) || c.image || existing.image;
+          const cleanBanner = formatDriveImageUrl(c.banner || c.image || existing.banner) || c.banner || c.image || existing.banner;
+          const videoUrl = c.video || c.videoUrl || c.previewVideoUrl || existing.video || '';
+          map.set(id, { 
+            ...existing, 
+            ...c,
+            image: cleanImg,
+            banner: cleanBanner,
+            video: videoUrl,
+            videoUrl: videoUrl,
+            previewVideoUrl: videoUrl,
+          } as ComingSoonCourse);
+        });
+        return Array.from(map.values());
       }
     } catch (e) {}
   }

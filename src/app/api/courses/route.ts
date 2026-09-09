@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
+import { supabaseServer } from '@/lib/supabase/server';
 import { generateCourseSlug, DEFAULT_COURSES, isValidCourse, formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
 
 export const dynamic = 'force-dynamic';
@@ -39,17 +39,30 @@ export async function GET(req: NextRequest) {
     // 1. Fetch deleted courses blacklist from site_settings
     let deletedCourses: string[] = [];
     try {
-      const { data: delData } = await supabase
+      const { data: delData } = await supabaseServer
         .from('site_settings')
         .select('data')
-        .eq('key', 'deleted_courses')
+        .or('key.eq.deleted_courses,id.eq.deleted_courses')
         .maybeSingle();
       if (Array.isArray(delData?.data)) {
         deletedCourses = delData.data;
       }
     } catch (e) {}
 
-    // 1. Single Course Lookup
+    // 2. Fetch persistent coming_soon_courses from site_settings (lifetime persistence)
+    let persistentComingSoon: any[] = [];
+    try {
+      const { data: csData } = await supabaseServer
+        .from('site_settings')
+        .select('data')
+        .or('key.eq.coming_soon_courses,id.eq.coming_soon_courses')
+        .maybeSingle();
+      if (Array.isArray(csData?.data)) {
+        persistentComingSoon = csData.data;
+      }
+    } catch (e) {}
+
+    // 3. Single Course Lookup
     if (courseId) {
       const cleanId = courseId.trim();
       const cleanLower = cleanId.toLowerCase();
@@ -58,9 +71,18 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Course deleted' }, { status: 404, headers: NO_CACHE_HEADERS });
       }
 
+      // Check persistent coming soon first if match
+      const csMatch = persistentComingSoon.find(c => (c.id === cleanId || c.slug === cleanLower || c.id === cleanLower));
+      if (csMatch) {
+        return NextResponse.json(
+          { success: true, course: sanitizeCourseImages({ ...csMatch, status: 'coming_soon', isComingSoon: true }) },
+          { headers: NO_CACHE_HEADERS }
+        );
+      }
+
       // Check Supabase directly
       try {
-        const { data: sbCourse, error: sbErr } = await supabase
+        const { data: sbCourse, error: sbErr } = await supabaseServer
           .from('courses')
           .select('*')
           .or(`id.eq.${cleanId},slug.eq.${cleanId},slug.eq.${cleanLower}`)
@@ -89,8 +111,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 2. Fetch All Courses from Supabase
-    const { data: sbCourses, error: sbErr } = await supabase
+    // 4. Fetch All Courses from Supabase
+    const { data: sbCourses, error: sbErr } = await supabaseServer
       .from('courses')
       .select('*')
       .order('created_at', { ascending: false });
@@ -121,10 +143,31 @@ export async function GET(req: NextRequest) {
         .map(sanitizeCourseImages);
     }
 
+    // Merge persistent coming_soon courses if not already present
+    const courseMap = new Map<string, any>();
+    activeCourses.forEach(c => {
+      const key = c.id || c.slug;
+      if (key) courseMap.set(key, c);
+    });
+
+    persistentComingSoon.forEach(cs => {
+      const key = cs.id || cs.slug;
+      if (key && !deletedCourses.includes(cs.id) && !deletedCourses.includes(cs.slug)) {
+        courseMap.set(key, sanitizeCourseImages({
+          ...(courseMap.get(key) || {}),
+          ...cs,
+          status: 'coming_soon',
+          isComingSoon: true
+        }));
+      }
+    });
+
+    const allMergedCourses = Array.from(courseMap.values());
+
     return NextResponse.json({
       success: true,
-      count: activeCourses.length,
-      courses: activeCourses
+      count: allMergedCourses.length,
+      courses: allMergedCourses
     }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error in GET /api/courses:', error);

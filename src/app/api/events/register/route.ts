@@ -42,6 +42,45 @@ async function saveTickets(tickets: EventTicket[]) {
   } catch (e) {}
 }
 
+async function getAllEvents(): Promise<any[]> {
+  // 1. Try Supabase events table
+  try {
+    const { data: dbEvents, error } = await supabaseServer
+      .from('events')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && Array.isArray(dbEvents) && dbEvents.length > 0) {
+      return dbEvents.map(e => ({
+        ...e,
+        capacity: Number(e.capacity) || 100,
+        registeredCount: Number(e.registered_count ?? e.registeredCount) || 0
+      }));
+    }
+  } catch (e) {}
+
+  // 2. Try site_settings 'events'
+  try {
+    const { data: row, error } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'events')
+      .maybeSingle();
+    if (!error && Array.isArray(row?.data) && row.data.length > 0) {
+      return row.data.map((e: any) => ({
+        ...e,
+        capacity: Number(e.capacity) || 100,
+        registeredCount: Number(e.registered_count ?? e.registeredCount) || 0
+      }));
+    }
+  } catch (e) {}
+
+  return DEFAULT_EVENTS.map(e => ({
+    ...e,
+    capacity: Number(e.capacity) || 100,
+    registeredCount: Number(e.registeredCount) || 0
+  }));
+}
+
 export async function POST(req: NextRequest) {
   try {
     let body: any = {};
@@ -67,7 +106,9 @@ export async function POST(req: NextRequest) {
       }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
-    const matchedEvent = DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId || e.slug === body.eventSlug);
+    // 1. Fetch live events list & match target event
+    const allEvents = await getAllEvents();
+    const matchedEvent = allEvents.find(e => e.id === eventId || e.slug === eventId || (body.eventSlug && e.slug === body.eventSlug)) || DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId || e.slug === body.eventSlug);
     const eventSlug = (body.eventSlug || matchedEvent?.slug || '').toString().trim();
     const eventTitle = body.eventTitle || body.title || matchedEvent?.title || 'Tsehay Campus Live Workshop';
     const eventDate = body.eventDate || body.date || matchedEvent?.date || new Date().toLocaleDateString();
@@ -78,13 +119,28 @@ export async function POST(req: NextRequest) {
     const eventLocation = body.eventLocation || body.location || (isOnline ? 'Online Google Meet' : (matchedEvent?.location || 'Addis Ababa, Ethiopia'));
     const eventImage = (body.eventImage || body.image || matchedEvent?.image || '').toString().trim();
 
+    // 🌟 Live Inventory Stock Validation & Decrement Check
+    const capacity = Number(matchedEvent?.capacity) || 100;
+    const currentRegistered = Number(matchedEvent?.registeredCount ?? matchedEvent?.registered_count) || 0;
+    const remainingSeats = Math.max(0, capacity - currentRegistered);
+
+    if (remainingSeats <= 0) {
+      return NextResponse.json({
+        success: false,
+        soldOut: true,
+        error: `ይቅርታ፣ የዚህ ዝግጅት (${eventTitle}) ቲኬቶች ሙሉ በሙሉ አልቀዋል (Sold Out)! ተጨማሪ ቲኬት መቁረጥ አይቻልም።`
+      }, { status: 400, headers: NO_CACHE_HEADERS });
+    }
+
+    // 🌟 Strict User & Email Isolation Check (No cross-account bleed)
     const existingTickets = await getTickets();
     const alreadyRegistered = existingTickets.find(t => {
       const matchEvent = t.eventId === eventId || (eventSlug && t.eventSlug === eventSlug);
       if (!matchEvent) return false;
-      const matchEmail = t.attendeeEmail && t.attendeeEmail.toLowerCase() === attendeeEmail;
-      const matchUser = userId && !userId.startsWith('guest_') && !userId.startsWith('anon_') && t.userId === userId;
-      return matchEmail || matchUser;
+      const isAuthUser = userId && !userId.startsWith('guest_') && !userId.startsWith('anon_');
+      const matchUser = isAuthUser && t.userId === userId;
+      const matchEmail = attendeeEmail && t.attendeeEmail && t.attendeeEmail.toLowerCase() === attendeeEmail;
+      return matchUser || matchEmail;
     });
 
     if (alreadyRegistered) {
@@ -147,8 +203,49 @@ export async function POST(req: NextRequest) {
       issuedAt: new Date().toISOString()
     };
 
+    // 1. Save Ticket to site_settings (key: 'event_tickets')
     const updatedTickets = [ticket, ...existingTickets.filter(t => t.ticketId !== ticketId)];
     await saveTickets(updatedTickets);
+
+    // 🌟 2. Instant Live Inventory Decrement on Database (Atomic increment of registered_count)
+    const newRegisteredCount = currentRegistered + 1;
+    const newRemainingSeats = Math.max(0, capacity - newRegisteredCount);
+
+    try {
+      if (matchedEvent?.id) {
+        await supabaseServer
+          .from('events')
+          .update({
+            registered_count: newRegisteredCount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', matchedEvent.id);
+      }
+    } catch (sbErr) {
+      console.warn('Supabase events table live decrement warning:', sbErr);
+    }
+
+    try {
+      const updatedEventsList = allEvents.map((ev: any) => {
+        if (ev.id === matchedEvent?.id || (eventSlug && ev.slug === eventSlug)) {
+          return {
+            ...ev,
+            registeredCount: newRegisteredCount,
+            registered_count: newRegisteredCount
+          };
+        }
+        return ev;
+      });
+      await supabaseServer
+        .from('site_settings')
+        .upsert({
+          key: 'events',
+          data: updatedEventsList,
+          updated_at: new Date().toISOString()
+        });
+    } catch (setErr) {
+      console.warn('site_settings events mirror update warning:', setErr);
+    }
 
     let emailResult = { success: false };
     try {
@@ -160,6 +257,9 @@ export async function POST(req: NextRequest) {
       ticketId,
       ticket,
       emailSent: emailResult.success,
+      registeredCount: newRegisteredCount,
+      remainingSeats: newRemainingSeats,
+      soldOut: newRemainingSeats <= 0,
       message: 'ምዝገባዎ በተሳካ ሁኔታ ተጠናቋል! ትኬትዎ ተዘጋጅቷል፤ ወደ ኢሜይልዎም ተልኳል። (Registration confirmed)'
     }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {

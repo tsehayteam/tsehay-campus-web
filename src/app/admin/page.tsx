@@ -506,6 +506,7 @@ export default function AdminDashboard() {
     description: '',
     image: '',
     banner: '',
+    video: '',
     highlightBadge: 'CapCut & Premiere Pro',
     enableWaitlist: true,
     expectedDate: 'በቅርቡ (Coming Soon)',
@@ -899,15 +900,47 @@ export default function AdminDashboard() {
     const fetchCoursesFromApi = async () => {
       try {
         const res = await fetch('/api/admin/courses', { cache: 'no-store' });
+        let serverCourses: any[] = [];
         if (res.ok) {
           const data = await res.json();
           if (data.courses && Array.isArray(data.courses)) {
-            setCourses(data.courses);
-            try {
-              localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(data.courses));
-              localStorage.setItem('tsehay_courses_cache', JSON.stringify(data.courses));
-            } catch (e) {}
+            serverCourses = data.courses;
           }
+        }
+
+        // Guaranteed lifetime persistence: Load mirrored coming soon courses from site_settings
+        try {
+          const csRes = await fetch('/api/admin/site-settings?settingKey=coming_soon_courses', { cache: 'no-store' });
+          if (csRes.ok) {
+            const csJson = await csRes.json();
+            const csList = Array.isArray(csJson?.data) ? csJson.data : [];
+            if (csList.length > 0) {
+              const map = new Map<string, any>();
+              serverCourses.forEach(c => {
+                const key = c.id || c.slug;
+                if (key) map.set(key, c);
+              });
+              csList.forEach((cs: any) => {
+                const key = cs.id || cs.slug;
+                if (key) {
+                  map.set(key, { ...(map.get(key) || {}), ...cs, status: 'coming_soon', isComingSoon: true });
+                }
+              });
+              serverCourses = Array.from(map.values());
+            }
+          }
+        } catch (csLoadErr) {}
+
+        if (serverCourses.length > 0) {
+          setCourses(serverCourses);
+          try {
+            localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(serverCourses));
+            localStorage.setItem('tsehay_courses_cache', JSON.stringify(serverCourses));
+            const csOnly = serverCourses.filter(c => c && (c.status === 'coming_soon' || c.isComingSoon));
+            if (csOnly.length > 0) {
+              localStorage.setItem('tsehay_coming_soon_cache', JSON.stringify(csOnly));
+            }
+          } catch (e) {}
         }
       } catch (err) {
         console.warn("API fetchCourses error:", err);
@@ -1060,6 +1093,103 @@ export default function AdminDashboard() {
     };
     fetchEventsData();
 
+    // ⚡ Real-Time Instant Ticket Purchaser Logging & Stock Inventory Decrement
+    let eventsBc: BroadcastChannel | null = null;
+    try {
+      eventsBc = new BroadcastChannel('tsehay_events_sync');
+      eventsBc.onmessage = (e) => {
+        const data = e.data;
+        if (data?.type === 'TICKET_BOOKED' || data?.type === 'TICKET_PURCHASED') {
+          if (data.ticket) {
+            setEventTickets(prev => {
+              const id = data.ticket.ticketId || data.ticket.id;
+              if (prev.some(t => (t.ticketId || t.id) === id)) return prev;
+              return [data.ticket, ...prev];
+            });
+          }
+          if (data.eventId) {
+            setEvents(prev => prev.map(ev => {
+              if (ev.id === data.eventId || ev.slug === data.eventId) {
+                const newReg = (Number(ev.registeredCount) || 0) + 1;
+                const cap = Number(ev.capacity) || 100;
+                return {
+                  ...ev,
+                  registeredCount: newReg,
+                  remainingSeats: Math.max(0, cap - newReg)
+                };
+              }
+              return ev;
+            }));
+          }
+          fetchEventsData();
+        } else if (data?.type === 'EVENT_SAVED' || data?.type === 'EVENT_DELETED') {
+          fetchEventsData();
+        }
+      };
+    } catch (e) {}
+
+    const handleTicketConfirmed = (e: any) => {
+      const ticket = e.detail?.ticket;
+      const eventId = e.detail?.eventId;
+      if (ticket) {
+        setEventTickets(prev => {
+          const id = ticket.ticketId || ticket.id;
+          if (prev.some(t => (t.ticketId || t.id) === id)) return prev;
+          return [ticket, ...prev];
+        });
+      }
+      if (eventId) {
+        setEvents(prev => prev.map(ev => {
+          if (ev.id === eventId || ev.slug === eventId) {
+            const newReg = (Number(ev.registeredCount) || 0) + 1;
+            const cap = Number(ev.capacity) || 100;
+            return {
+              ...ev,
+              registeredCount: newReg,
+              remainingSeats: Math.max(0, cap - newReg)
+            };
+          }
+          return ev;
+        }));
+      }
+      fetchEventsData();
+    };
+
+    const handleCapacityChange = (e: any) => {
+      const eventId = e.detail?.eventId;
+      const remainingSeats = e.detail?.remainingSeats;
+      if (eventId) {
+        setEvents(prev => prev.map(ev => {
+          if (ev.id === eventId || ev.slug === eventId) {
+            return {
+              ...ev,
+              remainingSeats: typeof remainingSeats === 'number' ? remainingSeats : ev.remainingSeats
+            };
+          }
+          return ev;
+        }));
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('tsehay_ticket_confirmed', handleTicketConfirmed);
+      window.addEventListener('tsehay_event_capacity_change', handleCapacityChange);
+    }
+
+    const eventsRealtimeChannel = supabase
+      .channel('admin_live_events_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+        fetchEventsData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, (payload: any) => {
+        if (payload?.new?.key === 'event_tickets' || payload?.new?.id === 'event_tickets' || payload?.new?.key === 'events' || payload?.new?.id === 'events') {
+          fetchEventsData();
+        }
+      })
+      .subscribe();
+
+    const eventsPollInterval = setInterval(fetchEventsData, 10000);
+
     // 🌟 Course Waitlists Data Loader
     const fetchWaitlistsData = async () => {
       try {
@@ -1162,7 +1292,12 @@ export default function AdminDashboard() {
       if (typeof unsubscribeCommunity === 'function') unsubscribeCommunity();
       if (typeof window !== 'undefined') {
         window.removeEventListener('tsehay_feedback_submitted', handleFeedbackSync);
+        window.removeEventListener('tsehay_ticket_confirmed', handleTicketConfirmed);
+        window.removeEventListener('tsehay_event_capacity_change', handleCapacityChange);
       }
+      if (eventsBc) eventsBc.close();
+      eventsRealtimeChannel.unsubscribe();
+      clearInterval(eventsPollInterval);
       clearInterval(feedbackPollInterval);
       clearTimeout(safetyTimer);
     };
@@ -1975,6 +2110,7 @@ export default function AdminDashboard() {
         description: course.description || course.desc || '',
         image: course.image || '',
         banner: course.banner || course.image || '',
+        video: course.video || course.videoUrl || course.previewVideoUrl || '',
         highlightBadge: course.highlightBadge || 'በቅርቡ (Coming Soon)',
         enableWaitlist: course.enableWaitlist !== undefined ? Boolean(course.enableWaitlist) : true,
         expectedDate: course.expectedDate || 'በቅርቡ (Coming Soon)',
@@ -1991,6 +2127,7 @@ export default function AdminDashboard() {
         description: '',
         image: '',
         banner: '',
+        video: '',
         highlightBadge: 'በቅርቡ (Coming Soon)',
         enableWaitlist: true,
         expectedDate: 'በቅርቡ (Coming Soon)',
@@ -2023,7 +2160,7 @@ export default function AdminDashboard() {
     reader.readAsDataURL(file);
   };
 
-  // 💾 Handle Save Coming Soon Course (Lightweight & Pre-registration Focused)
+  // 💾 Handle Save Coming Soon Course (Lightweight & Pre-registration Focused with Lifetime Persistence)
   const handleSaveComingSoonCourse = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -2049,6 +2186,7 @@ export default function AdminDashboard() {
 
       const formattedImg = formatDriveLink(comingSoonForm.image) || editingComingSoonCourse?.image || '/assets/hero-bg-new.jpg';
       const formattedBanner = formatDriveLink(comingSoonForm.banner) || formattedImg;
+      const cleanVideo = (comingSoonForm.video || editingComingSoonCourse?.video || editingComingSoonCourse?.videoUrl || editingComingSoonCourse?.previewVideoUrl || '').trim();
 
       const coursePayload = {
         ...comingSoonForm,
@@ -2062,6 +2200,9 @@ export default function AdminDashboard() {
         desc: comingSoonForm.description.trim(),
         image: formattedImg,
         banner: formattedBanner,
+        video: cleanVideo,
+        videoUrl: cleanVideo,
+        previewVideoUrl: cleanVideo,
         highlightBadge: comingSoonForm.highlightBadge,
         enableWaitlist: Boolean(comingSoonForm.enableWaitlist),
         expectedDate: comingSoonForm.expectedDate || 'በቅርቡ (Coming Soon)',
@@ -2077,7 +2218,7 @@ export default function AdminDashboard() {
         updatedAt: new Date().toISOString()
       };
 
-      // 2. Server Admin API Call
+      // 1. Server Admin API Call
       try {
         await fetch('/api/admin/courses', {
           method: 'POST',
@@ -2089,6 +2230,24 @@ export default function AdminDashboard() {
         });
       } catch (apiErr) {
         console.warn('Admin save-course API call warning:', apiErr);
+      }
+
+      // 2. Direct Mirror to site_settings for 100% Lifetime Persistence across Page Refreshes
+      try {
+        const currentCsList = courses.filter(c => c && (c.status === 'coming_soon' || c.isComingSoon));
+        const filtered = currentCsList.filter(c => c.id !== docId && c.slug !== slug);
+        const updatedCS = [coursePayload, ...filtered];
+        await fetch('/api/admin/site-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            settingKey: 'coming_soon_courses',
+            data: updatedCS
+          })
+        });
+        localStorage.setItem('tsehay_coming_soon_cache', JSON.stringify(updatedCS));
+      } catch (mirrorErr) {
+        console.warn('site-settings coming_soon_courses mirror warning:', mirrorErr);
       }
 
       // 3. Optimistic State Update
@@ -2105,6 +2264,8 @@ export default function AdminDashboard() {
         try {
           localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(updated));
           localStorage.setItem('tsehay_courses_cache', JSON.stringify(updated));
+          const csOnly = updated.filter(c => c && (c.status === 'coming_soon' || c.isComingSoon));
+          localStorage.setItem('tsehay_coming_soon_cache', JSON.stringify(csOnly));
         } catch (e) {}
         return updated;
       });
@@ -7703,10 +7864,13 @@ export default function AdminDashboard() {
                   >
                     <option value="Video Editing">Video Editing (ቪዲዮ ኤዲቲንግ)</option>
                     <option value="Digital Marketing">Digital Marketing (ዲጂታል ማርኬቲንግ)</option>
-                    <option value="Brokerage">Brokerage & Real Estate (ደላላነት እና ሪል እስቴት)</option>
-                    <option value="Career">Career & Leadership (ካሪየር እና አመራር)</option>
+                    <option value="Brokerage">Brokerage (ደላላነት)</option>
+                    <option value="Real Estate">Real Estate (ሪል እስቴት)</option>
+                    <option value="Filmmaking">Filmmaking (የፊልም ሥራ)</option>
+                    <option value="YouTube">YouTube (ዩቲዩብ)</option>
+                    <option value="Content Creation">Content Creation (ኮንቴንት ክሬሽን)</option>
                     <option value="E-Commerce">E-Commerce & Import</option>
-                    <option value="YouTube & Content Creation">YouTube & Content Creation</option>
+                    <option value="Career">Career & Leadership (ካሪየር እና አመራር)</option>
                     <option value="Technology & AI">Technology & AI</option>
                   </select>
                 </div>
@@ -7741,6 +7905,31 @@ export default function AdminDashboard() {
                   placeholder="የኮርሱ ዋና ዋና ጠቀሜታዎች፣ የሚያስተምራቸው ክህሎቶች እና ተማሪው ለምን መጠበቅ እንዳለበት የሚገልጽ አጭር ማራኪ ጽሑፍ..." 
                   className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 text-xs leading-relaxed text-dark dark:text-white outline-none focus:border-[#f9b03c] transition resize-y"
                 />
+              </div>
+
+              {/* 3.5 Video Teaser / Preview Link */}
+              <div className="space-y-1 bg-gray-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-gray-100 dark:border-slate-700/60">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-gray-300">
+                    የቪዲዮ / ቅድመ-ዕይታ ሊንክ (Video Teaser / Preview Link)
+                  </label>
+                  <span className="text-[10.5px] font-bold text-[#f9b03c]">አማራጭ (Optional)</span>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <i className="fa-brands fa-youtube text-red-500 text-sm"></i>
+                  </div>
+                  <input 
+                    type="text" 
+                    value={comingSoonForm.video} 
+                    onChange={e => setComingSoonForm({ ...comingSoonForm, video: e.target.value })} 
+                    placeholder="https://www.youtube.com/watch?v=... ወይም Google Drive / MP4 Link" 
+                    className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition" 
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  💡 ተማሪዎች የኮርሱን ማስተዋወቂያ ቪዲዮ (Teaser Trailer) በዋናው ድረ-ገጽ ላይ በቀጥታ እንዲመለከቱ ያስችላቸዋል።
+                </p>
               </div>
 
               {/* 4. Waitlist Lead Form Trigger Toggle */}
@@ -7873,10 +8062,12 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርሱ ዘርፍ (Category) *</label>
                   <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition">
                     <option value="E-Commerce">E-Commerce</option>
-                    <option value="YouTube & Content Creation">YouTube & Content Creation</option>
+                    <option value="YouTube">YouTube</option>
+                    <option value="Content Creation">Content Creation</option>
                     <option value="Marketing">Marketing</option>
                     <option value="Brokerage">Brokerage</option>
-                    <option value="Film Making">Film Making</option>
+                    <option value="Real Estate">Real Estate</option>
+                    <option value="Filmmaking">Filmmaking</option>
                     <option value="Career Development">Career Development</option>
                   </select>
                 </div>

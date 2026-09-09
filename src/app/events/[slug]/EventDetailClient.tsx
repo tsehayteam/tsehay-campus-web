@@ -39,7 +39,7 @@ export default function EventDetailClient() {
 
   // Booking & Payment Modal State
   const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => getCachedUserTickets());
+  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => user?.id ? getCachedUserTickets(user.id) : {});
   const [attendeeName, setAttendeeName] = useState(user?.displayName || '');
   const [attendeeEmail, setAttendeeEmail] = useState(user?.email || '');
   const [attendeePhone, setAttendeePhone] = useState('');
@@ -53,6 +53,44 @@ export default function EventDetailClient() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
+  // 🔒 Strict User-Session Ticket Isolation
+  useEffect(() => {
+    if (!user || !user.id) {
+      setUserBookedTickets({});
+      return;
+    }
+
+    const cached = getCachedUserTickets(user.id);
+    setUserBookedTickets(cached);
+
+    let isMounted = true;
+    const fetchUserTickets = async () => {
+      try {
+        const query = user.email 
+          ? `userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`
+          : `userId=${encodeURIComponent(user.id)}`;
+        const res = await fetch(`/api/events/tickets?${query}`, { cache: 'no-store' });
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data.tickets && Array.isArray(data.tickets)) {
+            const map: Record<string, EventTicket> = {};
+            data.tickets.forEach((t: EventTicket) => {
+              if (t.eventId) map[t.eventId] = t;
+              if (t.eventSlug) map[t.eventSlug] = t;
+              saveCachedUserTicket(t, user.id);
+            });
+            setUserBookedTickets(map);
+          }
+        }
+      } catch (e) {}
+    };
+    fetchUserTickets();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
+
   // Fetch from server API & listen for real-time admin edits and registrations
   useEffect(() => {
     const handleEventsUpdate = (e: any) => {
@@ -62,6 +100,18 @@ export default function EventDetailClient() {
       }
     };
     window.addEventListener('tsehay_events_updated', handleEventsUpdate);
+
+    const handleTicketSaved = (e: any) => {
+      if (e.detail?.ticket && user?.id && (!e.detail.userId || e.detail.userId === user.id)) {
+        const t = e.detail.ticket as EventTicket;
+        setUserBookedTickets(prev => ({
+          ...prev,
+          [t.eventId]: t,
+          ...(t.eventSlug ? { [t.eventSlug]: t } : {})
+        }));
+      }
+    };
+    window.addEventListener('tsehay_user_ticket_saved', handleTicketSaved);
 
     // Cross-Tab BroadcastChannel synchronization
     let bc: BroadcastChannel | null = null;
@@ -221,7 +271,7 @@ export default function EventDetailClient() {
     }
 
     if (ticketObj) {
-      saveCachedUserTicket(ticketObj);
+      saveCachedUserTicket(ticketObj, user?.id);
     }
 
     // 🌟 Instantly update local React state and persistent cache (e.g. 105 -> 104)
@@ -785,11 +835,37 @@ export default function EventDetailClient() {
         initialAttendeeEmail={attendeeEmail}
         initialAttendeePhone={attendeePhone}
         onSuccess={(ticket) => {
-          saveCachedUserTicket(ticket);
-          setUserBookedTickets(prev => ({
-            ...prev,
-            [event.id]: ticket,
-            ...(event.slug ? { [event.slug]: ticket } : {})
+          if (user?.id) {
+            saveCachedUserTicket(ticket, user.id);
+            setUserBookedTickets(prev => ({
+              ...prev,
+              [event.id]: ticket,
+              ...(event.slug ? { [event.slug]: ticket } : {})
+            }));
+          }
+          // Instant Live Count Decrement
+          setEvent(prev => {
+            if (!prev) return prev;
+            const curRemaining = prev.remainingSeats !== undefined 
+              ? prev.remainingSeats 
+              : Math.max(0, (Number(prev.capacity) || 100) - (Number(prev.registeredCount) || 0));
+            const nextRemaining = Math.max(0, curRemaining - 1);
+            const nextRegCount = (Number(prev.registeredCount) || 0) + 1;
+            return {
+              ...prev,
+              remainingSeats: nextRemaining,
+              seatsLeft: nextRemaining,
+              availableTickets: nextRemaining,
+              registeredCount: nextRegCount
+            };
+          });
+          try {
+            const bc = new BroadcastChannel('tsehay_events_sync');
+            bc.postMessage({ type: 'ticket_registered', eventId: event.id, eventSlug: event.slug, ticket });
+            bc.close();
+          } catch (e) {}
+          window.dispatchEvent(new CustomEvent('tsehay_ticket_registered', {
+            detail: { eventId: event.id, eventSlug: event.slug, ticket }
           }));
           setActiveTicket(ticket);
           setIsBookingOpen(false);

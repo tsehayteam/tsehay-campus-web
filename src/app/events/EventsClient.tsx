@@ -29,7 +29,7 @@ export default function EventsClient() {
   const [filter, setFilter] = useState<'all' | 'free' | 'paid' | 'online' | 'in-person'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => getCachedUserTickets());
+  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => user?.id ? getCachedUserTickets(user.id) : {});
   const [selectedEvent, setSelectedEvent] = useState<TsehayEvent | null>(null);
   const [previewVideoEvent, setPreviewVideoEvent] = useState<TsehayEvent | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -37,6 +37,44 @@ export default function EventsClient() {
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // 🔒 Strict User-Session Ticket Isolation
+  useEffect(() => {
+    if (!user || !user.id) {
+      setUserBookedTickets({});
+      return;
+    }
+
+    const cached = getCachedUserTickets(user.id);
+    setUserBookedTickets(cached);
+
+    let isMounted = true;
+    const fetchUserTickets = async () => {
+      try {
+        const query = user.email 
+          ? `userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`
+          : `userId=${encodeURIComponent(user.id)}`;
+        const res = await fetch(`/api/events/tickets?${query}`, { cache: 'no-store' });
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data.tickets && Array.isArray(data.tickets)) {
+            const map: Record<string, EventTicket> = {};
+            data.tickets.forEach((t: EventTicket) => {
+              if (t.eventId) map[t.eventId] = t;
+              if (t.eventSlug) map[t.eventSlug] = t;
+              saveCachedUserTicket(t, user.id);
+            });
+            setUserBookedTickets(map);
+          }
+        }
+      } catch (e) {}
+    };
+    fetchUserTickets();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
 
   // Auto-duck background music when trailer video is opened
   useEffect(() => {
@@ -56,6 +94,18 @@ export default function EventsClient() {
       }
     };
     window.addEventListener('tsehay_events_updated', handleCustomEventsUpdate);
+
+    const handleTicketSaved = (e: any) => {
+      if (e.detail?.ticket && user?.id && (!e.detail.userId || e.detail.userId === user.id)) {
+        const t = e.detail.ticket as EventTicket;
+        setUserBookedTickets(prev => ({
+          ...prev,
+          [t.eventId]: t,
+          ...(t.eventSlug ? { [t.eventSlug]: t } : {})
+        }));
+      }
+    };
+    window.addEventListener('tsehay_user_ticket_saved', handleTicketSaved);
 
     let bc: BroadcastChannel | null = null;
     try {

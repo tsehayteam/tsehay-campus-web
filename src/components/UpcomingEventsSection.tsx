@@ -51,11 +51,49 @@ export default function UpcomingEventsSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  // 🌟 User Booked Tickets Map: eventId/slug -> EventTicket
-  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => getCachedUserTickets());
+  // 🌟 User Booked Tickets Map: eventId/slug -> EventTicket (Strictly User-Scoped)
+  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => user?.id ? getCachedUserTickets(user.id) : {});
 
   // 🌟 Live Real-time Events Listener (Firestore + Local Broadcast + API)
   const [registrationsCountByEvent, setRegistrationsCountByEvent] = useState<Record<string, number>>({});
+
+  // 🔒 Strict User-Session Ticket Isolation
+  useEffect(() => {
+    if (!user || !user.id) {
+      setUserBookedTickets({});
+      return;
+    }
+
+    const cached = getCachedUserTickets(user.id);
+    setUserBookedTickets(cached);
+
+    let isMounted = true;
+    const fetchUserTickets = async () => {
+      try {
+        const query = user.email 
+          ? `userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`
+          : `userId=${encodeURIComponent(user.id)}`;
+        const res = await fetch(`/api/events/tickets?${query}`, { cache: 'no-store' });
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data.tickets && Array.isArray(data.tickets)) {
+            const map: Record<string, EventTicket> = {};
+            data.tickets.forEach((t: EventTicket) => {
+              if (t.eventId) map[t.eventId] = t;
+              if (t.eventSlug) map[t.eventSlug] = t;
+              saveCachedUserTicket(t, user.id);
+            });
+            setUserBookedTickets(map);
+          }
+        }
+      } catch (e) {}
+    };
+    fetchUserTickets();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
 
   useEffect(() => {
     const handleEventsUpdate = (e: any) => {
@@ -104,7 +142,7 @@ export default function UpcomingEventsSection() {
     } catch (e) {}
 
     const handleTicketSaved = (e: any) => {
-      if (e.detail?.ticket) {
+      if (e.detail?.ticket && user?.id && (!e.detail.userId || e.detail.userId === user.id)) {
         const t = e.detail.ticket as EventTicket;
         setUserBookedTickets(prev => ({
           ...prev,
@@ -748,14 +786,34 @@ export default function UpcomingEventsSection() {
         initialAttendeeEmail={attendeeEmail}
         initialAttendeePhone={attendeePhone}
         onSuccess={(ticket) => {
-          saveCachedUserTicket(ticket);
-          if (selectedEvent) {
-            setUserBookedTickets(prev => ({
+          if (user?.id) {
+            saveCachedUserTicket(ticket, user.id);
+            if (selectedEvent) {
+              setUserBookedTickets(prev => ({
+                ...prev,
+                [selectedEvent.id]: ticket,
+                ...(selectedEvent.slug ? { [selectedEvent.slug]: ticket } : {})
+              }));
+            }
+          }
+          // Instant Live Count Decrement
+          const eId = selectedEvent?.id || ticket.eventId;
+          const eSlug = selectedEvent?.slug || ticket.eventSlug;
+          if (eId) {
+            setRegistrationsCountByEvent(prev => ({
               ...prev,
-              [selectedEvent.id]: ticket,
-              ...(selectedEvent.slug ? { [selectedEvent.slug]: ticket } : {})
+              [eId]: (prev[eId] || 0) + 1,
+              ...(eSlug ? { [eSlug]: (prev[eSlug] || 0) + 1 } : {})
             }));
           }
+          try {
+            const bc = new BroadcastChannel('tsehay_events_sync');
+            bc.postMessage({ type: 'ticket_registered', eventId: eId, eventSlug: eSlug, ticket });
+            bc.close();
+          } catch (e) {}
+          window.dispatchEvent(new CustomEvent('tsehay_ticket_registered', {
+            detail: { eventId: eId, eventSlug: eSlug, ticket }
+          }));
           setActiveTicket(ticket);
           setIsBookingOpen(false);
           setIsTicketModalOpen(true);

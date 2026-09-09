@@ -27,6 +27,7 @@ const YouTubeVideoSlider = dynamic(() => import('@/components/YouTubeVideoSlider
 const InstructorYouTubePortfolio = dynamic(() => import('@/components/InstructorYouTubePortfolio'), { ssr: false });
 const CoursePreviewModal = dynamic(() => import('@/components/CoursePreviewModal'), { ssr: false });
 const WaitlistModal = dynamic(() => import('@/components/WaitlistModal'), { ssr: false });
+const CinematicVideoModal = dynamic(() => import('@/components/CinematicVideoModal'), { ssr: false });
 import { 
   getCachedCourses, 
   saveCachedCourses, 
@@ -192,6 +193,7 @@ export default function HomeClient({
   const [previewModalCourse, setPreviewModalCourse] = useState<any>(null);
   const [selectedWaitlistCourse, setSelectedWaitlistCourse] = useState<ComingSoonCourse | null>(null);
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
+  const [activeTeaserVideo, setActiveTeaserVideo] = useState<{ url: string; title: string; poster?: string } | null>(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
   const [authCourseTarget, setAuthCourseTarget] = useState<any>(null);
@@ -1034,18 +1036,37 @@ export default function HomeClient({
                             </div>
                             <div className="flex items-center gap-2">
                               {isComingSoon ? (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedWaitlistCourse(course);
-                                    setIsWaitlistModalOpen(true);
-                                  }}
-                                  className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:shadow-[0_0_30px_rgba(249,176,60,0.6)] transition-all cursor-pointer active:scale-95 group"
-                                >
-                                  <i className="fa-solid fa-bell text-xs group-hover:rotate-12 transition-transform"></i>
-                                  <span>ተጠባባቂ ዝርዝር ውስጥ ግባ</span>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  {(course.video || course.videoUrl || course.previewVideoUrl) && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveTeaserVideo({
+                                          url: course.video || course.videoUrl || course.previewVideoUrl,
+                                          title: course.title,
+                                          poster: getCleanCourseImage(course)
+                                        });
+                                      }}
+                                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-400/30 flex items-center justify-center cursor-pointer shadow-sm active:scale-95 transition"
+                                      title="የቪዲዮ ቅድመ-ዕይታ ይመልከቱ (Watch Teaser Video)"
+                                    >
+                                      <i className="fa-solid fa-play text-red-500 text-xs"></i>
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedWaitlistCourse(course);
+                                      setIsWaitlistModalOpen(true);
+                                    }}
+                                    className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:shadow-[0_0_30px_rgba(249,176,60,0.6)] transition-all cursor-pointer active:scale-95 group"
+                                  >
+                                    <i className="fa-solid fa-bell text-xs group-hover:rotate-12 transition-transform"></i>
+                                    <span>ተጠባባቂ ዝርዝር ውስጥ ግባ</span>
+                                  </button>
+                                </div>
                               ) : (
                                 <>
                                   <button
@@ -1250,6 +1271,17 @@ export default function HomeClient({
         }}
         course={selectedWaitlistCourse}
       />
+
+      {/* Cinematic Teaser Video Modal */}
+      {activeTeaserVideo && (
+        <CinematicVideoModal
+          isOpen={Boolean(activeTeaserVideo)}
+          onClose={() => setActiveTeaserVideo(null)}
+          videoUrl={activeTeaserVideo.url}
+          title={activeTeaserVideo.title}
+          poster={activeTeaserVideo.poster}
+        />
+      )}
 
     </main>
   );
