@@ -151,15 +151,23 @@ export async function GET(req: NextRequest) {
     });
 
     persistentComingSoon.forEach(cs => {
-      const key = cs.id || cs.slug;
-      if (key && !deletedCourses.includes(cs.id) && !deletedCourses.includes(cs.slug)) {
-        courseMap.set(key, sanitizeCourseImages({
-          ...(courseMap.get(key) || {}),
-          ...cs,
-          status: 'coming_soon',
-          isComingSoon: true
-        }));
+      if (!cs || deletedCourses.includes(cs.id) || deletedCourses.includes(cs.slug)) return;
+      const primaryKey = cs.id || cs.slug;
+      let targetKey = primaryKey;
+      if (!courseMap.has(primaryKey)) {
+        for (const [k, v] of courseMap.entries()) {
+          if (v.id === cs.id || (cs.slug && v.slug === cs.slug)) {
+            targetKey = k;
+            break;
+          }
+        }
       }
+      courseMap.set(targetKey, sanitizeCourseImages({
+        ...(courseMap.get(targetKey) || {}),
+        ...cs,
+        status: 'coming_soon',
+        isComingSoon: true
+      }));
     });
 
     const allMergedCourses = Array.from(courseMap.values());

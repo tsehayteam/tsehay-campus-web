@@ -869,7 +869,17 @@ export function getComingSoonCourses(liveCourses?: any[]): ComingSoonCourse[] {
   const map = new Map<string, ComingSoonCourse>();
   COMING_SOON_COURSES.forEach(c => map.set(c.id, { ...c }));
 
+  let deletedList: string[] = [];
+
   if (typeof window !== 'undefined') {
+    try {
+      const delStr = localStorage.getItem('tsehay_deleted_courses');
+      if (delStr) {
+        const parsed = JSON.parse(delStr);
+        if (Array.isArray(parsed)) deletedList = parsed;
+      }
+    } catch (e) {}
+
     try {
       let dynamicCS: any[] = [];
       const specificCSCache = localStorage.getItem('tsehay_coming_soon_cache');
@@ -891,18 +901,29 @@ export function getComingSoonCourses(liveCourses?: any[]): ComingSoonCourse[] {
         dynamicCS.forEach(c => {
           if (!c) return;
           const id = c.id || c.slug;
-          if (c.status === 'Deleted' || c.isDeleted) {
+          if (c.status === 'Deleted' || c.isDeleted || deletedList.includes(c.id) || deletedList.includes(c.slug)) {
             map.delete(id);
+            if (c.id) map.delete(c.id);
+            if (c.slug) map.delete(c.slug);
             return;
           }
-          const existing = map.get(id) || {} as any;
+          let targetKey = id;
+          if (!map.has(targetKey)) {
+            for (const [k, v] of map.entries()) {
+              if (v.id === c.id || (c.slug && v.slug === c.slug)) {
+                targetKey = k;
+                break;
+              }
+            }
+          }
+          const existing = map.get(targetKey) || {} as any;
           const cleanImg = formatDriveImageUrl(c.image || existing.image) || c.image || existing.image;
           const cleanBanner = formatDriveImageUrl(c.banner || c.image || existing.banner) || c.banner || c.image || existing.banner;
           const videoUrl = c.video || c.videoUrl || c.previewVideoUrl || existing.video || '';
-          map.set(id, { 
+          map.set(targetKey, { 
             ...existing, 
             ...c,
-            id,
+            id: c.id || existing.id || targetKey,
             image: cleanImg,
             banner: cleanBanner,
             video: videoUrl,
@@ -922,18 +943,29 @@ export function getComingSoonCourses(liveCourses?: any[]): ComingSoonCourse[] {
     liveCS.forEach(c => {
       if (!c) return;
       const id = c.id || c.slug;
-      if (c.status === 'Deleted' || c.isDeleted) {
+      if (c.status === 'Deleted' || c.isDeleted || deletedList.includes(c.id) || deletedList.includes(c.slug)) {
         map.delete(id);
+        if (c.id) map.delete(c.id);
+        if (c.slug) map.delete(c.slug);
         return;
       }
-      const existing = map.get(id) || {} as any;
+      let targetKey = id;
+      if (!map.has(targetKey)) {
+        for (const [k, v] of map.entries()) {
+          if (v.id === c.id || (c.slug && v.slug === c.slug)) {
+            targetKey = k;
+            break;
+          }
+        }
+      }
+      const existing = map.get(targetKey) || {} as any;
       const cleanImg = formatDriveImageUrl(c.image || existing.image) || c.image || existing.image;
       const cleanBanner = formatDriveImageUrl(c.banner || c.image || existing.banner) || c.banner || c.image || existing.banner;
       const videoUrl = c.video || c.videoUrl || c.previewVideoUrl || existing.video || '';
-      map.set(id, {
+      map.set(targetKey, {
         ...existing,
         ...c,
-        id,
+        id: c.id || existing.id || targetKey,
         image: cleanImg,
         banner: cleanBanner,
         video: videoUrl,
@@ -945,6 +977,18 @@ export function getComingSoonCourses(liveCourses?: any[]): ComingSoonCourse[] {
     });
   }
 
-  return Array.from(map.values());
+  // Final purge of any deleted courses
+  if (deletedList.length > 0) {
+    deletedList.forEach(delId => {
+      map.delete(delId);
+      for (const [k, v] of map.entries()) {
+        if (v.id === delId || v.slug === delId) {
+          map.delete(k);
+        }
+      }
+    });
+  }
+
+  return Array.from(map.values()).filter(c => c && c.status !== 'Deleted' && !c.isDeleted);
 }
 

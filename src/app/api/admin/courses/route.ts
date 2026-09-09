@@ -109,8 +109,10 @@ export async function GET(req: NextRequest) {
             ...item,
             ...(item.raw_data || {})
           });
-          courseMap.set(item.id, sanitized);
-          if (item.slug) courseMap.set(item.slug, sanitized);
+          const key = item.id || item.slug;
+          if (key) {
+            courseMap.set(key, sanitized);
+          }
         });
     }
 
@@ -125,15 +127,26 @@ export async function GET(req: NextRequest) {
       if (Array.isArray(csSettings?.data) && csSettings.data.length > 0) {
         csSettings.data.forEach((cs: any) => {
           if (cs && (cs.id || cs.slug) && !deletedCourses.includes(cs.id) && !deletedCourses.includes(cs.slug)) {
-            const key = cs.id || cs.slug;
-            const existing = courseMap.get(key) || {};
+            const primaryId = cs.id || cs.slug;
+            // Find existing course key if mapped by either id or slug
+            let targetKey = primaryId;
+            if (!courseMap.has(primaryId)) {
+              for (const [k, v] of courseMap.entries()) {
+                if (v.id === cs.id || (cs.slug && v.slug === cs.slug)) {
+                  targetKey = k;
+                  break;
+                }
+              }
+            }
+            const existing = courseMap.get(targetKey) || {};
             const sanitized = sanitizeCourseImages({
               ...existing,
               ...cs,
+              id: cs.id || existing.id || primaryId,
               isComingSoon: true,
               status: 'coming_soon'
             });
-            courseMap.set(key, sanitized);
+            courseMap.set(targetKey, sanitized);
           }
         });
       }
@@ -141,7 +154,7 @@ export async function GET(req: NextRequest) {
       console.warn('site_settings coming_soon_courses fetch warning:', csErr);
     }
 
-    let activeCourses = Array.from(new Set(courseMap.values()));
+    let activeCourses = Array.from(courseMap.values());
 
     // If Supabase table is completely empty and no courses were deleted by user, seed default courses
     if (activeCourses.length === 0 && (!sbCourses || sbCourses.length === 0) && deletedCourses.length === 0) {
@@ -262,12 +275,8 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString()
     });
 
-    if (sbErr) {
-      console.error('Supabase save course error:', sbErr);
-      return NextResponse.json({ success: false, error: 'Database save failed: ' + sbErr.message }, { status: 500, headers: NO_CACHE_HEADERS });
-    }
-
     // 🌟 If Coming Soon: Mirror to site_settings (key: 'coming_soon_courses') for 100% Lifetime Persistence
+    let siteSettingsSaved = false;
     if (isComingSoon) {
       try {
         const { data: currentCS } = await supabaseServer
@@ -280,11 +289,16 @@ export async function POST(req: NextRequest) {
         const filtered = csList.filter(c => c && c.id !== courseId && c.slug !== slug);
         const updatedCS = [payload, ...filtered];
 
-        await supabaseServer.from('site_settings').upsert({
+        const { error: csSaveErr } = await supabaseServer.from('site_settings').upsert({
           key: 'coming_soon_courses',
           data: updatedCS,
           updated_at: new Date().toISOString()
         });
+        if (!csSaveErr) {
+          siteSettingsSaved = true;
+        } else {
+          console.warn('Mirror coming soon courses to site_settings warning:', csSaveErr);
+        }
       } catch (csSaveErr) {
         console.warn('Mirror coming soon courses to site_settings warning:', csSaveErr);
       }
@@ -306,6 +320,11 @@ export async function POST(req: NextRequest) {
           });
         }
       } catch (e) {}
+    }
+
+    if (sbErr && !siteSettingsSaved) {
+      console.error('Supabase save course error:', sbErr);
+      return NextResponse.json({ success: false, error: 'Database save failed: ' + sbErr.message }, { status: 500, headers: NO_CACHE_HEADERS });
     }
 
     return NextResponse.json({ 
