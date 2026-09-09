@@ -167,6 +167,7 @@ const translations: Record<string, Record<Language, string>> = {
   'certificates': { am: 'ሰርተፍኬቶች', en: 'Certificates' },
   'settings': { am: 'ማስተካከያዎች', en: 'Settings' },
   'pro_member': { am: 'ፕሮ አባል', en: 'Pro Member' },
+  'free_member': { am: 'ነፃ አባል', en: 'Free Member' },
   'normal_student': { am: 'መደበኛ ተማሪ', en: 'Normal Student' },
 
   // Dashboard Header

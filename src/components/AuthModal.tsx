@@ -174,7 +174,11 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
               window.dispatchEvent(new CustomEvent('open-payment-modal', { detail: { course: courseObj } }));
             }, 250);
           } else if (pending.type === 'enroll_free') {
-            window.dispatchEvent(new CustomEvent('tsehay_enroll_free_course', { detail: pending }));
+            sessionStorage.removeItem('tsehay_pending_course_action');
+            sessionStorage.removeItem('tsehay_pending_action');
+            const targetCourseId = pending.courseId || pending.course?.id || 'digital_marketing_free';
+            window.location.href = `/dashboard?view=classroom&courseId=${encodeURIComponent(targetCourseId)}&lesson=0`;
+            return;
           } else if (pending.type === 'book_mentorship') {
             window.dispatchEvent(new CustomEvent('open-mentorship-payment', { detail: pending }));
           } else if (pending.type === 'buy_event_ticket' || pending.type === 'event_reg') {
@@ -331,7 +335,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       const { error: oAuthErr } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined
         }
       });
       if (oAuthErr) throw oAuthErr;

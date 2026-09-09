@@ -37,13 +37,12 @@ export default function TwoStageEventBookingModal({
   const [step1Error, setStep1Error] = useState<string | null>(null);
 
   // Step 2: Payment & Discount Form
-  const [paymethod, setPaymethod] = useState<'lakipay' | 'cbe' | 'paypal'>('lakipay');
+  const [paymethod, setPaymethod] = useState<'lakipay' | 'paypal' | 'nowpayments'>('lakipay');
   const [referralInput, setReferralInput] = useState('');
   const [appliedCode, setAppliedCode] = useState<string | null>(null);
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [promoMessage, setPromoMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
-  const [cbeCopied, setCbeCopied] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
@@ -53,7 +52,6 @@ export default function TwoStageEventBookingModal({
       setStep(1);
       setStep1Error(null);
       setGeneralError(null);
-      setCbeCopied(false);
       setAttendeeName(
         initialAttendeeName || 
         user?.displayName || 
@@ -162,15 +160,6 @@ export default function TwoStageEventBookingModal({
     setPromoMessage(null);
   };
 
-  // Copy CBE Account
-  const handleCopyCbe = () => {
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText('1000456789012');
-      setCbeCopied(true);
-      setTimeout(() => setCbeCopied(false), 2500);
-    }
-  };
-
   // Execute Ticket Registration & Issuance
   const executeRegistration = async (pricePaid: number, method: string) => {
     setIsProcessing(true);
@@ -178,55 +167,59 @@ export default function TwoStageEventBookingModal({
     setStep1Error(null);
 
     try {
-      const trimmedName = attendeeName.trim();
-      const trimmedEmail = attendeeEmail.trim().toLowerCase();
-      const trimmedPhone = attendeePhone.trim();
-
-      const res = await fetch('/api/events/register', {
+      const res = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           eventId: event.id,
-          eventSlug: event.slug || event.id,
+          eventSlug: event.slug,
           eventTitle: event.title,
           eventDate: event.date,
           eventTime: event.time,
           eventLocation: event.location,
-          isOnline: Boolean(event.isOnline),
-          meetingLink: event.meetingLink || '',
-          mapsUrl: event.mapsUrl || '',
-          name: trimmedName,
-          email: trimmedEmail,
-          phone: trimmedPhone,
-          attendeeName: trimmedName,
-          attendeeEmail: trimmedEmail,
-          attendeePhone: trimmedPhone,
-          eventImage: event.image || '',
-          image: event.image || '',
-          userId: user?.uid || `guest_${Date.now()}`,
-          pricePaid,
+          isOnline: event.isOnline,
+          meetingLink: event.meetingLink,
+          mapsUrl: event.mapsUrl,
+          eventImage: event.image,
+          attendeeName: attendeeName.trim(),
+          attendeeEmail: attendeeEmail.trim().toLowerCase(),
+          attendeePhone: attendeePhone.trim(),
+          amount: pricePaid,
           paymentMethod: method,
           referralCode: appliedCode || null,
           tier: pricePaid > 1200 ? 'VIP Pass' : 'General Admission'
         })
       });
 
-      const data = await res.json().catch(() => null);
-
-      if (data && data.success && data.ticket) {
-        if (appliedCode) {
-          recordReferralUsage(appliedCode).catch(() => {});
-        }
-        const unifiedTicket = {
-          ...data.ticket,
-          eventImage: data.ticket.eventImage || event.image || '',
-          image: data.ticket.image || event.image || ''
-        };
-        onSuccess(unifiedTicket);
-        onClose();
-      } else if (data && data.alreadyRegistered && data.ticket) {
-        const unifiedTicket = {
-          ...data.ticket,
+      const data = await res.json();
+      if (res.ok && data.success && data.ticket) {
+        const ticketCode = data.ticket.ticketCode || data.ticket.ticket_code || data.ticket.ticketId || `TKT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        const unifiedTicket: EventTicket = {
+          ticketId: data.ticket.ticketId || data.ticket.id || ticketCode,
+          id: data.ticket.id || `TKT-${Date.now()}`,
+          ticketCode: ticketCode,
+          userId: data.ticket.userId || user?.uid || `guest_${Date.now()}`,
+          pricePaid: Number(data.ticket.pricePaid ?? data.ticket.amount ?? pricePaid) || 0,
+          isUsed: Boolean(data.ticket.isUsed ?? false),
+          issuedAt: data.ticket.issuedAt || data.ticket.createdAt || new Date().toISOString(),
+          eventId: data.ticket.eventId || event.id,
+          eventTitle: data.ticket.eventTitle || event.title,
+          eventDate: data.ticket.eventDate || event.date,
+          eventTime: data.ticket.eventTime || event.time,
+          eventLocation: data.ticket.eventLocation || event.location,
+          isOnline: data.ticket.isOnline ?? event.isOnline,
+          meetingLink: data.ticket.meetingLink || event.meetingLink,
+          mapsUrl: data.ticket.mapsUrl || event.mapsUrl,
+          attendeeName: data.ticket.attendeeName || attendeeName.trim(),
+          attendeeEmail: data.ticket.attendeeEmail || attendeeEmail.trim().toLowerCase(),
+          attendeePhone: data.ticket.attendeePhone || attendeePhone.trim(),
+          amount: data.ticket.amount ?? pricePaid,
+          currency: 'ETB',
+          paymentMethod: data.ticket.paymentMethod || method,
+          status: 'confirmed',
+          createdAt: data.ticket.createdAt || new Date().toISOString(),
+          tier: data.ticket.tier || (pricePaid > 1200 ? 'VIP Pass' : 'General Admission'),
+          qrCodeData: data.ticket.qrCodeData || `${ticketCode}|${event.id}`,
           eventImage: data.ticket.eventImage || event.image || '',
           image: data.ticket.image || event.image || ''
         };
@@ -247,14 +240,14 @@ export default function TwoStageEventBookingModal({
   };
 
   const handleCompletePayment = async () => {
-    // 🌟 If Paid Event with LakiPay, initiate dynamic hosted checkout session
-    if (finalPrice > 0 && paymethod === 'lakipay') {
+    const trimmedName = attendeeName.trim() || user?.displayName || 'Student';
+    const trimmedEmail = attendeeEmail.trim().toLowerCase() || user?.email || '';
+    const trimmedPhone = attendeePhone.trim();
+
+    // 🌟 If Paid Event, initiate dynamic hosted checkout session for chosen gateway
+    if (finalPrice > 0) {
       setIsProcessing(true);
       setGeneralError(null);
-
-      const trimmedName = attendeeName.trim() || user?.displayName || 'Student';
-      const trimmedEmail = attendeeEmail.trim().toLowerCase() || user?.email || '';
-      const trimmedPhone = attendeePhone.trim();
 
       try {
         const checkoutRes = await fetch('/api/initiate-payment', {
@@ -272,7 +265,7 @@ export default function TwoStageEventBookingModal({
             phone: trimmedPhone,
             phone_number: trimmedPhone,
             phoneNumber: trimmedPhone,
-            paymethod: 'lakipay',
+            paymethod: paymethod,
             isEventTicket: true,
             eventId: event.id,
             eventSlug: event.slug,
@@ -294,28 +287,21 @@ export default function TwoStageEventBookingModal({
         const checkoutData = await checkoutRes.json().catch(() => null);
         const redirectUrl = checkoutData?.paymentUrl || checkoutData?.payment_url || checkoutData?.checkoutUrl || checkoutData?.checkout_url;
 
-        const fallbackUrl = `https://checkout.lakipay.co/pay/EVT-${Date.now().toString(36).toUpperCase()}?amount=${finalPrice}&title=${encodeURIComponent(`ትኬት - ${event.title}`)}&email=${encodeURIComponent(trimmedEmail)}&return_url=${encodeURIComponent(window.location.origin + '/events?success=true&ticket=confirmed')}`;
-
-        if (redirectUrl) {
+        if (redirectUrl && typeof redirectUrl === 'string' && redirectUrl.startsWith('http')) {
           if (appliedCode) {
             recordReferralUsage(appliedCode).catch(() => {});
           }
           window.location.href = redirectUrl;
           return;
         } else {
-          if (appliedCode) {
-            recordReferralUsage(appliedCode).catch(() => {});
-          }
-          window.location.href = fallbackUrl;
+          setGeneralError(checkoutData?.error || checkoutData?.message || 'የክፍያ ሂደቱን ማስጀመር አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።');
+          setIsProcessing(false);
           return;
         }
       } catch (err: any) {
-        console.warn("Event payment initiation fallback redirect:", err);
-        const fallbackUrl = `https://checkout.lakipay.co/pay/EVT-${Date.now().toString(36).toUpperCase()}?amount=${finalPrice}&title=${encodeURIComponent(`ትኬት - ${event.title}`)}&email=${encodeURIComponent(trimmedEmail)}&return_url=${encodeURIComponent(window.location.origin + '/events?success=true&ticket=confirmed')}`;
-        if (appliedCode) {
-          recordReferralUsage(appliedCode).catch(() => {});
-        }
-        window.location.href = fallbackUrl;
+        console.warn("Event payment initiation error:", err);
+        setGeneralError('የኔትዎርክ ችግር አጋጥሟል። እባክዎ በድጋሚ ይሞክሩ።');
+        setIsProcessing(false);
         return;
       }
     }
@@ -641,67 +627,7 @@ export default function TwoStageEventBookingModal({
                       </div>
                     </label>
 
-                    {/* Option 2: CBE Direct Transfer (ንግድ ባንክ) */}
-                    <label
-                      className={`payment-option flex flex-col p-3 sm:p-3.5 rounded-2xl border cursor-pointer transition-all duration-200 ${
-                        paymethod === 'cbe'
-                          ? 'border-[#f9b03c] bg-amber-500/10 shadow-[0_0_20px_rgba(249,176,60,0.2)] ring-2 ring-amber-500/40'
-                          : 'border-gray-800/90 bg-[#121a2d] hover:bg-[#16233d]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 min-w-0 pr-2">
-                          <input
-                            type="radio"
-                            name="ticket-paymethod"
-                            value="cbe"
-                            checked={paymethod === 'cbe'}
-                            onChange={() => setPaymethod('cbe')}
-                            className="w-4 h-4 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0"
-                          />
-                          <div>
-                            <span className="font-black text-white text-sm sm:text-base block leading-tight">የኢትዮጵያ ንግድ ባንክ (CBE Transfer)</span>
-                            <span className="text-[11px] text-[#a0aec0] font-medium block mt-0.5">ቀጥታ የባንክ ሂሳብ ዝውውር (Direct Deposit)</span>
-                          </div>
-                        </div>
-                        <div className="w-8 h-8 rounded-lg bg-purple-900/40 text-purple-300 flex items-center justify-center font-bold text-xs shrink-0 border border-purple-500/30">
-                          CBE
-                        </div>
-                      </div>
-
-                      {/* CBE Account Details Dropdown */}
-                      {paymethod === 'cbe' && (
-                        <div className="mt-3 pt-3 border-t border-white/10 space-y-2 text-xs">
-                          <div className="flex items-center justify-between p-2 rounded-xl bg-black/50 border border-white/10">
-                            <div>
-                              <span className="text-[10px] text-slate-400 block uppercase">CBE የሂሳብ ቁጥር (Account Number)</span>
-                              <span className="font-mono font-black text-white text-sm tracking-wider">1000456789012</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCopyCbe();
-                              }}
-                              className="px-3 py-1.5 rounded-lg bg-[#f9b03c] hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-sm active:scale-95"
-                            >
-                              <i className={`fa-solid ${cbeCopied ? 'fa-check' : 'fa-copy'}`}></i>
-                              <span>{cbeCopied ? 'ተቀድቷል!' : 'ኮፒ'}</span>
-                            </button>
-                          </div>
-                          <div className="flex items-center justify-between text-[11px] text-slate-300 px-1">
-                            <span>የመለያ ስም (Account Holder):</span>
-                            <span className="font-bold text-white">ኢዮብ ሳህሌ (Eyoub Sahle)</span>
-                          </div>
-                          <div className="flex items-center justify-between text-[11px] text-slate-300 px-1">
-                            <span>አዋሽ ባንክ (Awash Bank):</span>
-                            <span className="font-mono font-bold text-white">01320876543210</span>
-                          </div>
-                        </div>
-                      )}
-                    </label>
-
-                    {/* Option 3: PayPal / International */}
+                    {/* Option 2: PayPal */}
                     <label
                       className={`payment-option flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border cursor-pointer transition-all duration-200 ${
                         paymethod === 'paypal'
@@ -718,13 +644,40 @@ export default function TwoStageEventBookingModal({
                           onChange={() => setPaymethod('paypal')}
                           className="w-4 h-4 text-blue-500 focus:ring-blue-500 accent-blue-500 cursor-pointer shrink-0"
                         />
-                        <div>
-                          <span className="font-black text-white text-sm sm:text-base block leading-tight">PayPal / International Cards</span>
-                          <span className="text-[11px] text-blue-400 font-bold block mt-0.5">ዓለም አቀፍ ክፍያ (USD / Master / Visa)</span>
+                        <div className="min-w-0">
+                          <span className="font-black text-white text-sm sm:text-base block leading-tight">PayPal</span>
+                          <span className="text-[11px] text-blue-400 font-bold block mt-0.5">For International Payments</span>
                         </div>
                       </div>
                       <div className="bg-white w-20 sm:w-24 h-8 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
                         <img src="/paypal-logo.svg" alt="PayPal" className="h-4 sm:h-5 w-auto max-w-full object-contain" />
+                      </div>
+                    </label>
+
+                    {/* Option 3: NOWPayments */}
+                    <label
+                      className={`payment-option flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border cursor-pointer transition-all duration-200 ${
+                        paymethod === 'nowpayments'
+                          ? 'border-cyan-500 bg-cyan-500/10 shadow-[0_0_20px_rgba(6,182,212,0.2)] ring-2 ring-cyan-500/40'
+                          : 'border-gray-800/90 bg-[#121a2d] hover:bg-[#16233d]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <input
+                          type="radio"
+                          name="ticket-paymethod"
+                          value="nowpayments"
+                          checked={paymethod === 'nowpayments'}
+                          onChange={() => setPaymethod('nowpayments')}
+                          className="w-4 h-4 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <span className="font-black text-white text-sm sm:text-base block leading-tight">NOWPayments</span>
+                          <span className="text-[11px] text-cyan-400 font-bold block mt-0.5">For Crypto Payments</span>
+                        </div>
+                      </div>
+                      <div className="bg-white w-20 sm:w-24 h-8 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
+                        <img src="/nowpayments-logo.svg" alt="NOWPayments" className="h-4 sm:h-5 w-auto max-w-full object-contain" />
                       </div>
                     </label>
                   </div>

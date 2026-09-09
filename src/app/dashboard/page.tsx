@@ -143,6 +143,16 @@ function StudentDashboardContent() {
       return {};
     }
   });
+  const [hasPaidEnrollment, setHasPaidEnrollment] = useState<boolean>(false);
+  const [loadingSafetyBypass, setLoadingSafetyBypass] = useState<boolean>(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingSafetyBypass(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [courses, setCourses] = useState<any[]>(() => {
     if (typeof window === 'undefined') return DEFAULT_COURSES;
     try {
@@ -163,28 +173,67 @@ function StudentDashboardContent() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   const [activeCourse, setActiveCourse] = useState<any>(() => {
-    if (typeof window === 'undefined') return DEFAULT_COURSES[0];
     try {
-      const cachedCourse = localStorage.getItem('tsehay_user_active_course');
-      if (cachedCourse) {
-        const parsed = JSON.parse(cachedCourse);
-        if (parsed && parsed.id) return parsed;
+      if (typeof window !== 'undefined') {
+        const sp = new URLSearchParams(window.location.search);
+        const qCourse = sp.get('courseId') || sp.get('course');
+        if (qCourse) {
+          const allCached = getCachedCourses();
+          const match = allCached.find(c => c.id === qCourse || c.slug === qCourse) || DEFAULT_COURSES.find(c => c.id === qCourse || c.slug === qCourse);
+          if (match) return match;
+        }
+        const cachedCourse = localStorage.getItem('tsehay_user_active_course');
+        if (cachedCourse) {
+          const parsed = JSON.parse(cachedCourse);
+          if (parsed && parsed.id) return parsed;
+        }
+        const allCached = getCachedCourses();
+        if (allCached.length > 0) return allCached[0];
       }
-      const allCached = getCachedCourses();
-      return allCached[0] || DEFAULT_COURSES[0];
+      return DEFAULT_COURSES[0];
     } catch (e) { return DEFAULT_COURSES[0]; }
   });
   const [activeLesson, setActiveLesson] = useState<any>(() => {
-    if (typeof window === 'undefined') return DEFAULT_COURSES[0]?.lessons?.[0] || null;
     try {
-      const cachedLesson = localStorage.getItem('tsehay_user_active_lesson');
-      if (cachedLesson) {
-        const parsed = JSON.parse(cachedLesson);
-        if (parsed && parsed.title) return parsed;
+      if (typeof window !== 'undefined') {
+        const sp = new URLSearchParams(window.location.search);
+        const qCourse = sp.get('courseId') || sp.get('course');
+        const qLesson = sp.get('lesson');
+        let matchedCourse = null;
+        if (qCourse) {
+          const allCached = getCachedCourses();
+          matchedCourse = allCached.find(c => c.id === qCourse || c.slug === qCourse) || DEFAULT_COURSES.find(c => c.id === qCourse || c.slug === qCourse);
+        }
+        const targetCourse = matchedCourse || DEFAULT_COURSES[0];
+        if (qLesson !== null && qLesson !== undefined && targetCourse?.lessons?.length > 0) {
+          const lNum = parseInt(qLesson, 10);
+          if (!isNaN(lNum) && targetCourse.lessons[lNum]) {
+            return { ...targetCourse.lessons[lNum], moduleIndex: 0, lessonIndex: lNum };
+          }
+        }
+        const cachedLesson = localStorage.getItem('tsehay_user_active_lesson');
+        if (cachedLesson) {
+          const parsed = JSON.parse(cachedLesson);
+          if (parsed && parsed.title) return parsed;
+        }
+        return targetCourse?.lessons?.[0] || null;
       }
       return DEFAULT_COURSES[0]?.lessons?.[0] || null;
     } catch (e) { return DEFAULT_COURSES[0]?.lessons?.[0] || null; }
   });
+
+  // Immediate URL course synchronizer (instant switch without waiting for network)
+  useEffect(() => {
+    if (!urlCourseId) return;
+    const allAvailable = courses.length > 0 ? courses : (getCachedCourses().length > 0 ? getCachedCourses() : DEFAULT_COURSES);
+    const matched = allAvailable.find(c => c.id === urlCourseId || c.slug === urlCourseId);
+    if (matched && (!activeCourse || activeCourse.id !== matched.id)) {
+      setActiveCourse(matched);
+      try {
+        localStorage.setItem('tsehay_user_active_course', JSON.stringify(matched));
+      } catch (e) {}
+    }
+  }, [urlCourseId, courses]);
   const [activeTab, setActiveTab] = useState('overview');
   const [modules, setModules] = useState<any[]>(() => {
     const defaultMod = [{ id: 'main', title: 'Course Content', order: 1, lessons: DEFAULT_COURSES[0]?.lessons || [] }];
@@ -664,10 +713,12 @@ function StudentDashboardContent() {
   // Student Display Name, Photo and Pro Status Computed Helpers
   const studentDisplayName = settingsName?.trim() || user?.displayName || (user?.email ? user.email.split('@')[0] : '') || 'ተማሪ (Student)';
   const studentPhotoUrl = settingsPhotoUrl || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
-  const isProStudent = courses.some(c => {
-    const isFree = c.isFree === true || c.price === 'Free' || c.price === '0' || c.price === 0 || Number(c.price) === 0;
-    return !isFree;
-  }) || Boolean((user as any)?.isPro || (user as any)?.role === 'pro' || (user as any)?.role === 'admin');
+  const isProStudent = Boolean(
+    hasPaidEnrollment ||
+    (user as any)?.isPro ||
+    (user as any)?.role === 'pro' ||
+    (user as any)?.role === 'admin'
+  );
 
   const handleProfilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -776,6 +827,7 @@ function StudentDashboardContent() {
 
         // 2. Fetch student enrollments from Supabase enrollments table
         let userCourses: any[] = [];
+        let hasPaid = false;
         try {
           const { data: enrollments } = await supabase
             .from('enrollments')
@@ -785,6 +837,14 @@ function StudentDashboardContent() {
           if (enrollments && Array.isArray(enrollments) && enrollments.length > 0) {
             const enrolledIds = enrollments.map((enr: any) => enr.course_id);
             userCourses = allCatalogCourses.filter(c => enrolledIds.includes(c.id) || enrolledIds.includes(c.slug));
+
+            // User is Pro Member ONLY if they purchased a paid course
+            hasPaid = enrollments.some((enr: any) => {
+              const amount = Number(enr.amount);
+              const method = String(enr.payment_method || '').toLowerCase();
+              const isCompleted = enr.status === 'completed' || enr.status === 'success' || !enr.status;
+              return isCompleted && ((!isNaN(amount) && amount > 0) || (method !== 'free' && method !== ''));
+            });
           }
         } catch (e) {}
 
@@ -809,13 +869,13 @@ function StudentDashboardContent() {
           }
         }
 
-        // 🌟 If student has no purchased courses yet, provide full catalog (including free course)
+        // 🌟 Accurate Membership Tier: Default is Free Member with Free Course only
         if (userCourses.length === 0) {
-          userCourses = allCatalogCourses;
+          const freeCourse = allCatalogCourses.find(c => c.isFree || c.id === 'digital_marketing_free' || c.price === 0 || c.price === 'Free') || allCatalogCourses[0];
+          userCourses = freeCourse ? [freeCourse] : [];
 
           // Auto-persist free course enrollment for student in Supabase
           try {
-            const freeCourse = userCourses.find(c => c.isFree || c.id === 'digital_marketing_free') || userCourses[0];
             if (freeCourse) {
               (async () => {
                 try {
@@ -835,7 +895,7 @@ function StudentDashboardContent() {
           } catch (e) {}
         }
 
-
+        setHasPaidEnrollment(hasPaid);
         setCourses(userCourses);
         try {
           localStorage.setItem(`tsehay_user_courses_${user.uid}`, JSON.stringify(userCourses));
@@ -1844,7 +1904,7 @@ function StudentDashboardContent() {
     return handleSendAiMessage(e);
   };
 
-  if ((authLoading && !user) || (!authInitialized && !user) || (loading && courses.length === 0 && !activeCourse)) {
+  if (!loadingSafetyBypass && ((authLoading && !user) || (!authInitialized && !user) || (loading && courses.length === 0 && !activeCourse))) {
     return <DashboardLoadingScreen message="የመማሪያ ክፍልዎን በማዘጋጀት ላይ... (Loading Classroom...)" />;
   }
 
@@ -2330,36 +2390,6 @@ function StudentDashboardContent() {
                 </svg>
               )}
             </button>
-            
-            {/* 7. Settings */}
-            <button 
-              onClick={() => setCurrentView('settings')} 
-              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
-                currentView === 'settings' 
-                  ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
-                  : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                  currentView === 'settings'
-                    ? 'bg-white/20 text-white shadow-inner'
-                    : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
-                }`}>
-                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-                  </svg>
-                </span>
-                <span className="font-black text-sm tracking-tight drop-shadow-xs">
-                  {t('settings')}
-                </span>
-              </div>
-              {currentView === 'settings' && (
-                <svg className="w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              )}
-            </button>
           </div>
         </nav>
 
@@ -2420,11 +2450,12 @@ function StudentDashboardContent() {
                       <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping inline-block"></span>
                       <Crown className="w-3.5 h-3.5 text-[#f9b03c] inline mr-1" aria-hidden="true" />{t('pro_member') || 'PRO አባል (Pro Member)'}
                     </span>
-                  ) : 'Free Member'}
+                  ) : (
+                    <span className="text-slate-400 font-medium">
+                      {t('free_member') || 'ነፃ አባል (Free Member)'}
+                    </span>
+                  )}
                 </p>
-                <span className="text-[10px] text-slate-500 group-hover:text-slate-300 font-medium">
-                  <i className="fa-solid fa-gear text-[10px]"></i>
-                </span>
               </div>
             </div>
           </div>

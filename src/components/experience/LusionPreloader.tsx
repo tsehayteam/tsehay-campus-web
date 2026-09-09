@@ -48,6 +48,18 @@ export default function LusionPreloader() {
   const [shouldRemove, setShouldRemove] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
+      if (typeof window !== 'undefined') {
+        const isAuthCallback = window.location.hash.includes('access_token') || 
+                               window.location.hash.includes('refresh_token') || 
+                               window.location.search.includes('code=') ||
+                               window.location.pathname.startsWith('/auth/');
+        if (isAuthCallback) {
+          sessionStorage.setItem('tsehay_preloader_shown', 'true');
+          sessionStorage.setItem('tsehay_preloader_seen', 'true');
+          return true;
+        }
+      }
+
       const navEntry = window.performance?.getEntriesByType?.('navigation')?.[0] as PerformanceNavigationTiming | undefined;
       const isReload = navEntry?.type === 'reload';
       
@@ -68,11 +80,17 @@ export default function LusionPreloader() {
   const progressRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
 
-  // If already shown in this session, immediately unblock document and dispatch complete
+  // If already shown or if on auth callback, immediately unblock document and dispatch complete
   useEffect(() => {
-    if (shouldRemove && typeof document !== 'undefined') {
-      document.documentElement.classList.remove('tsehay-loading');
-      window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
+    if (typeof document !== 'undefined') {
+      const isAuthCallback = window.location.hash.includes('access_token') || 
+                             window.location.hash.includes('refresh_token') || 
+                             window.location.search.includes('code=') ||
+                             window.location.pathname.startsWith('/auth/');
+      if (isAuthCallback || shouldRemove) {
+        document.documentElement.classList.remove('tsehay-loading');
+        window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
+      }
     }
   }, [shouldRemove]);
 
