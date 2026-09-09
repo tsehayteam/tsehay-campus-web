@@ -37,9 +37,19 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   const [showPassword, setShowPassword] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
+  const openTimestampRef = useRef<number>(0);
+  const backdropPointerDownRef = useRef<boolean>(false);
+
   useEffect(() => {
     setHasMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      openTimestampRef.current = Date.now();
+      backdropPointerDownRef.current = false;
+    }
+  }, [isOpen]);
   
   // 🌟 Smart User Existence Detection States
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -961,7 +971,24 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           ? 'opacity-100 pointer-events-auto visible' 
           : 'opacity-0 pointer-events-none invisible'
       }`} 
-      onClick={(e) => { if (e.target === e.currentTarget && !loading && isOpen) onClose(); }}
+      onPointerDown={(e) => {
+        backdropPointerDownRef.current = (e.target === e.currentTarget);
+      }}
+      onMouseDown={(e) => {
+        backdropPointerDownRef.current = (e.target === e.currentTarget);
+      }}
+      onClick={(e) => { 
+        if (
+          e.target === e.currentTarget && 
+          backdropPointerDownRef.current && 
+          !loading && 
+          isOpen && 
+          (Date.now() - openTimestampRef.current > 350)
+        ) {
+          onClose(); 
+        }
+        backdropPointerDownRef.current = false;
+      }}
       aria-hidden={!isOpen}
     >
       <div className={`bg-white dark:bg-[#050811] w-full max-w-lg rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col relative modal-animate border border-amber-400/30 dark:border-white/[0.1] max-h-[92vh] will-change-transform transition-all duration-200 ${

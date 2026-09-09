@@ -17,19 +17,46 @@ export default function Tilt3DLoginButton({
   const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0, glareX: 50, glareY: 50, isHovered: false });
   const rafId = useRef<number | null>(null);
 
-  const isClickLockedRef = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number; time: number } | null>(null);
+  const lastActionTime = useRef<number>(0);
 
-  // Instant 1-Click Zero-Lag Activation Handler with Multi-Click Debounce (Under 50ms)
-  const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    if (isClickLockedRef.current) return;
-    isClickLockedRef.current = true;
-    setTimeout(() => {
-      isClickLockedRef.current = false;
-    }, 450);
-
+  // Instant 1-Click / 1-Touch Zero-Lag Activation Handler
+  const triggerAction = useCallback(() => {
+    const now = Date.now();
+    if (now - lastActionTime.current < 400) return;
+    lastActionTime.current = now;
     onClick();
   }, [onClick]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLButtonElement>) => {
+    const touch = e.touches[0];
+    if (touch) {
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLButtonElement>) => {
+    if (!touchStartPos.current) return;
+    const touch = e.changedTouches[0];
+    if (touch) {
+      const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+      const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+      const dt = Date.now() - touchStartPos.current.time;
+      touchStartPos.current = null;
+
+      // Instant activation on mobile tap (movement < 15px, duration < 600ms)
+      if (dx < 15 && dy < 15 && dt < 600) {
+        e.preventDefault(); // Prevents delayed 300ms click and ghost click bleed-through
+        e.stopPropagation();
+        triggerAction();
+      }
+    }
+  }, [triggerAction]);
+
+  const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    triggerAction();
+  }, [triggerAction]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     if (typeof window !== 'undefined' && window.matchMedia && !window.matchMedia('(pointer: fine)').matches) {
@@ -80,6 +107,8 @@ export default function Tilt3DLoginButton({
         ref={btnRef}
         type="button"
         onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         className={`relative group px-4 sm:px-5 py-2 sm:py-2.2 rounded-full font-heading font-black text-xs sm:text-[13px] text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.5),0_10px_25px_rgba(0,0,0,0.85)] border border-amber-300/80 hover:border-white active:scale-95 cursor-pointer select-none transition-shadow duration-300 overflow-hidden flex items-center gap-2 touch-manipulation ${className}`}
@@ -109,13 +138,13 @@ export default function Tilt3DLoginButton({
 
         {/* Icon & Label */}
         <div 
-          className="relative z-10 flex items-center gap-2"
+          className="relative z-10 flex items-center gap-2 pointer-events-none select-none"
           style={{ transform: 'translateZ(10px)' }}
         >
-          <div className="w-5 h-5 rounded-full bg-slate-950/15 flex items-center justify-center text-slate-950 text-xs">
+          <div className="w-5 h-5 rounded-full bg-slate-950/15 flex items-center justify-center text-slate-950 text-xs pointer-events-none">
             <i className="fa-solid fa-arrow-right-to-bracket text-[11px] group-hover:translate-x-0.5 transition-transform" />
           </div>
-          <span className="tracking-wide">{label}</span>
+          <span className="tracking-wide pointer-events-none">{label}</span>
         </div>
       </button>
     </div>

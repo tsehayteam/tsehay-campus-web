@@ -223,6 +223,13 @@ export default function Navbar() {
       }
     });
 
+    if (typeof window !== 'undefined') {
+      window.openAuthModal = (isSignUp: boolean) => {
+        setIsSignupMode(isSignUp);
+        setIsAuthModalOpen(true);
+      };
+    }
+
     return () => {
       window.removeEventListener('open-auth-modal', handleOpenAuth);
       document.removeEventListener('mousedown', handleClickOutside);
@@ -245,6 +252,20 @@ export default function Navbar() {
     setIsSignupMode(signup);
     setIsAuthModalOpen(true);
   }, []);
+
+  const handleLoginClick = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    openAuthModal(false);
+    closeCurtain();
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-auth-modal', { 
+        detail: { isSignupMode: false, isSignUp: false } 
+      }));
+    }
+  }, [openAuthModal]);
 
   const handleSignOut = async () => {
     try {
@@ -454,10 +475,7 @@ export default function Navbar() {
               {!mounted || !user ? (
                 <div className="hidden sm:block">
                   <Tilt3DLoginButton
-                    onClick={() => {
-                      openAuthModal(false);
-                      closeCurtain();
-                    }}
+                    onClick={handleLoginClick}
                     label={lang === 'en' ? 'Login' : 'ይግቡ (Login)'}
                   />
                 </div>
@@ -657,10 +675,7 @@ export default function Navbar() {
                 <div className="w-full flex justify-center">
                   <Tilt3DLoginButton
                     className="w-full justify-center py-3.5"
-                    onClick={() => {
-                      openAuthModal(false);
-                      closeCurtain();
-                    }}
+                    onClick={handleLoginClick}
                     label={t('login') || (lang === 'en' ? 'Login / Sign Up' : 'ግባ ወይም ተመዝገብ (Login / Sign Up)')}
                   />
                 </div>
