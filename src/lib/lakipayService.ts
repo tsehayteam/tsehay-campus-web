@@ -228,7 +228,7 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
     phone_number: formattedPhone,
     reference: params.reference,
     title: String(params.title || 'Tsehay Campus'),
-    description: params.description || 'Tsehay Campus Education & Events',
+    description: String(params.description || params.title || 'Training Ticket'),
     email: params.email,
     first_name: params.firstName || (params.email ? params.email.split('@')[0] : 'Student'),
     last_name: params.lastName || 'Campus',

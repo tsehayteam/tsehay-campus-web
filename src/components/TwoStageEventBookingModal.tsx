@@ -367,7 +367,7 @@ export default function TwoStageEventBookingModal({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             courseId: event.id,
-            title: `ትኬት - ${event.title}`,
+            title: event.title ? `${event.title} Ticket` : 'Training Ticket',
             price: finalPrice,
             originalPrice: originalPrice,
             referralCode: appliedCode || null,
@@ -896,8 +896,8 @@ export default function TwoStageEventBookingModal({
                         />
                         <div className="min-w-0 flex-1">
                           <span className="font-black text-white text-sm sm:text-base block leading-tight">LakiPay</span>
-                          <span className="text-[11px] text-amber-400 font-bold block mt-0.5 truncate max-w-[180px] sm:max-w-[260px]">
-                            {event?.title ? event.title : 'የሀገር ውስጥ ክፍያ (Telebirr, CBE)'}
+                          <span className="text-[11px] text-amber-400 font-bold block mt-0.5">
+                            For Local Payments
                           </span>
                         </div>
                       </div>

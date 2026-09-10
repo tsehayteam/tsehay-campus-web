@@ -8,6 +8,95 @@ function generateCleanTxRef() {
   return `REF-${randHex}`;
 }
 
+/**
+ * 🌟 Context-Aware Dynamic Concise Payment Metadata
+ * Ensures clean, professional titles and descriptions for LakiPay and other checkout screens:
+ * - Event tickets: "Training Ticket", "[Event Name] Ticket" (e.g. "Digital Marketing Ticket", "Tech Summit Ticket")
+ * - Courses: "Digital Marketing Course", "Filmmaking Course", "Python Programming Course"
+ * - Mentorship: "1-on-1 Mentorship"
+ */
+function getConciseCheckoutMetadata(params: {
+  isEventTicket: boolean;
+  isMentorship: boolean;
+  rawTitle?: string;
+  eventTitle?: string;
+  courseId?: string;
+}): { title: string; description: string } {
+  const { isEventTicket, isMentorship, rawTitle = '', eventTitle = '' } = params;
+
+  if (isEventTicket) {
+    const raw = (eventTitle || rawTitle || '').trim();
+    let cleanEvent = raw
+      .replace(/^(ትኬት|የቲኬት|የመግቢያ ትኬት|ticket|event)\s*[-–:]\s*/i, '')
+      .replace(/[-–:]\s*(ትኬት|ticket)$/i, '')
+      .replace(/[-–]\s*Tsehay Campus.*$/i, '')
+      .replace(/[-–]\s*ፀሐይ ካምፓስ.*$/i, '')
+      .trim();
+
+    if (/marketing|ማርኬቲንግ/i.test(cleanEvent)) {
+      cleanEvent = "Digital Marketing";
+    } else if (/tech|summit|ቴክኖሎጂ/i.test(cleanEvent)) {
+      cleanEvent = "Tech Summit";
+    } else if (/masterclass|ክላስ/i.test(cleanEvent)) {
+      cleanEvent = "Masterclass";
+    } else if (/filmmaking|video|ፊልም/i.test(cleanEvent)) {
+      cleanEvent = "Filmmaking";
+    } else if (/training|ስልጠና/i.test(cleanEvent)) {
+      cleanEvent = "Training";
+    }
+
+    if (!cleanEvent || cleanEvent.length > 25) {
+      cleanEvent = "Training";
+    }
+
+    const concise = `${cleanEvent} Ticket`;
+    return {
+      title: concise,
+      description: concise
+    };
+  }
+
+  if (isMentorship) {
+    return {
+      title: "1-on-1 Mentorship",
+      description: "Mentorship Session"
+    };
+  }
+
+  // Courses
+  const raw = (rawTitle || '').trim();
+  let cleanCourse = raw
+    .replace(/[-–]\s*Tsehay Campus.*$/i, '')
+    .replace(/[-–]\s*ፀሐይ ካምፓስ.*$/i, '')
+    .trim();
+
+  if (/digital marketing|ዲጂታል ማርኬቲንግ/i.test(cleanCourse)) {
+    cleanCourse = "Digital Marketing Course";
+  } else if (/filmmaking|video|ፊልም/i.test(cleanCourse)) {
+    cleanCourse = "Filmmaking Course";
+  } else if (/python|ፓይተን/i.test(cleanCourse)) {
+    cleanCourse = "Python Programming Course";
+  } else if (/full[- ]?stack|web|ዌብ/i.test(cleanCourse)) {
+    cleanCourse = "Full-Stack Web Course";
+  } else if (/dropshipping|ኢኮሜርስ|ecommerce/i.test(cleanCourse)) {
+    cleanCourse = "E-Commerce Course";
+  } else if (/graphic|ግራፊክስ/i.test(cleanCourse)) {
+    cleanCourse = "Graphic Design Course";
+  } else {
+    if (cleanCourse.length > 26) {
+      cleanCourse = cleanCourse.slice(0, 24).trim();
+    }
+    if (!/course/i.test(cleanCourse)) {
+      cleanCourse = `${cleanCourse} Course`;
+    }
+  }
+
+  return {
+    title: cleanCourse,
+    description: cleanCourse
+  };
+}
+
 function formatPaymentDetails(rawTitle?: string) {
   if (!rawTitle) {
     return {
@@ -23,7 +112,6 @@ function formatPaymentDetails(rawTitle?: string) {
 
   let chosenName = englishName || amharicName;
   
-  // Keep the course name concise so it never wraps on LakiPay's summary card
   if (chosenName.length > 22) {
     chosenName = chosenName.replace(/\s+(Course|Masterclass|Bootcamp|Training|ስልጠና)/i, '').trim();
   }
@@ -150,19 +238,22 @@ export async function POST(request: Request) {
       const merchantDefaultPhone = (process.env.LAKIPAY_DEFAULT_PHONE || process.env.LAKIPAY_MERCHANT_PHONE || '251911000000').replace(/[^0-9]/g, '');
       const phoneForLakipay = validEthPhone || merchantDefaultPhone;
 
-      // 🌟 Extract clean, dynamic course/event title for LakiPay checkout summary
-      const cleanCourseTitle = payDetails.title || (isEventTicket ? (body.eventTitle || "Tsehay Event Ticket") : "Tsehay Campus Course");
-      const lakipayDescription = isEventTicket
-        ? `ትኬት: ${payDetails.description || body.eventTitle || 'Tsehay Event'}`
-        : `${payDetails.description || cleanCourseTitle} - Tsehay Campus`;
+      // 🌟 Extract clean, concise dynamic course/event metadata for LakiPay checkout summary
+      const conciseMeta = getConciseCheckoutMetadata({
+        isEventTicket,
+        isMentorship,
+        rawTitle: payDetails.title || title,
+        eventTitle: body.eventTitle,
+        courseId: String(courseId)
+      });
 
       // Initialize session via official LakiPay dynamic flow (POST https://api.lakipay.co/api/v2/payment/checkout)
       const lakipayResult = await initializeLakiPaySession({
         amount: Number(numAmount),
         currency: "ETB",
         reference: tx_ref,
-        title: String(cleanCourseTitle),
-        description: String(lakipayDescription).substring(0, 80),
+        title: conciseMeta.title,
+        description: conciseMeta.description,
         email: email,
         firstName: firstName,
         lastName: lastName,
