@@ -16,9 +16,16 @@ export default function Tilt3DLoginButton({
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const glareRef = useRef<HTMLDivElement | null>(null);
 
-  // Direct, zero-lag click handler (sub-10ms response, no state re-renders)
-  const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
+  const lastTriggerRef = useRef(0);
+
+  // Direct, single-click deterministic trigger with debounce against synthetic double-firing
+  const triggerClick = useCallback((e?: React.SyntheticEvent) => {
+    if (e && typeof e.stopPropagation === 'function') {
+      e.stopPropagation();
+    }
+    const now = Date.now();
+    if (now - lastTriggerRef.current < 350) return;
+    lastTriggerRef.current = now;
     onClick();
   }, [onClick]);
 
@@ -60,7 +67,13 @@ export default function Tilt3DLoginButton({
       <button
         ref={btnRef}
         type="button"
-        onClick={handleClick}
+        onClick={triggerClick}
+        onTouchEnd={triggerClick}
+        onPointerUp={(e) => {
+          if (e.pointerType === 'touch') {
+            triggerClick(e);
+          }
+        }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         className={`relative group px-4 sm:px-5 py-2 sm:py-2.2 rounded-full font-heading font-black text-xs sm:text-[13px] text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.5),0_10px_25px_rgba(0,0,0,0.85)] border border-amber-300/80 hover:border-white active:scale-95 cursor-pointer select-none transition-shadow duration-300 overflow-hidden flex items-center gap-2 touch-manipulation ${className}`}

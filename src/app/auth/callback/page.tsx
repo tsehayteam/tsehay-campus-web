@@ -122,28 +122,30 @@ function AuthCallbackHandler() {
       // New Visitor -> Mandatory Onboarding Form
       // =========================================================================
       try {
-        // Step 1: Check instant local cache first for zero network delay
-        let localPhone = '';
+        // Step 1: Check instant local cache for this specific user ONLY
+        let verifiedCachedPhone = '';
         try {
           const cachedUserRaw = localStorage.getItem('tsehay_auth_user_cache');
           if (cachedUserRaw) {
             const parsed = JSON.parse(cachedUserRaw);
-            localPhone = parsed.phone || parsed.phoneNumber || parsed.phone_number || '';
-          }
-          if (!localPhone) {
-            localPhone = localStorage.getItem('tsehay_user_phone') || '';
+            // STRICT MATCH: Only trust cache if it belongs to this specific email or UID
+            const matchesEmail = Boolean(parsed?.email && formatted.email && parsed.email.toLowerCase() === formatted.email.toLowerCase());
+            const matchesUid = Boolean(parsed?.uid && parsed.uid === formatted.uid);
+            if (matchesEmail || matchesUid) {
+              verifiedCachedPhone = parsed.phone || parsed.phoneNumber || parsed.phone_number || '';
+            }
           }
         } catch (e) {}
 
-        // Immediate pass if phone is already cached locally or in user metadata
-        const userMetaPhone = (formatted as any)?.phone || formatted.user_metadata?.phone || localPhone;
-        if (userMetaPhone && String(userMetaPhone).trim().length >= 7) {
+        const cleanCachedDigits = String(verifiedCachedPhone).trim().replace(/[^0-9]/g, '');
+        if (cleanCachedDigits.length >= 7) {
+          // Confirmed returning student with complete profile in own cache
           setStatus('redirecting');
           navigatePostAuth();
           return;
         }
 
-        // Step 2: Query server API check-registration with 2000ms race timeout protection
+        // Step 2: Query server API check-registration and client queries in parallel
         const checkPromise = fetch('/api/auth/check-registration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -153,12 +155,12 @@ function AuthCallbackHandler() {
           })
         }).then(res => res.json()).catch(() => null);
 
-        // Client query fallback in parallel
+        // Client profile query
         const clientProfilePromise = (async () => {
           try {
             const { data } = await supabase
               .from('profiles')
-              .select('*')
+              .select('id, full_name, display_name, phone, phone_number, city, avatar_url, role')
               .or(`id.eq.${formatted.uid},email.ilike.${formatted.email || ''}`)
               .limit(1);
             return data && data.length > 0 ? data[0] : null;
@@ -167,41 +169,66 @@ function AuthCallbackHandler() {
           }
         })();
 
-        // 2000ms safety timeout: prevents false onboarding triggers on mobile networks
+        // Client enrollments query
+        const clientEnrollmentsPromise = (async () => {
+          try {
+            const { count } = await supabase
+              .from('enrollments')
+              .select('id', { count: 'exact', head: true })
+              .or(`user_id.eq.${formatted.uid},user_email.ilike.${formatted.email || ''}`);
+            return count || 0;
+          } catch (e) {
+            return 0;
+          }
+        })();
+
+        // 2500ms safety timeout: prevents false onboarding triggers on slow connections
         const timeoutPromise = new Promise<{ isTimeout: boolean }>(resolve => {
-          setTimeout(() => resolve({ isTimeout: true }), 2000);
+          setTimeout(() => resolve({ isTimeout: true }), 2500);
         });
 
         const raceResult = await Promise.race([
-          Promise.all([checkPromise, clientProfilePromise]),
+          Promise.all([checkPromise, clientProfilePromise, clientEnrollmentsPromise]),
           timeoutPromise
         ]);
 
         let serverCheck: any = null;
         let clientProfile: any = null;
+        let enrollmentsCount = 0;
 
         if (Array.isArray(raceResult)) {
           serverCheck = raceResult[0];
           clientProfile = raceResult[1];
+          enrollmentsCount = raceResult[2] || 0;
         }
 
         const resolvedProfile = serverCheck?.profile || clientProfile;
-        const existingPhone = resolvedProfile?.phone || resolvedProfile?.phone_number || userMetaPhone || '';
-        const hasValidPhone = Boolean(existingPhone && String(existingPhone).trim().length >= 7);
-        const isRegisteredServer = Boolean(serverCheck?.isRegistered) || Boolean(resolvedProfile?.id);
+        const profilePhone = resolvedProfile?.phone || resolvedProfile?.phone_number || '';
+        const cleanProfilePhone = String(profilePhone).trim().replace(/[^0-9]/g, '');
+        const hasValidPhone = cleanProfilePhone.length >= 7;
+        const hasEnrollments = enrollmentsCount > 0 || Boolean(serverCheck?.hasEnrollments);
+        const isServerStudent = Boolean(serverCheck?.isStudent || (serverCheck?.isRegistered && serverCheck?.hasValidPhone));
 
-        // Case A: Existing Student (Valid profile record, enrollments, or phone) -> AUTOMATIC PASS
-        if ((isRegisteredServer || Boolean(resolvedProfile)) && (hasValidPhone || resolvedProfile?.name || resolvedProfile?.full_name)) {
+        // =========================================================================
+        // 🌟 DECISION: EXISTING STUDENT vs NEW VISITOR
+        // 1. Existing Student -> Detected! Pass through immediately (Zero forms)
+        // 2. New Visitor -> Detected! Make them enter full info (Full Onboarding)
+        // =========================================================================
+        const isStudent = isServerStudent || hasValidPhone || hasEnrollments;
+
+        if (isStudent) {
+          // 🎓 EXISTING STUDENT -> AUTOMATIC PASS
           const finalUser: User = {
             ...formatted,
             displayName: resolvedProfile?.name || resolvedProfile?.full_name || resolvedProfile?.displayName || formatted.displayName,
             photoURL: resolvedProfile?.photoURL || resolvedProfile?.avatar_url || formatted.photoURL,
+            phone: profilePhone || verifiedCachedPhone,
           };
 
           try {
             localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(finalUser));
-            if (existingPhone) {
-              localStorage.setItem('tsehay_user_phone', existingPhone);
+            if (profilePhone) {
+              localStorage.setItem('tsehay_user_phone', profilePhone);
             }
           } catch (e) {}
 
@@ -213,11 +240,21 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // Case B: Brand New Visitor -> Mandatory Onboarding Form
-        const suggestedName = resolvedProfile?.name || resolvedProfile?.full_name || serverCheck?.suggestedName || formatted.displayName || '';
+        // 👤 NEW VISITOR -> MANDATORY ONBOARDING FORM
+        const suggestedName = (
+          resolvedProfile?.name || 
+          resolvedProfile?.full_name || 
+          serverCheck?.suggestedName || 
+          formatted.displayName || 
+          rawUser?.user_metadata?.full_name || 
+          rawUser?.user_metadata?.name || 
+          ''
+        );
+
         setFullName(suggestedName);
-        setPhone(existingPhone || '');
+        setPhone(''); // Fresh input for new visitor
         setCity(resolvedProfile?.city || '');
+        setSource('Google');
         setStatus('onboarding');
 
       } catch (evalErr) {
@@ -371,6 +408,24 @@ function AuthCallbackHandler() {
           updated_at: new Date().toISOString()
         });
       } catch (uErr) {}
+
+      // 3. Server-side fail-safe save
+      try {
+        await fetch('/api/auth/complete-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid: currentUser.uid,
+            fullName: cleanName,
+            email: currentUser.email,
+            phone: cleanPhone,
+            city: cleanCity,
+            source: source || 'Google',
+            avatarUrl: currentUser.photoURL,
+            referredBy: storedReferrerUid || null
+          })
+        });
+      } catch (srvErr) {}
 
       // 3. Referral tracking
       if (storedReferrerUid && storedReferrerUid !== currentUser.uid) {

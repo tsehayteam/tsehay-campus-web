@@ -45,6 +45,7 @@ export interface User {
   email?: string | null;
   displayName?: string | null;
   photoURL?: string | null;
+  phone?: string | null;
   user_metadata?: any;
   app_metadata?: any;
   getIdToken?: (forceRefresh?: boolean) => Promise<string>;

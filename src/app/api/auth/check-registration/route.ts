@@ -50,26 +50,27 @@ export async function POST(req: NextRequest) {
       console.warn('[check-registration] Profile query warning:', err);
     }
 
+    let hasEnrollments = false;
+
     // 2. Check enrollments table if not already confirmed
-    if (!isRegistered) {
-      try {
-        let enrQuery = supabaseServer.from('enrollments').select('id, user_id, user_email, course_id, course_title');
-        if (cleanUid && cleanEmail) {
-          enrQuery = enrQuery.or(`user_id.eq.${cleanUid},user_email.ilike.${cleanEmail}`);
-        } else if (cleanUid) {
-          enrQuery = enrQuery.eq('user_id', cleanUid);
-        } else {
-          enrQuery = enrQuery.ilike('user_email', cleanEmail);
-        }
-
-        const { data: enrollments, error: enrErr } = await enrQuery.limit(1);
-
-        if (!enrErr && enrollments && enrollments.length > 0) {
-          isRegistered = true;
-        }
-      } catch (err) {
-        console.warn('[check-registration] Enrollments query warning:', err);
+    try {
+      let enrQuery = supabaseServer.from('enrollments').select('id, user_id, user_email, course_id, course_title');
+      if (cleanUid && cleanEmail) {
+        enrQuery = enrQuery.or(`user_id.eq.${cleanUid},user_email.ilike.${cleanEmail}`);
+      } else if (cleanUid) {
+        enrQuery = enrQuery.eq('user_id', cleanUid);
+      } else {
+        enrQuery = enrQuery.ilike('user_email', cleanEmail);
       }
+
+      const { data: enrollments, error: enrErr } = await enrQuery.limit(1);
+
+      if (!enrErr && enrollments && enrollments.length > 0) {
+        isRegistered = true;
+        hasEnrollments = true;
+      }
+    } catch (err) {
+      console.warn('[check-registration] Enrollments query warning:', err);
     }
 
     // 3. Check users table if still not confirmed
@@ -97,12 +98,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Check if the student has completed registration (has a valid phone number with >= 7 digits)
+    // A student is considered an existing student ONLY if:
+    // 1) They have a verified phone number (>= 7 digits) in profiles/users, OR
+    // 2) They already have active course enrollments.
+    // Otherwise, they are a VISITOR who must complete onboarding!
     const phone = resolvedProfile?.phone || resolvedProfile?.phone_number || '';
-    const hasValidPhone = Boolean(phone && String(phone).trim().length >= 7);
+    const digitsOnlyPhone = String(phone).trim().replace(/[^0-9]/g, '');
+    const hasValidPhone = Boolean(digitsOnlyPhone.length >= 7);
 
-    // A student is considered fully registered ONLY if an account exists AND they have completed their phone info
-    const isFullyRegistered = isRegistered && hasValidPhone;
+    const isStudent = (isRegistered && hasValidPhone) || hasEnrollments;
+    const isVisitor = !isStudent;
 
     // Format safe profile response
     const profileResponse = resolvedProfile ? {
@@ -117,9 +122,12 @@ export async function POST(req: NextRequest) {
     } : null;
 
     return NextResponse.json({
-      isRegistered: isFullyRegistered,
+      isRegistered: isStudent,
+      isStudent,
+      isVisitor,
       hasAccount: isRegistered,
       hasValidPhone,
+      hasEnrollments,
       profile: profileResponse,
       suggestedName: resolvedProfile?.full_name || resolvedProfile?.name || resolvedProfile?.display_name || '',
       email: cleanEmail,
