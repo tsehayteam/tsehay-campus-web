@@ -5,7 +5,7 @@ import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_COURSES, COMING_SOON_COURSES, getComingSoonCourses, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate } from '@/lib/courseCache';
-import { DEFAULT_EVENTS, DEFAULT_EVENT_BANNER, formatEventBannerUrl, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
+import { DEFAULT_EVENTS, DEFAULT_EVENT_BANNER, formatEventBannerUrl, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket, getDeletedEventIds, recordDeletedEventId } from '@/lib/eventCache';
 import AdminQrScanner from '@/components/AdminQrScanner';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
@@ -1204,26 +1204,24 @@ export default function AdminDashboard() {
         const evRes = await fetch('/api/events');
         if (evRes.ok) {
           const evData = await evRes.json();
-          if (evData.events && Array.isArray(evData.events) && evData.events.length > 0) {
-            setEvents(prev => {
-              const map = new Map<string, TsehayEvent>();
-              prev.forEach(ev => {
-                if (ev && ev.id) map.set(ev.id, ev);
-              });
-              evData.events.forEach((apiEv: TsehayEvent) => {
-                if (apiEv && apiEv.id) {
-                  const existing = map.get(apiEv.id);
-                  map.set(apiEv.id, {
-                    ...existing,
-                    ...apiEv,
-                    image: formatDriveImageUrl(apiEv.image) || apiEv.image || existing?.image || DEFAULT_EVENT_BANNER
-                  });
-                }
-              });
-              const combined = Array.from(map.values());
-              saveCachedEvents(combined);
-              return combined;
-            });
+          if (evData.events && Array.isArray(evData.events)) {
+            const deletedIds = getDeletedEventIds();
+            const isDeleted = (e: TsehayEvent) => {
+              if (deletedIds.length === 0) return false;
+              const cId = (e.id || '').trim().toLowerCase();
+              const cSlug = (e.slug || '').trim().toLowerCase();
+              return (cId && deletedIds.includes(cId)) || (cSlug && deletedIds.includes(cSlug));
+            };
+
+            const freshEvents = evData.events
+              .filter((apiEv: TsehayEvent) => apiEv && apiEv.id && !isDeleted(apiEv))
+              .map((apiEv: TsehayEvent) => ({
+                ...apiEv,
+                image: formatDriveImageUrl(apiEv.image) || apiEv.image || DEFAULT_EVENT_BANNER
+              }));
+
+            setEvents(freshEvents);
+            saveCachedEvents(freshEvents);
           }
         }
         const tickRes = await fetch('/api/events/tickets');
@@ -3304,31 +3302,43 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteEvent = async (id: string) => {
-    if (window.confirm("እርግጠኛ ነዎት ይህን ክስተት ማጥፋት ይፈልጋሉ?")) {
-      const updatedEvents = events.filter(e => e.id !== id);
+    const targetEvent = events.find(e => e.id === id);
+    const targetSlug = targetEvent?.slug || '';
+
+    if (window.confirm("እርግጠኛ ነዎት ይህን ክስተት በቋሚነት ማጥፋት ይፈልጋሉ? (Delete Permanently)")) {
+      // 1. Immediately remove from local state
+      const updatedEvents = events.filter(e => e.id !== id && (!targetSlug || e.slug !== targetSlug));
       setEvents(updatedEvents);
       saveCachedEvents(updatedEvents);
+
+      // 2. Record in permanent tombstone lists so it NEVER reappears
+      recordDeletedEventId(id);
+      if (targetSlug) recordDeletedEventId(targetSlug);
+
+      // 3. Broadcast to all open tabs and windows
       try {
         localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
-        window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents } }));
+        window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents, deletedId: id, deletedSlug: targetSlug } }));
         const bc = new BroadcastChannel('tsehay_events_sync');
-        bc.postMessage({ type: 'EVENT_DELETED', events: updatedEvents, deletedId: id });
+        bc.postMessage({ type: 'EVENT_DELETED', events: updatedEvents, deletedId: id, deletedSlug: targetSlug });
         bc.close();
       } catch (e) {}
 
-      // Record in deleted events list so default events don't reappear on reload
+      // 4. Send authenticated DELETE to server with full headers
       try {
-        const deleted = JSON.parse(localStorage.getItem('tsehay_deleted_events') || '[]');
-        if (!deleted.includes(id)) {
-          localStorage.setItem('tsehay_deleted_events', JSON.stringify([...deleted, id]));
-        }
-      } catch (e) {}
+        const query = targetSlug 
+          ? `id=${encodeURIComponent(id)}&slug=${encodeURIComponent(targetSlug)}`
+          : `id=${encodeURIComponent(id)}`;
+        
+        await fetch(`/api/events?${query}`, { 
+          method: 'DELETE',
+          headers: getAdminAuthHeaders()
+        });
+      } catch (e) {
+        console.error('Failed to call delete API:', e);
+      }
 
-      try {
-        await fetch(`/api/events?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-      } catch (e) {}
-
-      showToast('ክስተቱ ተሰርዟል!', 'success');
+      showToast('ክስተቱ ሙሉ በሙሉ ተሰርዟል! (Permanently Deleted)', 'success');
     }
   };
 

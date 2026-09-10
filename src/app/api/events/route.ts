@@ -61,7 +61,30 @@ function mapDbRowToEvent(row: any): TsehayEvent {
   };
 }
 
+async function getDeletedEventIdsFromServer(): Promise<string[]> {
+  try {
+    const { data: row } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'events_deleted_ids')
+      .maybeSingle();
+
+    if (row?.data && Array.isArray(row.data)) {
+      return row.data.map((s: any) => String(s).trim().toLowerCase()).filter(Boolean);
+    }
+  } catch (e) {}
+  return [];
+}
+
 async function getSupabaseEvents(): Promise<any[]> {
+  const deletedIds = await getDeletedEventIdsFromServer();
+  const isDeleted = (e: any) => {
+    if (deletedIds.length === 0) return false;
+    const cId = (e.id || '').trim().toLowerCase();
+    const cSlug = (e.slug || '').trim().toLowerCase();
+    return (cId && deletedIds.includes(cId)) || (cSlug && deletedIds.includes(cSlug));
+  };
+
   // 1. Primary: Read directly from Supabase `events` table
   try {
     const { data: dbEvents, error: dbErr } = await supabaseServer
@@ -70,7 +93,7 @@ async function getSupabaseEvents(): Promise<any[]> {
       .order('created_at', { ascending: false });
 
     if (!dbErr && dbEvents && Array.isArray(dbEvents) && dbEvents.length > 0) {
-      const mapped = dbEvents.map(mapDbRowToEvent);
+      const mapped = dbEvents.map(mapDbRowToEvent).filter(e => !isDeleted(e));
       savePersistedEvents(mapped);
       return mapped;
     }
@@ -87,7 +110,7 @@ async function getSupabaseEvents(): Promise<any[]> {
       .maybeSingle();
 
     if (!error && row?.data && Array.isArray(row.data) && row.data.length > 0) {
-      const mapped = row.data.map(mapDbRowToEvent);
+      const mapped = row.data.map(mapDbRowToEvent).filter((e: any) => !isDeleted(e));
       savePersistedEvents(mapped);
       return mapped;
     }
@@ -97,10 +120,12 @@ async function getSupabaseEvents(): Promise<any[]> {
 
   // 3. Tertiary: In-memory/filesystem store
   const inMem = loadPersistedEvents();
-  if (inMem && inMem.length > 0) return inMem.map(mapDbRowToEvent);
+  if (inMem && inMem.length > 0) {
+    return inMem.map(mapDbRowToEvent).filter(e => !isDeleted(e));
+  }
 
-  // 4. Fallback defaults
-  return DEFAULT_EVENTS;
+  // 4. Fallback defaults (only non-deleted)
+  return DEFAULT_EVENTS.filter(e => !isDeleted(e));
 }
 
 async function saveSupabaseEvents(events: any[], singlePayload?: any) {
@@ -167,8 +192,21 @@ export async function GET(req: NextRequest) {
     let eventsList = await getSupabaseEvents();
 
     if (eventId) {
-      const found = eventsList.find(e => e.id === eventId || e.slug === eventId) ||
-                    DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId);
+      const cleanKey = eventId.trim().toLowerCase();
+      const deletedIds = await getDeletedEventIdsFromServer();
+      if (deletedIds.includes(cleanKey)) {
+        return NextResponse.json({ error: 'Event has been permanently deleted' }, { status: 404, headers: NO_CACHE_HEADERS });
+      }
+
+      const found = eventsList.find(e => 
+        (e.id && e.id.toLowerCase() === cleanKey) || 
+        (e.slug && e.slug.toLowerCase() === cleanKey)
+      ) || DEFAULT_EVENTS.find(e => 
+        !deletedIds.includes(e.id.toLowerCase()) && 
+        !(e.slug && deletedIds.includes(e.slug.toLowerCase())) && 
+        (e.id.toLowerCase() === cleanKey || (e.slug && e.slug.toLowerCase() === cleanKey))
+      );
+
       if (found) {
         return NextResponse.json({ 
           success: true, 
@@ -252,26 +290,74 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const eventId = searchParams.get('id') || searchParams.get('eventId');
+    const eventId = searchParams.get('id') || searchParams.get('eventId') || '';
+    const eventSlug = searchParams.get('slug') || '';
 
-    if (!eventId) {
-      return NextResponse.json({ error: 'Event ID required' }, { status: 400 });
+    if (!eventId && !eventSlug) {
+      return NextResponse.json({ error: 'Event ID or slug required' }, { status: 400 });
     }
 
-    // 1. Delete from Supabase events table
+    const cleanId = eventId.trim();
+    const cleanSlug = eventSlug.trim();
+
+    // 1. Delete from Supabase events table by ID and slug
     try {
-      await supabaseServer.from('events').delete().eq('id', eventId);
+      if (cleanId) {
+        await supabaseServer.from('events').delete().eq('id', cleanId);
+      }
+      if (cleanSlug) {
+        await supabaseServer.from('events').delete().eq('slug', cleanSlug);
+      }
     } catch (e) {
       console.warn('Supabase events delete warning:', e);
     }
 
-    // 2. Update site_settings and memory store
-    const currentEvents = await getSupabaseEvents();
-    const updatedEvents = currentEvents.filter(e => e.id !== eventId);
-    await saveSupabaseEvents(updatedEvents);
-    deletePersistedEvent(eventId);
+    // 2. Add to permanent server tombstone in site_settings (key: 'events_deleted_ids')
+    try {
+      const existingDeleted = await getDeletedEventIdsFromServer();
+      const updatedDeleted = Array.from(new Set([
+        ...existingDeleted,
+        ...(cleanId ? [cleanId.toLowerCase()] : []),
+        ...(cleanSlug ? [cleanSlug.toLowerCase()] : [])
+      ]));
 
-    return NextResponse.json({ success: true, deletedId: eventId }, { headers: NO_CACHE_HEADERS });
+      await supabaseServer.from('site_settings').upsert({
+        key: 'events_deleted_ids',
+        data: updatedDeleted,
+        updated_at: new Date().toISOString()
+      });
+    } catch (tombErr) {
+      console.warn('Error recording tombstone in site_settings:', tombErr);
+    }
+
+    // 3. Update site_settings 'events' array to remove this event
+    try {
+      const { data: row } = await supabaseServer
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'events')
+        .maybeSingle();
+
+      if (row?.data && Array.isArray(row.data)) {
+        const filtered = row.data.filter((e: any) => {
+          const eId = (e.id || '').trim().toLowerCase();
+          const eSlug = (e.slug || '').trim().toLowerCase();
+          const matchId = cleanId && (eId === cleanId.toLowerCase() || eSlug === cleanId.toLowerCase());
+          const matchSlug = cleanSlug && (eId === cleanSlug.toLowerCase() || eSlug === cleanSlug.toLowerCase());
+          return !matchId && !matchSlug;
+        });
+        await supabaseServer.from('site_settings').upsert({
+          key: 'events',
+          data: filtered,
+          updated_at: new Date().toISOString()
+        });
+      }
+    } catch (e) {}
+
+    // 4. Update memory store
+    deletePersistedEvent(cleanId, cleanSlug);
+
+    return NextResponse.json({ success: true, deletedId: cleanId, deletedSlug: cleanSlug }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error deleting event:', error);
     return NextResponse.json({ error: error.message || 'Failed to delete event' }, { status: 500, headers: NO_CACHE_HEADERS });

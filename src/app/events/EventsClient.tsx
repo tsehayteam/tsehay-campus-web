@@ -17,7 +17,9 @@ import {
   getRemainingSeats, 
   formatDriveImageUrl,
   getCachedUserTickets,
-  saveCachedUserTicket 
+  saveCachedUserTicket,
+  getDeletedEventIds,
+  recordDeletedEventId
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
@@ -89,8 +91,23 @@ export default function EventsClient() {
   // Real-time Firestore sync on both collections
   useEffect(() => {
     const handleCustomEventsUpdate = (e: any) => {
+      if (e.detail?.deletedId || e.detail?.deletedSlug) {
+        const dId = (e.detail.deletedId || '').toLowerCase();
+        const dSlug = (e.detail.deletedSlug || '').toLowerCase();
+        if (dId) recordDeletedEventId(dId);
+        if (dSlug) recordDeletedEventId(dSlug);
+        setEvents(prev => prev.filter(ev => {
+          const cId = (ev.id || '').toLowerCase();
+          const cSlug = (ev.slug || '').toLowerCase();
+          return cId !== dId && (!dSlug || cSlug !== dSlug);
+        }));
+      }
       if (e.detail?.events && Array.isArray(e.detail.events)) {
-        setEvents(e.detail.events);
+        const deletedIds = getDeletedEventIds();
+        setEvents(e.detail.events.filter((ev: TsehayEvent) => 
+          !deletedIds.includes((ev.id || '').toLowerCase()) && 
+          !(ev.slug && deletedIds.includes(ev.slug.toLowerCase()))
+        ));
       }
     };
     window.addEventListener('tsehay_events_updated', handleCustomEventsUpdate);
@@ -111,11 +128,29 @@ export default function EventsClient() {
     try {
       bc = new BroadcastChannel('tsehay_events_sync');
       bc.onmessage = (msg) => {
+        if (msg.data?.type === 'EVENT_DELETED' || msg.data?.deletedId || msg.data?.deletedSlug) {
+          const dId = (msg.data.deletedId || '').toLowerCase();
+          const dSlug = (msg.data.deletedSlug || '').toLowerCase();
+          if (dId) recordDeletedEventId(dId);
+          if (dSlug) recordDeletedEventId(dSlug);
+          setEvents(prev => prev.filter(ev => {
+            const cId = (ev.id || '').toLowerCase();
+            const cSlug = (ev.slug || '').toLowerCase();
+            return cId !== dId && (!dSlug || cSlug !== dSlug);
+          }));
+        }
         if (msg.data?.events && Array.isArray(msg.data.events)) {
-          setEvents(msg.data.events);
+          const deletedIds = getDeletedEventIds();
+          setEvents(msg.data.events.filter((ev: TsehayEvent) => 
+            !deletedIds.includes((ev.id || '').toLowerCase()) && 
+            !(ev.slug && deletedIds.includes(ev.slug.toLowerCase()))
+          ));
         } else if (msg.data?.event) {
           const single = msg.data.event;
-          setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
+          const deletedIds = getDeletedEventIds();
+          if (!deletedIds.includes((single.id || '').toLowerCase()) && !(single.slug && deletedIds.includes(single.slug.toLowerCase()))) {
+            setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
+          }
         }
       };
     } catch (e) {}
@@ -124,17 +159,25 @@ export default function EventsClient() {
     let rootList: TsehayEvent[] = [];
 
     const syncAndSet = () => {
+      const deletedIds = getDeletedEventIds();
+      const isDeleted = (idOrSlug?: string) => {
+        if (!idOrSlug || deletedIds.length === 0) return false;
+        return deletedIds.includes(idOrSlug.trim().toLowerCase());
+      };
+
       const eventMap = new Map<string, TsehayEvent>();
       
-      // 1. Preload with DEFAULT_EVENTS
+      // 1. Preload with DEFAULT_EVENTS ONLY if not deleted
       DEFAULT_EVENTS.forEach(ev => {
-        eventMap.set(ev.id, { ...ev });
-        if (ev.slug) eventMap.set(ev.slug, { ...ev });
+        if (!isDeleted(ev.id) && !isDeleted(ev.slug)) {
+          eventMap.set(ev.id, { ...ev });
+          if (ev.slug) eventMap.set(ev.slug, { ...ev });
+        }
       });
 
       // 2. Overlay LocalStorage Cached Events
       getCachedEvents().forEach(ev => {
-        if (ev && (ev.id || ev.slug)) {
+        if (ev && (ev.id || ev.slug) && !isDeleted(ev.id) && !isDeleted(ev.slug)) {
           const key = ev.id || ev.slug!;
           eventMap.set(key, { ...(eventMap.get(key) || {}), ...ev });
         }
@@ -142,7 +185,7 @@ export default function EventsClient() {
 
       // 3. Overlay live Firestore data
       [...artifactList, ...rootList].forEach(ev => {
-        if (ev && (ev.id || ev.slug)) {
+        if (ev && (ev.id || ev.slug) && !isDeleted(ev.id) && !isDeleted(ev.slug)) {
           const key = ev.id || ev.slug;
           const existing: any = eventMap.get(key) || (ev.slug ? eventMap.get(ev.slug) : null) || {};
           const cap = Number(ev.capacity || existing.capacity) || 100;
@@ -174,16 +217,16 @@ export default function EventsClient() {
       // De-duplicate by ID
       const uniqueEventsMap = new Map<string, TsehayEvent>();
       eventMap.forEach(v => {
-        if (v && v.id) uniqueEventsMap.set(v.id, v);
+        if (v && v.id && !isDeleted(v.id) && !isDeleted(v.slug)) {
+          uniqueEventsMap.set(v.id, v);
+        }
       });
 
       const combined = Array.from(uniqueEventsMap.values());
-      if (combined.length > 0) {
-        setEvents(combined);
-        try {
-          localStorage.setItem('tsehay_events_cache', JSON.stringify(combined));
-        } catch (e) {}
-      }
+      setEvents(combined);
+      try {
+        localStorage.setItem('tsehay_events_cache', JSON.stringify(combined));
+      } catch (e) {}
     };
 
     // Fetch events from API

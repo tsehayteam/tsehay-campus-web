@@ -180,33 +180,95 @@ export const DEFAULT_EVENTS: TsehayEvent[] = [
 ];
 
 export const EVENTS_CACHE_KEY = 'tsehay_events_cache';
+export const DELETED_EVENTS_KEY = 'tsehay_deleted_events';
+
+export function getDeletedEventIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DELETED_EVENTS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map(s => String(s).trim().toLowerCase()).filter(Boolean);
+      }
+    }
+  } catch (e) {}
+  return [];
+}
+
+export function recordDeletedEventId(idOrSlug: string): void {
+  if (typeof window === 'undefined' || !idOrSlug) return;
+  try {
+    const clean = idOrSlug.trim().toLowerCase();
+    if (!clean) return;
+    const current = getDeletedEventIds();
+    if (!current.includes(clean)) {
+      current.push(clean);
+      localStorage.setItem(DELETED_EVENTS_KEY, JSON.stringify(current));
+    }
+  } catch (e) {}
+}
+
+export function isEventDeleted(eventOrId: TsehayEvent | string): boolean {
+  const deletedIds = getDeletedEventIds();
+  if (deletedIds.length === 0) return false;
+
+  if (typeof eventOrId === 'string') {
+    const clean = eventOrId.trim().toLowerCase();
+    return deletedIds.includes(clean);
+  }
+
+  const idMatch = eventOrId.id ? deletedIds.includes(eventOrId.id.trim().toLowerCase()) : false;
+  const slugMatch = eventOrId.slug ? deletedIds.includes(eventOrId.slug.trim().toLowerCase()) : false;
+  return idMatch || slugMatch;
+}
 
 export function getCachedEvents(): TsehayEvent[] {
   if (typeof window === 'undefined') return DEFAULT_EVENTS;
+  const deletedIds = getDeletedEventIds();
+  const isDeleted = (e: TsehayEvent) => {
+    if (deletedIds.length === 0) return false;
+    const cleanId = (e.id || '').trim().toLowerCase();
+    const cleanSlug = (e.slug || '').trim().toLowerCase();
+    return (cleanId && deletedIds.includes(cleanId)) || (cleanSlug && deletedIds.includes(cleanSlug));
+  };
+
   try {
     const cached = localStorage.getItem(EVENTS_CACHE_KEY);
-    if (cached) {
+    if (cached !== null) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((e: any) => ({
-          ...e,
-          image: formatDriveImageUrl(e.image) || e.image
-        }));
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter(e => !isDeleted(e))
+          .map((e: any) => ({
+            ...e,
+            image: formatDriveImageUrl(e.image) || e.image
+          }));
       }
     }
   } catch (e) {
     console.warn("Events cache load error:", e);
   }
-  return DEFAULT_EVENTS;
+  return DEFAULT_EVENTS.filter(e => !isDeleted(e));
 }
 
 export function saveCachedEvents(events: TsehayEvent[]): void {
   if (typeof window === 'undefined') return;
+  const deletedIds = getDeletedEventIds();
+  const isDeleted = (e: TsehayEvent) => {
+    if (deletedIds.length === 0) return false;
+    const cleanId = (e.id || '').trim().toLowerCase();
+    const cleanSlug = (e.slug || '').trim().toLowerCase();
+    return (cleanId && deletedIds.includes(cleanId)) || (cleanSlug && deletedIds.includes(cleanSlug));
+  };
+
   try {
-    const sanitized = events.map(e => ({
-      ...e,
-      image: formatDriveImageUrl(e.image) || e.image
-    }));
+    const sanitized = events
+      .filter(e => !isDeleted(e))
+      .map(e => ({
+        ...e,
+        image: formatDriveImageUrl(e.image) || e.image
+      }));
     localStorage.setItem(EVENTS_CACHE_KEY, JSON.stringify(sanitized));
   } catch (e) {
     console.warn("Events cache save error:", e);
@@ -217,25 +279,44 @@ export function getEventBySlugOrId(slugOrId: string, eventsList: TsehayEvent[] =
   if (!slugOrId) return null;
   const cleanKey = slugOrId.toLowerCase().trim();
 
+  // Check if target was permanently deleted
+  const deletedIds = getDeletedEventIds();
+  if (deletedIds.includes(cleanKey)) {
+    return null;
+  }
+
+  const isDeleted = (e: TsehayEvent) => {
+    if (deletedIds.length === 0) return false;
+    const cleanId = (e.id || '').trim().toLowerCase();
+    const cleanSlug = (e.slug || '').trim().toLowerCase();
+    return (cleanId && deletedIds.includes(cleanId)) || (cleanSlug && deletedIds.includes(cleanSlug));
+  };
+
   // 1. Direct slug or id match
   let found = eventsList.find(e => 
-    (e.slug && e.slug.toLowerCase() === cleanKey) || 
-    (e.id && e.id.toLowerCase() === cleanKey)
+    !isDeleted(e) && (
+      (e.slug && e.slug.toLowerCase() === cleanKey) || 
+      (e.id && e.id.toLowerCase() === cleanKey)
+    )
   );
 
   // 2. Fallback search in DEFAULT_EVENTS
   if (!found && eventsList !== DEFAULT_EVENTS) {
     found = DEFAULT_EVENTS.find(e => 
-      (e.slug && e.slug.toLowerCase() === cleanKey) || 
-      (e.id && e.id.toLowerCase() === cleanKey)
+      !isDeleted(e) && (
+        (e.slug && e.slug.toLowerCase() === cleanKey) || 
+        (e.id && e.id.toLowerCase() === cleanKey)
+      )
     );
   }
 
   // 3. Fallback partial slug search
   if (!found) {
     found = eventsList.find(e => 
-      (e.slug && e.slug.includes(cleanKey)) || 
-      (e.id && e.id.includes(cleanKey))
+      !isDeleted(e) && (
+        (e.slug && e.slug.toLowerCase().includes(cleanKey)) || 
+        (e.id && e.id.toLowerCase().includes(cleanKey))
+      )
     );
   }
 
