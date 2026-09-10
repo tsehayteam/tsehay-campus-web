@@ -202,6 +202,21 @@ export default function UpcomingEventsSection() {
         return deletedIds.includes(idOrSlug.trim().toLowerCase());
       };
 
+      // 🌟 Authoritative sync: If server returned an active events list, use it directly (purging any deleted events)
+      if (artifactList && artifactList.length > 0) {
+        const cleanServerList = artifactList
+          .filter(ev => ev && (ev.id || ev.slug) && !isDeleted(ev.id) && !isDeleted(ev.slug))
+          .map(ev => ({
+            ...ev,
+            image: formatDriveImageUrl(ev.image) || ev.image || ''
+          }));
+        setEvents(cleanServerList);
+        try {
+          localStorage.setItem('tsehay_events_cache', JSON.stringify(cleanServerList));
+        } catch (e) {}
+        return;
+      }
+
       const eventMap = new Map<string, TsehayEvent>();
 
       // 1. Preload DEFAULT_EVENTS ONLY if not permanently deleted
@@ -261,7 +276,10 @@ export default function UpcomingEventsSection() {
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.events && Array.isArray(data.events) && data.events.length > 0) {
+          if (data.deletedIds && Array.isArray(data.deletedIds)) {
+            data.deletedIds.forEach((d: string) => recordDeletedEventId(d));
+          }
+          if (data.events && Array.isArray(data.events)) {
             artifactList = data.events;
             syncAndSet();
           }

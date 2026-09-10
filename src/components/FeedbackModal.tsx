@@ -35,6 +35,9 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
 
     const feedbackId = `fb_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
+    const isStudentUser = Boolean(user && user.uid && !user.uid.startsWith('guest_'));
+    const userRole = isStudentUser ? 'student' : 'visitor';
+
     const feedbackPayload = {
       id: feedbackId,
       rating: Number(rating) || 5,
@@ -42,8 +45,10 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
       category: feedbackType,
       message: message.trim(),
       userId: user?.uid || 'guest_user',
-      userName: user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
-      userEmail: user?.email || 'student@tsehaycampus.com',
+      userName: user?.displayName || (user?.email ? user.email.split('@')[0] : (isStudentUser ? 'ተማሪ' : 'ጎብኚ')),
+      userEmail: user?.email || (isStudentUser ? 'student@tsehaycampus.com' : 'visitor@tsehaycampus.com'),
+      userRole,
+      role: userRole,
       status: 'pending',
       createdAt: new Date().toISOString(),
       createdAtClient: new Date().toISOString()

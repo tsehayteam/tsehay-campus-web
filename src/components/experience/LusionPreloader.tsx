@@ -49,28 +49,25 @@ export default function LusionPreloader() {
     if (typeof window === 'undefined') return false;
     try {
       if (typeof window !== 'undefined') {
-        const isAuthCallback = window.location.hash.includes('access_token') || 
+        if (sessionStorage.getItem('tsehay_preloader_shown') === 'true' || sessionStorage.getItem('tsehay_preloader_seen') === 'true') {
+          return true;
+        }
+
+        const isAuthOrDashboard = window.location.hash.includes('access_token') || 
                                window.location.hash.includes('refresh_token') || 
                                window.location.search.includes('code=') ||
                                window.location.pathname.startsWith('/auth/') ||
                                window.location.pathname.startsWith('/dashboard') ||
                                Boolean(localStorage.getItem('tsehay_auth_user_cache'));
-        if (isAuthCallback) {
+        if (isAuthOrDashboard) {
           sessionStorage.setItem('tsehay_preloader_shown', 'true');
           sessionStorage.setItem('tsehay_preloader_seen', 'true');
           return true;
         }
-      }
 
-      const navEntry = window.performance?.getEntriesByType?.('navigation')?.[0] as PerformanceNavigationTiming | undefined;
-      const isReload = navEntry?.type === 'reload';
-      
-      if (isReload) {
-        sessionStorage.removeItem('tsehay_preloader_shown');
-        return false;
+        return sessionStorage.getItem('tsehay_preloader_shown') === 'true';
       }
-
-      return sessionStorage.getItem('tsehay_preloader_shown') === 'true';
+      return false;
     } catch (e) {
       return false;
     }

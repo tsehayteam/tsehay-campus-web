@@ -568,6 +568,14 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
     return result;
   }, [posts, activeCategory, searchQuery]);
 
+  // 🌟 Gated Preview for Unregistered Visitors (Facebook Style: max 10 posts preview)
+  const visiblePosts = useMemo(() => {
+    if (effectiveUser) return filteredPosts;
+    return filteredPosts.slice(0, 10);
+  }, [effectiveUser, filteredPosts]);
+
+  const hasGatedPosts = !effectiveUser && filteredPosts.length > 10;
+
   return (
     <div className="min-h-screen bg-[#030509] text-white flex flex-col selection:bg-[#f9b03c]/30 selection:text-[#f9b03c]">
       <Navbar />
@@ -858,7 +866,7 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
               </form>
             </div>
 
-            {filteredPosts.length === 0 ? (
+            {visiblePosts.length === 0 ? (
               <div className="p-12 text-center rounded-3xl bg-slate-900/60 border border-white/10 backdrop-blur-xl">
                 <div className="w-16 h-16 rounded-2xl bg-white/5 text-slate-400 flex items-center justify-center text-2xl mx-auto mb-3">
                   <i className="fa-solid fa-newspaper"></i>
@@ -869,7 +877,7 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
                 </p>
               </div>
             ) : (
-              filteredPosts.map((post) => {
+              visiblePosts.map((post) => {
                 const isLiked = effectiveUser ? post.likes?.includes(effectiveUser.uid) : false;
                 const isPostAuthor = effectiveUser?.uid === post.authorId;
                 const canDelete = isPostAuthor || effectiveProfile?.isAdmin;
@@ -1118,6 +1126,65 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
                   </article>
                 );
               })
+            )}
+
+            {/* 🌟 Gated Preview Curtain for Unregistered Visitors (Facebook Style) */}
+            {hasGatedPosts && (
+              <div className="relative pt-4 pb-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="relative rounded-3xl bg-gradient-to-b from-slate-900/80 via-slate-950/95 to-slate-950 border border-[#f9b03c]/20 p-8 sm:p-10 overflow-hidden backdrop-blur-2xl shadow-2xl">
+                  {/* Glowing background ambience */}
+                  <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#f9b03c]/15 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#030509] via-[#030509]/60 to-transparent pointer-events-none" />
+                  
+                  {/* Decorative blurred background mock post to simulate more posts fading out */}
+                  <div className="opacity-15 blur-sm pointer-events-none select-none space-y-3 mb-6" aria-hidden="true">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-600" />
+                      <div className="space-y-1.5 text-left">
+                        <div className="w-32 h-3.5 bg-slate-600 rounded-full" />
+                        <div className="w-20 h-2.5 bg-slate-700 rounded-full" />
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-left">
+                      <div className="w-full h-3 bg-slate-600 rounded-full" />
+                      <div className="w-5/6 h-3 bg-slate-600 rounded-full" />
+                      <div className="w-2/3 h-3 bg-slate-700 rounded-full" />
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 max-w-md mx-auto space-y-4">
+                    <div className="w-14 h-14 mx-auto rounded-2xl bg-[#f9b03c]/15 border border-[#f9b03c]/30 flex items-center justify-center text-[#f9b03c] text-2xl shadow-xl shadow-[#f9b03c]/10">
+                      <i className="fa-solid fa-lock" />
+                    </div>
+                    <div>
+                      <span className="inline-block px-3 py-1 rounded-full bg-[#f9b03c]/10 text-[#f9b03c] text-[11px] font-bold tracking-wider uppercase border border-[#f9b03c]/20 mb-2">
+                        የማኅበረሰብ መግቢያ (Community Gate)
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-heading font-black text-white">
+                        ሙሉውን የማኅበረሰብ ውይይት ለማየት ይመዝገቡ
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+                        ያልተመዘገቡ ጎብኚዎች የመጀመሪያዎቹን 10 ፖስቶች ብቻ በነፃ ማየት ይችላሉ። ተጨማሪ {filteredPosts.length - 10}+ ፖስቶችን፣ የተማሪዎች ጥያቄና መልሶችን እና የዕለታዊ የስኬት ታሪኮችን ለማግኘት አሁኑኑ ይመዝገቡ ወይም ይግቡ።
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthModalTitle('ወደ Tsehay Campus ማኅበረሰብ ይቀላቀሉ');
+                          setAuthModalDescription('ሁሉንም ፖስቶች ለማየት፣ ጥያቄዎችን ለመጠየቅ እና ከተማሪዎች ጋር ለመወያየት ይመዝገቡ ወይም ይግቡ።');
+                          setShowAuthModal(true);
+                        }}
+                        className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#f9b03c] to-[#e09825] hover:from-[#fca626] hover:to-[#cb8419] text-slate-950 font-black text-sm shadow-xl shadow-[#f9b03c]/25 hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <i className="fa-solid fa-arrow-right-to-bracket" />
+                        <span>ይመዝገቡ ወይም ይግቡ (Log In / Sign Up)</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
           </section>

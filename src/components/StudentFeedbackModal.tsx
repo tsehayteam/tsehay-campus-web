@@ -306,22 +306,27 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
       const trimmedEmail = contactEmail.trim();
       const trimmedName = contactName.trim();
 
-      const feedbackPayload = {
-        id: feedbackId,
-        category,
-        type: category,
-        rating: Number(rating) || 5,
-        message: message.trim() || (uploadedAudioUrl ? '[የድምፅ መልዕክት ተልኳል]' : ''),
-        audioUrl: uploadedAudioUrl || null,
-        imageUrl: uploadedImageUrl || null,
-        userEmail: trimmedEmail || user?.email || 'visitor@tsehaycampus.com',
-        userName: trimmedName || user?.displayName || (user?.email ? user.email.split('@')[0] : (trimmedEmail ? trimmedEmail.split('@')[0] : 'እንግዳ ተጠቃሚ (Guest Visitor)')),
-        userId: user?.uid || `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/',
-        status: 'pending',
-        createdAt: Date.now(),
-        createdAtISO: new Date().toISOString()
-      };
+        const isStudentUser = Boolean(user && user.uid && !user.uid.startsWith('guest_'));
+        const userRole = isStudentUser ? 'student' : 'visitor';
+
+        const feedbackPayload = {
+          id: feedbackId,
+          category,
+          type: category,
+          rating: Number(rating) || 5,
+          message: message.trim() || (uploadedAudioUrl ? '[የድምፅ መልዕክት ተልኳል]' : ''),
+          audioUrl: uploadedAudioUrl || null,
+          imageUrl: uploadedImageUrl || null,
+          userEmail: trimmedEmail || user?.email || 'visitor@tsehaycampus.com',
+          userName: trimmedName || user?.displayName || (user?.email ? user.email.split('@')[0] : (trimmedEmail ? trimmedEmail.split('@')[0] : (isStudentUser ? 'ተማሪ' : 'እንግዳ ጎብኚ'))),
+          userId: user?.uid || `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          userRole,
+          role: userRole,
+          pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/',
+          status: 'pending',
+          createdAt: Date.now(),
+          createdAtISO: new Date().toISOString()
+        };
 
       // 4. Server API Dispatch with guaranteed persistence
       try {

@@ -161,7 +161,11 @@ function AuthCallbackHandler() {
         console.error("Auth callback error:", err);
         if (isMounted) {
           setStatus('error');
-          setErrorMessage(err?.message || 'የመግቢያ ሂደቱን ማጠናቀቅ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+          const rawErr = err?.message || '';
+          const cleanErr = /supabase|postgres|vwkjmag/i.test(rawErr)
+            ? 'የመግቢያ ሂደቱን ማጠናቀቅ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።'
+            : rawErr || 'የመግቢያ ሂደቱን ማጠናቀቅ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።';
+          setErrorMessage(cleanErr);
         }
       }
     };
@@ -185,11 +189,25 @@ function AuthCallbackHandler() {
       window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: formatted }));
 
       // =========================================================================
-      // 🌟 COMPREHENSIVE REGISTRATION STATUS CHECK
-      // "automaticly yilef alredy yetemezegebe temari kehone kaltemezegebe detect argo endetelemedew yiketil"
+      // 🌟 ZERO-LAG COMPREHENSIVE REGISTRATION STATUS CHECK
+      // Existing student with complete info -> AUTOMATIC INSTANT PASS
+      // New visitor -> Mandatory Onboarding Form
       // =========================================================================
       try {
-        // Step 1: Query server API check-registration with 3-second timeout protection
+        // Step 1: Check instant local cache first for zero network delay
+        let localPhone = '';
+        try {
+          const cachedUserRaw = localStorage.getItem('tsehay_auth_user_cache');
+          if (cachedUserRaw) {
+            const parsed = JSON.parse(cachedUserRaw);
+            localPhone = parsed.phone || parsed.phoneNumber || parsed.phone_number || '';
+          }
+          if (!localPhone) {
+            localPhone = localStorage.getItem('tsehay_user_phone') || '';
+          }
+        } catch (e) {}
+
+        // Step 2: Query server API check-registration with 1500ms race timeout protection
         const checkPromise = fetch('/api/auth/check-registration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -213,18 +231,31 @@ function AuthCallbackHandler() {
           }
         })();
 
-        const [serverCheck, clientProfile] = await Promise.all([
-          checkPromise,
-          clientProfilePromise
+        // Hard 1500ms safety timeout: Never leave user stuck on spinner screen
+        const timeoutPromise = new Promise<{ isTimeout: boolean }>(resolve => {
+          setTimeout(() => resolve({ isTimeout: true }), 1500);
+        });
+
+        const raceResult = await Promise.race([
+          Promise.all([checkPromise, clientProfilePromise]),
+          timeoutPromise
         ]);
 
+        let serverCheck: any = null;
+        let clientProfile: any = null;
+
+        if (Array.isArray(raceResult)) {
+          serverCheck = raceResult[0];
+          clientProfile = raceResult[1];
+        }
+
         const resolvedProfile = serverCheck?.profile || clientProfile;
-        const existingPhone = resolvedProfile?.phone || resolvedProfile?.phone_number || (formatted as any)?.phone || '';
+        const existingPhone = resolvedProfile?.phone || resolvedProfile?.phone_number || (formatted as any)?.phone || localPhone || '';
         const hasValidPhone = Boolean(existingPhone && String(existingPhone).trim().length >= 7);
-        const isRegisteredServer = Boolean(serverCheck?.isRegistered);
+        const isRegisteredServer = Boolean(serverCheck?.isRegistered) || Boolean(resolvedProfile?.id);
 
         // Case A: Existing Student with COMPLETE registration (Valid phone & full info) -> AUTOMATIC PASS
-        if (isRegisteredServer && hasValidPhone) {
+        if ((isRegisteredServer || Boolean(resolvedProfile)) && hasValidPhone) {
           const finalUser: User = {
             ...formatted,
             displayName: resolvedProfile?.name || resolvedProfile?.full_name || resolvedProfile?.displayName || formatted.displayName,
@@ -233,6 +264,9 @@ function AuthCallbackHandler() {
 
           try {
             localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(finalUser));
+            if (existingPhone) {
+              localStorage.setItem('tsehay_user_phone', existingPhone);
+            }
           } catch (e) {}
 
           window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: finalUser }));
@@ -243,7 +277,7 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // Case B: Brand New Visitor or Incomplete Info -> Detect as New & Require Full Information
+        // Case B: Brand New Visitor or Incomplete Info -> Detect as New & Require Full Information (Onboarding)
         const suggestedName = resolvedProfile?.name || resolvedProfile?.full_name || serverCheck?.suggestedName || formatted.displayName || '';
         setFullName(suggestedName);
         setPhone(existingPhone || '');
@@ -252,17 +286,7 @@ function AuthCallbackHandler() {
 
       } catch (evalErr) {
         console.warn("Notice evaluating profile:", evalErr);
-        // Fallback: If evaluation encountered unexpected error, check if user already has course caches
-        try {
-          const hasCachedCourses = localStorage.getItem(`tsehay_user_courses_${formatted.uid}`);
-          if (hasCachedCourses) {
-            setStatus('redirecting');
-            navigatePostAuth();
-            return;
-          }
-        } catch (e) {}
-
-        // Otherwise show onboarding form
+        // Fallback: If evaluation encountered unexpected error, show onboarding form
         setFullName(formatted.displayName || '');
         setStatus('onboarding');
       }
@@ -411,7 +435,7 @@ function AuthCallbackHandler() {
             በተሳካ ሁኔታ ገብተዋል!
           </h2>
           <p className="text-xs sm:text-sm text-slate-300">
-            ወደ ፀሐይ ካምፓስ መማሪያ ክፍልዎ በማስተላለፍ ላይ ነን...
+            ወደ ፀሐይ ካምፓስ (Tsehay Campus) በማስተላለፍ ላይ ነን...
           </p>
           <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden mt-4">
             <div className="bg-[#f9b03c] h-full animate-pulse w-full"></div>

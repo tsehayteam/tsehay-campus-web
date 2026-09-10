@@ -58,10 +58,98 @@ html.dark, html.dark body {
   color: #ededed !important;
 }
 
+/* ==========================================================================
+   🌟 World-Class Light Theme Elevation (Clean Neutral Grayscale & Soft Shadows)
+   ========================================================================== */
 html:not(.dark), html:not(.dark) body {
-  background-color: #f1f5f9 !important;
-  background: #f1f5f9 !important;
+  background-color: #f8fafc !important;
+  background: #f8fafc !important;
   color: #0f172a !important;
+}
+
+html:not(.dark) {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --bodyBg: #f8fafc;
+  --color-bodyBg: #f8fafc;
+  color-scheme: light;
+}
+
+/* Light mode card elevations & glass surfaces */
+html:not(.dark) .bg-slate-900,
+html:not(.dark) .bg-slate-900\/80,
+html:not(.dark) .bg-slate-900\/85,
+html:not(.dark) .bg-slate-900\/90,
+html:not(.dark) .bg-slate-900\/95,
+html:not(.dark) .bg-slate-950,
+html:not(.dark) .bg-slate-950\/80,
+html:not(.dark) .bg-slate-950\/90,
+html:not(.dark) .bg-slate-950\/95,
+html:not(.dark) .bg-\[\#030509\],
+html:not(.dark) .bg-\[\#070b14\],
+html:not(.dark) .bg-\[\#0a0f1d\],
+html:not(.dark) .bg-dark,
+html:not(.dark) .bg-darkCard {
+  background-color: #ffffff !important;
+  border-color: rgba(226, 232, 240, 0.85) !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03) !important;
+}
+
+/* Light mode text readability */
+html:not(.dark) .bg-slate-900 .text-white,
+html:not(.dark) .bg-slate-950 .text-white,
+html:not(.dark) .bg-\[\#030509\] .text-white,
+html:not(.dark) .bg-\[\#070b14\] .text-white,
+html:not(.dark) .text-slate-100 {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .bg-slate-900 .text-slate-400,
+html:not(.dark) .bg-slate-950 .text-slate-400,
+html:not(.dark) .bg-\[\#030509\] .text-slate-400,
+html:not(.dark) .bg-slate-900 .text-slate-300,
+html:not(.dark) .bg-slate-950 .text-slate-300 {
+  color: #475569 !important;
+}
+
+/* Light mode border refinement */
+html:not(.dark) .border-white\/10,
+html:not(.dark) .border-white\/15,
+html:not(.dark) .border-white\/20,
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-800\/80,
+html:not(.dark) .border-slate-700 {
+  border-color: rgba(226, 232, 240, 0.8) !important;
+}
+
+/* Light mode input & control refinement */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html:not(.dark) textarea,
+html:not(.dark) select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Light mode glassmorphism navbar & overlays */
+html:not(.dark) .glass-panel,
+html:not(.dark) .glassmorphism {
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-color: rgba(226, 232, 240, 0.85) !important;
+  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Light mode modal backdrops */
+html:not(.dark) .modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(8px) !important;
 }
 
 body {

@@ -452,9 +452,11 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                       onChange={() => setPaymethod('lakipay')} 
                       className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
                     />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                      <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">For Local Payments</span>
+                      <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5 truncate max-w-[180px] sm:max-w-[260px]">
+                        {course?.title ? course.title : 'የሀገር ውስጥ ክፍያ (Telebirr, CBE)'}
+                      </span>
                     </div>
                   </div>
                   <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">

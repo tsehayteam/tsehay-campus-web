@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef, Suspense } from 'react';
 
 
 import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import nextDynamic from 'next/dynamic';
@@ -65,7 +66,8 @@ function StudentDashboardContent() {
   const validViews = ['classroom', 'courses', 'referrals', 'messages', 'ai', 'certificates', 'settings'];
   const initialView = (urlViewParam && validViews.includes(urlViewParam))
     ? urlViewParam
-    : (typeof window !== 'undefined' && localStorage.getItem('tsehay_dashboard_last_view')) || 'classroom';
+    : (typeof window !== 'undefined' && localStorage.getItem('tsehay_dashboard_last_view')) ||
+      (typeof window !== 'undefined' && (!localStorage.getItem('tsehay_user_courses_cache') || (JSON.parse(localStorage.getItem('tsehay_user_courses_cache') || '[]').length === 0)) ? 'courses' : 'classroom');
 
   const [currentView, _setCurrentView] = useState<string>(initialView);
 
@@ -154,16 +156,15 @@ function StudentDashboardContent() {
   }, []);
 
   const [courses, setCourses] = useState<any[]>(() => {
-    if (typeof window === 'undefined') return DEFAULT_COURSES;
+    if (typeof window === 'undefined') return [];
     try {
       const cached = localStorage.getItem('tsehay_user_courses_cache');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
-      const allCached = getCachedCourses();
-      return allCached.length > 0 ? allCached : DEFAULT_COURSES;
-    } catch (e) { return DEFAULT_COURSES; }
+      return [];
+    } catch (e) { return []; }
   });
   const [loading, setLoading] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -187,11 +188,9 @@ function StudentDashboardContent() {
           const parsed = JSON.parse(cachedCourse);
           if (parsed && parsed.id) return parsed;
         }
-        const allCached = getCachedCourses();
-        if (allCached.length > 0) return allCached[0];
       }
-      return DEFAULT_COURSES[0];
-    } catch (e) { return DEFAULT_COURSES[0]; }
+      return null;
+    } catch (e) { return null; }
   });
   const [activeLesson, setActiveLesson] = useState<any>(() => {
     try {
@@ -204,22 +203,23 @@ function StudentDashboardContent() {
           const allCached = getCachedCourses();
           matchedCourse = allCached.find(c => c.id === qCourse || c.slug === qCourse) || DEFAULT_COURSES.find(c => c.id === qCourse || c.slug === qCourse);
         }
-        const targetCourse = matchedCourse || DEFAULT_COURSES[0];
-        if (qLesson !== null && qLesson !== undefined && targetCourse?.lessons?.length > 0) {
-          const lNum = parseInt(qLesson, 10);
-          if (!isNaN(lNum) && targetCourse.lessons[lNum]) {
-            return { ...targetCourse.lessons[lNum], moduleIndex: 0, lessonIndex: lNum };
+        if (matchedCourse) {
+          if (qLesson !== null && qLesson !== undefined && matchedCourse.lessons?.length > 0) {
+            const lNum = parseInt(qLesson, 10);
+            if (!isNaN(lNum) && matchedCourse.lessons[lNum]) {
+              return { ...matchedCourse.lessons[lNum], moduleIndex: 0, lessonIndex: lNum };
+            }
           }
+          return matchedCourse.lessons?.[0] || null;
         }
         const cachedLesson = localStorage.getItem('tsehay_user_active_lesson');
         if (cachedLesson) {
           const parsed = JSON.parse(cachedLesson);
           if (parsed && parsed.title) return parsed;
         }
-        return targetCourse?.lessons?.[0] || null;
       }
-      return DEFAULT_COURSES[0]?.lessons?.[0] || null;
-    } catch (e) { return DEFAULT_COURSES[0]?.lessons?.[0] || null; }
+      return null;
+    } catch (e) { return null; }
   });
 
   // Immediate URL course synchronizer (instant switch without waiting for network)
@@ -895,32 +895,7 @@ function StudentDashboardContent() {
           }
         }
 
-        // 🌟 Accurate Membership Tier: Default is Free Member with Free Course only
-        if (userCourses.length === 0) {
-          const freeCourse = allCatalogCourses.find(c => c.isFree || c.id === 'digital_marketing_free' || c.price === 0 || c.price === 'Free') || allCatalogCourses[0];
-          userCourses = freeCourse ? [freeCourse] : [];
-
-          // Auto-persist free course enrollment for student in Supabase
-          try {
-            if (freeCourse) {
-              (async () => {
-                try {
-                  await supabase.from('enrollments').upsert({
-                    id: `enr_${user.uid}_${freeCourse.id}`,
-                    user_id: user.uid,
-                    user_email: user.email || '',
-                    course_id: freeCourse.id,
-                    course_title: freeCourse.title,
-                    amount: 0,
-                    payment_method: 'free',
-                    status: 'completed'
-                  });
-                } catch (e) {}
-              })();
-            }
-          } catch (e) {}
-        }
-
+        // 🌟 Enrollment Integrity: Users start with exactly what they enrolled in (Empty if none)
         setHasPaidEnrollment(hasPaid);
         setCourses(userCourses);
         try {
@@ -928,7 +903,6 @@ function StudentDashboardContent() {
           localStorage.setItem('tsehay_user_courses_cache', JSON.stringify(userCourses));
         } catch(e) {}
 
-          
         if (userCourses.length > 0) {
           setActiveCourse((prev: any) => {
             // 1. Priority: URL courseId parameter
@@ -959,7 +933,12 @@ function StudentDashboardContent() {
             return userCourses[0];
           });
         } else {
-          setActiveCourse(DEFAULT_COURSES[0]);
+          setActiveCourse(null);
+          setActiveLesson(null);
+          try {
+            localStorage.removeItem(`tsehay_user_active_course_${user.uid}`);
+            localStorage.removeItem('tsehay_user_active_course');
+          } catch(e) {}
         }
       } catch (error) {
         console.error("Error fetching courses", error);
@@ -2561,6 +2540,41 @@ function StudentDashboardContent() {
       <main className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-[#030509] ${isFocusMode ? 'p-1 sm:p-3 lg:p-4' : 'p-4 lg:p-8'} transition-all duration-300`}>
         
         {currentView === 'classroom' && (
+          (!activeCourse && courses.length === 0) ? (
+            <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 text-center animate-in fade-in zoom-in-95 duration-300">
+              <div className="p-8 sm:p-12 rounded-3xl bg-white dark:bg-[#0c1017]/95 border border-amber-400/30 dark:border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-2xl">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-[#f9b03c]/15 border border-[#f9b03c]/30 text-[#f9b03c] flex items-center justify-center text-3xl sm:text-4xl mx-auto mb-6 shadow-[0_0_30px_rgba(249,176,60,0.2)]">
+                  <i className="fa-solid fa-graduation-cap"></i>
+                </div>
+                <span className="inline-block px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-black uppercase tracking-wider mb-3">
+                  የተመዘገበ ኮርስ የለም (No Enrolled Courses)
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black font-heading text-gray-900 dark:text-white mb-3">
+                  እስካሁን የተመዘገቡበት ኮርስ የለም
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-slate-300 max-w-md mx-auto mb-8 leading-relaxed">
+                  ወደ ፀሐይ ካምፓስ እንኳን ደህና መጡ! ወደ መማሪያ ክፍልዎ ለመግባት እና ትምህርት ለመጀመር ከተዘጋጁት ጥራት ያላቸው ኮርሶች መካከል አንዱን ይምረጡ።
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentView('courses')}
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-sm hover:brightness-110 shadow-[0_0_25px_rgba(249,176,60,0.4)] transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-compass"></i>
+                    <span>ኮርሶችን ያስሱ (Browse Courses)</span>
+                  </button>
+                  <Link
+                    href="/courses"
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-900 dark:text-white font-bold text-sm border border-gray-200 dark:border-white/10 transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>ሙሉ ካታሎግ ይመልከቱ</span>
+                    <i className="fa-solid fa-arrow-right text-xs"></i>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : (
           <div className={`${isFocusMode ? 'max-w-[1700px] w-full' : 'max-w-[1600px]'} mx-auto transition-all duration-500`}>
             {/* Top Course Title & Action Header (Completely hidden during Focus Mode to eliminate clutter) */}
             {!isFocusMode && (
@@ -3604,6 +3618,7 @@ function StudentDashboardContent() {
                 </div>
             </div>
           </div>
+          )
         )}
 
         {currentView === 'courses' && (

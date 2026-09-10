@@ -165,6 +165,21 @@ export default function EventsClient() {
         return deletedIds.includes(idOrSlug.trim().toLowerCase());
       };
 
+      // 🌟 Authoritative sync: If server returned active events, use them directly (purging any deleted events)
+      if (artifactList && artifactList.length > 0) {
+        const cleanServerList = artifactList
+          .filter(ev => ev && (ev.id || ev.slug) && !isDeleted(ev.id) && !isDeleted(ev.slug))
+          .map(ev => ({
+            ...ev,
+            image: formatDriveImageUrl(ev.image) || ev.image || ''
+          }));
+        setEvents(cleanServerList);
+        try {
+          localStorage.setItem('tsehay_events_cache', JSON.stringify(cleanServerList));
+        } catch (e) {}
+        return;
+      }
+
       const eventMap = new Map<string, TsehayEvent>();
       
       // 1. Preload with DEFAULT_EVENTS ONLY if not deleted
@@ -236,7 +251,10 @@ export default function EventsClient() {
     })
       .then(res => res.json())
       .then(data => {
-        if (data && Array.isArray(data.events) && data.events.length > 0) {
+        if (data && data.deletedIds && Array.isArray(data.deletedIds)) {
+          data.deletedIds.forEach((d: string) => recordDeletedEventId(d));
+        }
+        if (data && Array.isArray(data.events)) {
           artifactList = data.events;
           syncAndSet();
         }
@@ -252,7 +270,10 @@ export default function EventsClient() {
           fetch(`/api/events?t=${Date.now()}`, { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
-              if (data && Array.isArray(data.events) && data.events.length > 0) {
+              if (data && data.deletedIds && Array.isArray(data.deletedIds)) {
+                data.deletedIds.forEach((d: string) => recordDeletedEventId(d));
+              }
+              if (data && Array.isArray(data.events)) {
                 artifactList = data.events;
                 syncAndSet();
               }

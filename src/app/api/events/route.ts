@@ -79,6 +79,10 @@ async function getDeletedEventIdsFromServer(): Promise<string[]> {
 async function getSupabaseEvents(): Promise<any[]> {
   const deletedIds = await getDeletedEventIdsFromServer();
   const isDeleted = (e: any) => {
+    if (!e) return true;
+    if (e.is_deleted === true || e.isDeleted === true || e.is_active === false || e.isActive === false || e.status === 'deleted' || e.status === 'inactive') {
+      return true;
+    }
     if (deletedIds.length === 0) return false;
     const cId = (e.id || '').trim().toLowerCase();
     const cSlug = (e.slug || '').trim().toLowerCase();
@@ -232,7 +236,13 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ success: true, events: formattedEvents, count: formattedEvents.length }, { headers: NO_CACHE_HEADERS });
+    const deletedIds = await getDeletedEventIdsFromServer();
+    return NextResponse.json({ 
+      success: true, 
+      events: formattedEvents, 
+      count: formattedEvents.length,
+      deletedIds 
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error fetching events:', error);
     const fallback = loadPersistedEvents();
@@ -300,12 +310,19 @@ export async function DELETE(req: NextRequest) {
     const cleanId = eventId.trim();
     const cleanSlug = eventSlug.trim();
 
-    // 1. Delete from Supabase events table by ID and slug
+    // 1. Delete and soft-delete from Supabase events table by ID and slug
     try {
       if (cleanId) {
+        // Try soft-delete first in case of foreign keys, then hard delete
+        try {
+          await supabaseServer.from('events').update({ status: 'deleted', is_active: false, is_deleted: true }).eq('id', cleanId);
+        } catch (_) {}
         await supabaseServer.from('events').delete().eq('id', cleanId);
       }
       if (cleanSlug) {
+        try {
+          await supabaseServer.from('events').update({ status: 'deleted', is_active: false, is_deleted: true }).eq('slug', cleanSlug);
+        } catch (_) {}
         await supabaseServer.from('events').delete().eq('slug', cleanSlug);
       }
     } catch (e) {

@@ -157,6 +157,24 @@ export default function RootLayout({
             `,
           }}
         />
+        <script
+          id="tsehay-preloader-session-detector"
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (
+                  sessionStorage.getItem('tsehay_preloader_shown') === 'true' ||
+                  sessionStorage.getItem('tsehay_preloader_seen') === 'true' ||
+                  location.pathname.startsWith('/dashboard') ||
+                  location.pathname.startsWith('/auth/') ||
+                  localStorage.getItem('tsehay_auth_user_cache')
+                ) {
+                  document.documentElement.classList.remove('tsehay-loading');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} ${notoSansEthiopic.variable} antialiased pt-0 notranslate`}

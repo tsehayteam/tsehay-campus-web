@@ -425,6 +425,7 @@ export default function AdminDashboard() {
   const [feedbackSearchTerm, setFeedbackSearchTerm] = useState('');
   const [feedbackTypeFilter, setFeedbackTypeFilter] = useState<'all' | 'course' | 'bug' | 'idea' | 'general'>('all');
   const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+  const [feedbackRoleFilter, setFeedbackRoleFilter] = useState<'all' | 'student' | 'visitor'>('all');
   const [isUpdatingFeedbackId, setIsUpdatingFeedbackId] = useState<string | null>(null);
   const [isLoadingFeedbacks, setIsLoadingFeedbacks] = useState(false);
   const [lastFeedbackSyncTime, setLastFeedbackSyncTime] = useState<string | null>(null);
@@ -7795,6 +7796,28 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
+                {/* 🌟 Role Filter: ተማሪ (Student) vs ተራ ጎብኚ (Visitor) */}
+                <div className="flex items-center bg-gray-100 dark:bg-slate-900/90 p-1 rounded-xl border border-gray-200 dark:border-slate-700/60">
+                  {[
+                    { id: 'all', label: 'ሁሉም ተጠቃሚ' },
+                    { id: 'student', label: '🎓 ተማሪ (Student)' },
+                    { id: 'visitor', label: '👤 ተራ ጎብኚ (Visitor)' },
+                  ].map((rf) => (
+                    <button
+                      key={rf.id}
+                      type="button"
+                      onClick={() => setFeedbackRoleFilter(rf.id as any)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        feedbackRoleFilter === rf.id
+                          ? 'bg-white dark:bg-slate-800 text-dark dark:text-white shadow-xs font-black'
+                          : 'text-gray-500 hover:text-dark dark:hover:text-white'
+                      }`}
+                    >
+                      {rf.label}
+                    </button>
+                  ))}
+                </div>
+
               </div>
 
               {/* Feedback Cards List */}
@@ -7804,12 +7827,16 @@ export default function AdminDashboard() {
                   const matchStatus = feedbackStatusFilter === 'all' || 
                     (feedbackStatusFilter === 'resolved' && item.status === 'resolved') ||
                     (feedbackStatusFilter === 'pending' && item.status !== 'resolved');
+                  const isVisitor = item.userRole === 'visitor' || item.role === 'visitor' || (item.userId && String(item.userId).startsWith('guest_'));
+                  const matchRole = feedbackRoleFilter === 'all' ||
+                    (feedbackRoleFilter === 'visitor' && isVisitor) ||
+                    (feedbackRoleFilter === 'student' && !isVisitor);
                   const q = feedbackSearchTerm.toLowerCase().trim();
                   const matchSearch = !q || 
                     (item.userName || '').toLowerCase().includes(q) ||
                     (item.userEmail || '').toLowerCase().includes(q) ||
                     (item.message || '').toLowerCase().includes(q);
-                  return matchType && matchStatus && matchSearch;
+                  return matchType && matchStatus && matchRole && matchSearch;
                 });
 
                 if (isLoadingFeedbacks && feedbacks.length === 0) {
@@ -7866,9 +7893,23 @@ export default function AdminDashboard() {
                                   {(item.userName || 'ተ')[0].toUpperCase()}
                                 </div>
                                 <div className="min-w-0">
-                                  <h4 className="font-black text-sm text-dark dark:text-white truncate">
-                                    {item.userName || 'ተማሪ'}
-                                  </h4>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="font-black text-sm text-dark dark:text-white truncate">
+                                      {item.userName || (item.userRole === 'visitor' ? 'ጎብኚ' : 'ተማሪ')}
+                                    </h4>
+                                    {/* 🏷️ Student vs Visitor Role Badge */}
+                                    {(item.userRole === 'visitor' || item.role === 'visitor' || (item.userId && String(item.userId).startsWith('guest_'))) ? (
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 flex items-center gap-1 shrink-0">
+                                        <i className="fa-solid fa-user text-[9px]" />
+                                        <span>ተራ ጎብኚ (Visitor)</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1 shrink-0">
+                                        <i className="fa-solid fa-graduation-cap text-[9px]" />
+                                        <span>ተማሪ (Student)</span>
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">
                                     {item.userEmail || 'student@tsehaycampus.com'}
                                   </p>

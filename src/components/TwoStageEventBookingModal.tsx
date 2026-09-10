@@ -62,7 +62,22 @@ export default function TwoStageEventBookingModal({
         user?.email || 
         ''
       );
-      setAttendeePhone(initialAttendeePhone || '');
+
+      // Smart Auto-Fill for logged-in students
+      let resolvedPhone = initialAttendeePhone || (user as any)?.phone || (user as any)?.phoneNumber || '';
+      if (!resolvedPhone && typeof window !== 'undefined') {
+        try {
+          resolvedPhone = localStorage.getItem('tsehay_user_phone') || '';
+          if (!resolvedPhone) {
+            const cachedUser = localStorage.getItem('tsehay_auth_user_cache');
+            if (cachedUser) {
+              const parsed = JSON.parse(cachedUser);
+              resolvedPhone = parsed.phone || parsed.phoneNumber || parsed.phone_number || '';
+            }
+          }
+        } catch (e) {}
+      }
+      setAttendeePhone(resolvedPhone || '');
     }
   }, [isOpen, user, initialAttendeeName, initialAttendeeEmail, initialAttendeePhone]);
 
@@ -167,7 +182,7 @@ export default function TwoStageEventBookingModal({
     setStep1Error(null);
 
     try {
-      const res = await fetch('/api/tickets', {
+      const res = await fetch('/api/events/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -182,8 +197,14 @@ export default function TwoStageEventBookingModal({
           mapsUrl: event.mapsUrl,
           eventImage: event.image,
           attendeeName: attendeeName.trim(),
+          name: attendeeName.trim(),
           attendeeEmail: attendeeEmail.trim().toLowerCase(),
+          email: attendeeEmail.trim().toLowerCase(),
           attendeePhone: attendeePhone.trim(),
+          phone: attendeePhone.trim(),
+          userId: user?.uid || `guest_${Date.now()}`,
+          pricePaid: pricePaid,
+          price: pricePaid,
           amount: pricePaid,
           paymentMethod: method,
           referralCode: appliedCode || null,
@@ -617,9 +638,11 @@ export default function TwoStageEventBookingModal({
                           onChange={() => setPaymethod('lakipay')}
                           className="w-4 h-4 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0"
                         />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <span className="font-black text-white text-sm sm:text-base block leading-tight">LakiPay</span>
-                          <span className="text-[11px] text-amber-400 font-bold block mt-0.5">For Local Payments</span>
+                          <span className="text-[11px] text-amber-400 font-bold block mt-0.5 truncate max-w-[180px] sm:max-w-[260px]">
+                            {event?.title ? event.title : 'የሀገር ውስጥ ክፍያ (Telebirr, CBE)'}
+                          </span>
                         </div>
                       </div>
                       <div className="bg-white w-20 sm:w-24 h-8 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">

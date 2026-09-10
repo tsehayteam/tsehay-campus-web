@@ -261,25 +261,43 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   };
 
   const getFriendlyErrorMessage = (err: any) => {
-    const msg = err?.message || '';
+    const rawMsg = (err?.message || (typeof err === 'string' ? err : '')).toLowerCase();
     if (
-      msg.includes('Invalid login credentials') ||
-      msg.includes('invalid-credential') ||
-      msg.includes('user not found') ||
-      msg.includes('wrong-password')
+      rawMsg.includes('invalid login credentials') ||
+      rawMsg.includes('invalid-credential') ||
+      rawMsg.includes('user not found') ||
+      rawMsg.includes('wrong-password')
     ) {
       return 'የተሳሳተ የ Gmail አድራሻ ወይም የይለፍ ቃል አስገብተዋል። እባክዎ በትክክል ያረጋግጡ።';
     }
-    if (msg.includes('already registered') || msg.includes('User already registered') || msg.includes('email-already-in-use')) {
+    if (rawMsg.includes('already registered') || rawMsg.includes('user already registered') || rawMsg.includes('email-already-in-use')) {
       return 'ይህ የ Gmail አድራሻ አስቀድሞ ተመዝግቧል። እባክዎ የይለፍ ቃልዎን አስገብተው ይግቡ።';
     }
-    if (msg.includes('Password should be at least')) {
+    if (rawMsg.includes('password should be at least')) {
       return 'የይለፍ ቃሉ በጣም አጭር ወይም ደካማ ነው። እባክዎ ቢያንስ 6 ፊደላት ወይም ቁጥሮች ይጠቀሙ።';
     }
-    if (msg.includes('rate limit') || msg.includes('too many requests')) {
+    if (rawMsg.includes('rate limit') || rawMsg.includes('too many requests')) {
       return 'ብዙ ያልተሳኩ ሙከራዎች ተደርገዋል። እባክዎ ጥቂት ደቂቃዎችን ቆይተው በድጋሚ ይሞክሩ።';
     }
-    return msg || 'የሆነ ችግር አጋጥሟል። እባክዎ በድጋሚ ይሞክሩ።';
+    if (rawMsg.includes('network') || rawMsg.includes('failed to fetch') || rawMsg.includes('abort')) {
+      return 'የኔትወርክ ግንኙነት ችግር አጋጥሟል። እባክዎ ኢንተርኔትዎን አረጋግጠው እንደገና ይሞክሩ።';
+    }
+    // Strict privacy & brand clean: sanitize away any internal/database technical leaks
+    if (
+      rawMsg.includes('supabase') ||
+      rawMsg.includes('postgres') ||
+      rawMsg.includes('database') ||
+      rawMsg.includes('jwt') ||
+      rawMsg.includes('.co') ||
+      rawMsg.includes('auth/') ||
+      rawMsg.includes('schema') ||
+      rawMsg.includes('relation') ||
+      /supabase|postgres|vwkjmag/i.test(err?.message || '')
+    ) {
+      return 'የመግቢያ ሂደቱ አልተሳካም። እባክዎ በድጋሚ ይሞክሩ ወይም በ Google ይግቡ።';
+    }
+    const cleanMsg = err?.message || '';
+    return cleanMsg || 'የሆነ ችግር አጋጥሟል። እባክዎ በድጋሚ ይሞክሩ።';
   };
 
   if (!hasMounted) return null;

@@ -150,13 +150,19 @@ export async function POST(request: Request) {
       const merchantDefaultPhone = (process.env.LAKIPAY_DEFAULT_PHONE || process.env.LAKIPAY_MERCHANT_PHONE || '251911000000').replace(/[^0-9]/g, '');
       const phoneForLakipay = validEthPhone || merchantDefaultPhone;
 
+      // 🌟 Extract clean, dynamic course/event title for LakiPay checkout summary
+      const cleanCourseTitle = payDetails.title || (isEventTicket ? (body.eventTitle || "Tsehay Event Ticket") : "Tsehay Campus Course");
+      const lakipayDescription = isEventTicket
+        ? `ትኬት: ${payDetails.description || body.eventTitle || 'Tsehay Event'}`
+        : `${payDetails.description || cleanCourseTitle} - Tsehay Campus`;
+
       // Initialize session via official LakiPay dynamic flow (POST https://api.lakipay.co/api/v2/payment/checkout)
       const lakipayResult = await initializeLakiPaySession({
         amount: Number(numAmount),
         currency: "ETB",
         reference: tx_ref,
-        title: String(payDetails.title || (isEventTicket ? "Tsehay Campus Event Ticket" : "Tsehay Campus Course")),
-        description: isEventTicket ? "Event Ticket Purchase" : "For Local Payments",
+        title: String(cleanCourseTitle),
+        description: String(lakipayDescription).substring(0, 80),
         email: email,
         firstName: firstName,
         lastName: lastName,
