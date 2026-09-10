@@ -94,10 +94,18 @@ export async function POST(req: NextRequest) {
     const attendeeEmail = (body.email || body.attendeeEmail || '').toString().trim().toLowerCase();
     const attendeePhone = (body.phone || body.attendeePhone || '').toString().trim();
     const eventId = (body.eventId || 'evt_general').toString().trim();
-    const userId = (body.userId || `guest_${Date.now()}`).toString().trim();
+    const userId = (body.userId || '').toString().trim();
     const pricePaid = Number(body.pricePaid || body.price || 0);
     const paymentMethod = body.paymentMethod || (pricePaid === 0 ? 'free' : 'lakipay');
     const tier = body.tier || (pricePaid > 1200 ? 'VIP Pass' : 'General Admission');
+
+    if (!userId || userId.startsWith('guest_') || userId.startsWith('anon_')) {
+      return NextResponse.json({
+        success: false,
+        requireAuth: true,
+        error: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+      }, { status: 401, headers: NO_CACHE_HEADERS });
+    }
 
     if (!attendeeEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendeeEmail)) {
       return NextResponse.json({
@@ -132,7 +140,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
-    // 🌟 Strict User & Email Isolation Check (No cross-account bleed)
+    // 🌟 Strict 1-Ticket Per Account & User Isolation Check
     const existingTickets = await getTickets();
     const alreadyRegistered = existingTickets.find(t => {
       const matchEvent = t.eventId === eventId || (eventSlug && t.eventSlug === eventSlug);
@@ -154,7 +162,7 @@ export async function POST(req: NextRequest) {
         alreadyRegistered: true,
         ticketId: alreadyRegistered.ticketId,
         ticket: enrichedTicket,
-        error: `ለዚህ ዝግጅት (${eventTitle}) አስቀድመው ትኬት ቆርጠዋል! (You have already registered for this event. Ticket ID: ${alreadyRegistered.ticketId})`
+        error: `ለዚህ ዝግጅት አስቀድመው ትኬት ቆርጠዋል! በአንድ አካውንት አንድ ትኬት ብቻ ነው የሚፈቀደው። (Already Purchased)`
       }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 

@@ -675,17 +675,23 @@ export default function EventDetailClient() {
 
                       if (isAlreadyRegistered) {
                         return (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveTicket(userTicket);
-                              setIsTicketModalOpen(true);
-                            }}
-                            className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_35px_rgba(16,185,129,0.4)] border border-emerald-400/40 active:scale-98"
-                          >
-                            <i className="fa-solid fa-circle-check text-white text-lg"></i>
-                            <span>ቲኬት ቆርጠዋል (Already Registered) • ትኬትህን እይ</span>
-                          </button>
+                          <div className="w-full sm:flex-1 flex flex-col gap-2">
+                            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-xs font-black w-fit shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                              <span>Already Purchased / ትኬት ተቆርጧል</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveTicket(userTicket);
+                                setIsTicketModalOpen(true);
+                              }}
+                              className="w-full py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_35px_rgba(16,185,129,0.4)] border border-emerald-400/40 active:scale-98"
+                            >
+                              <i className="fa-solid fa-ticket text-white text-lg"></i>
+                              <span>ትኬትዎን ይመልከቱ (View Your Ticket)</span>
+                            </button>
+                          </div>
                         );
                       }
 
@@ -702,10 +708,32 @@ export default function EventDetailClient() {
                         );
                       }
 
+                      const handleTicketClick = () => {
+                        if (!user) {
+                          try {
+                            sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+                              action: 'book_ticket',
+                              eventId: event.id,
+                              eventSlug: event.slug,
+                              returnUrl: `/events/${event.slug || event.id}`
+                            }));
+                          } catch (e) {}
+                          window.dispatchEvent(new CustomEvent('open-auth-modal', {
+                            detail: {
+                              isSignupMode: false,
+                              returnUrl: `/events/${event.slug || event.id}`,
+                              message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+                            }
+                          }));
+                          return;
+                        }
+                        setIsBookingOpen(true);
+                      };
+
                       return (
                         <button
                           type="button"
-                          onClick={() => setIsBookingOpen(true)}
+                          onClick={handleTicketClick}
                           className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all btn-buy-now-vibe cursor-pointer active:scale-98 shadow-[0_0_35px_rgba(249,176,60,0.4)]"
                         >
                           <i className="fa-solid fa-ticket text-lg"></i>

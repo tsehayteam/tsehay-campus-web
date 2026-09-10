@@ -315,6 +315,32 @@ export default function EventsClient() {
   });
 
   const handleBookTicket = (event: TsehayEvent) => {
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+          action: 'book_ticket',
+          eventId: event.id,
+          eventSlug: event.slug,
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('open-auth-modal', {
+        detail: {
+          isSignupMode: false,
+          returnUrl: `/events/${event.slug || event.id}`,
+          message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+        }
+      }));
+      return;
+    }
+
+    const userTicket = userBookedTickets[event.id] || (event.slug ? userBookedTickets[event.slug] : null);
+    if (userTicket) {
+      setGeneratedTicket(userTicket);
+      setIsTicketModalOpen(true);
+      return;
+    }
+
     setSelectedEvent(event);
     const seats = getRemainingSeats(event);
     if (seats <= 0) {
@@ -573,17 +599,23 @@ export default function EventsClient() {
 
                       if (isAlreadyRegistered) {
                         return (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setGeneratedTicket(userTicket);
-                              setIsTicketModalOpen(true);
-                            }}
-                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.4)] border border-emerald-400/40 active:scale-98"
-                          >
-                            <i className="fa-solid fa-circle-check" />
-                            <span>ቲኬት ቆርጠዋል (Already Registered)</span>
-                          </button>
+                          <div className="w-full flex flex-col gap-1.5">
+                            <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[11px] font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                              <span>Already Purchased / ትኬት ተቆርጧል</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGeneratedTicket(userTicket);
+                                setIsTicketModalOpen(true);
+                              }}
+                              className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.4)] border border-emerald-400/40 active:scale-98"
+                            >
+                              <i className="fa-solid fa-ticket" />
+                              <span>ትኬትህን እይ (View Ticket)</span>
+                            </button>
+                          </div>
                         );
                       }
 

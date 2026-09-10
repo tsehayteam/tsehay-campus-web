@@ -178,19 +178,34 @@ function StudentDashboardContent() {
       if (typeof window !== 'undefined') {
         const sp = new URLSearchParams(window.location.search);
         const qCourse = sp.get('courseId') || sp.get('course');
+        const allCached = getCachedCourses();
+        const allPool = allCached.length > 0 ? allCached : DEFAULT_COURSES;
         if (qCourse) {
-          const allCached = getCachedCourses();
-          const match = allCached.find(c => c.id === qCourse || c.slug === qCourse) || DEFAULT_COURSES.find(c => c.id === qCourse || c.slug === qCourse);
+          const match = allPool.find(c => c.id === qCourse || c.slug === qCourse) || DEFAULT_COURSES.find(c => c.id === qCourse || c.slug === qCourse);
           if (match) return match;
         }
         const cachedCourse = localStorage.getItem('tsehay_user_active_course');
         if (cachedCourse) {
-          const parsed = JSON.parse(cachedCourse);
-          if (parsed && parsed.id) return parsed;
+          try {
+            const parsed = JSON.parse(cachedCourse);
+            if (parsed && (parsed.id || parsed.title)) return parsed;
+          } catch (pe) {
+            const found = allPool.find(c => c.id === cachedCourse || c.slug === cachedCourse) || DEFAULT_COURSES.find(c => c.id === cachedCourse || c.slug === cachedCourse);
+            if (found) return found;
+          }
         }
+        // Check enrolled cache
+        const userCoursesRaw = localStorage.getItem('tsehay_user_courses_cache');
+        if (userCoursesRaw) {
+          try {
+            const parsedArr = JSON.parse(userCoursesRaw);
+            if (Array.isArray(parsedArr) && parsedArr.length > 0) return parsedArr[0];
+          } catch (e) {}
+        }
+        return DEFAULT_COURSES[0] || null;
       }
-      return null;
-    } catch (e) { return null; }
+      return DEFAULT_COURSES[0] || null;
+    } catch (e) { return DEFAULT_COURSES[0] || null; }
   });
   const [activeLesson, setActiveLesson] = useState<any>(() => {
     try {
@@ -198,10 +213,25 @@ function StudentDashboardContent() {
         const sp = new URLSearchParams(window.location.search);
         const qCourse = sp.get('courseId') || sp.get('course');
         const qLesson = sp.get('lesson');
+        const allCached = getCachedCourses();
+        const allPool = allCached.length > 0 ? allCached : DEFAULT_COURSES;
         let matchedCourse = null;
         if (qCourse) {
-          const allCached = getCachedCourses();
-          matchedCourse = allCached.find(c => c.id === qCourse || c.slug === qCourse) || DEFAULT_COURSES.find(c => c.id === qCourse || c.slug === qCourse);
+          matchedCourse = allPool.find(c => c.id === qCourse || c.slug === qCourse) || DEFAULT_COURSES.find(c => c.id === qCourse || c.slug === qCourse);
+        }
+        if (!matchedCourse) {
+          const cachedCourse = localStorage.getItem('tsehay_user_active_course');
+          if (cachedCourse) {
+            try {
+              const parsed = JSON.parse(cachedCourse);
+              if (parsed && (parsed.id || parsed.title)) matchedCourse = parsed;
+            } catch (pe) {
+              matchedCourse = allPool.find(c => c.id === cachedCourse || c.slug === cachedCourse);
+            }
+          }
+        }
+        if (!matchedCourse) {
+          matchedCourse = DEFAULT_COURSES[0];
         }
         if (matchedCourse) {
           if (qLesson !== null && qLesson !== undefined && matchedCourse.lessons?.length > 0) {
@@ -214,12 +244,14 @@ function StudentDashboardContent() {
         }
         const cachedLesson = localStorage.getItem('tsehay_user_active_lesson');
         if (cachedLesson) {
-          const parsed = JSON.parse(cachedLesson);
-          if (parsed && parsed.title) return parsed;
+          try {
+            const parsed = JSON.parse(cachedLesson);
+            if (parsed && parsed.title) return parsed;
+          } catch (e) {}
         }
       }
-      return null;
-    } catch (e) { return null; }
+      return DEFAULT_COURSES[0]?.lessons?.[0] || null;
+    } catch (e) { return DEFAULT_COURSES[0]?.lessons?.[0] || null; }
   });
 
   // Immediate URL course synchronizer (instant switch without waiting for network)
@@ -1909,7 +1941,8 @@ function StudentDashboardContent() {
     return handleSendAiMessage(e);
   };
 
-  if (!loadingSafetyBypass && ((authLoading && !user) || (!authInitialized && !user) || (loading && courses.length === 0 && !activeCourse))) {
+  const isCachedUserAvailable = typeof window !== 'undefined' && Boolean(localStorage.getItem('tsehay_auth_user_cache'));
+  if (!loadingSafetyBypass && !user && !isCachedUserAvailable && (authLoading || !authInitialized)) {
     return <DashboardLoadingScreen message="የመማሪያ ክፍልዎን በማዘጋጀት ላይ... (Loading Classroom...)" />;
   }
 

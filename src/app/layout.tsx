@@ -115,7 +115,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="am" className="dark notranslate tsehay-loading" translate="no" suppressHydrationWarning>
+    <html lang="am" className="dark notranslate" translate="no" suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
         <meta name="googlebot" content="notranslate" />
@@ -162,16 +162,18 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                if (
-                  sessionStorage.getItem('tsehay_preloader_shown') === 'true' ||
-                  sessionStorage.getItem('tsehay_preloader_seen') === 'true' ||
-                  location.pathname.startsWith('/dashboard') ||
-                  location.pathname.startsWith('/auth/') ||
-                  localStorage.getItem('tsehay_auth_user_cache')
-                ) {
+                var p = location.pathname;
+                var isLanding = (p === '/' || p === '');
+                var seen = sessionStorage.getItem('tsehay_preloader_shown') === 'true' || sessionStorage.getItem('tsehay_preloader_seen') === 'true';
+                var userCached = Boolean(localStorage.getItem('tsehay_auth_user_cache'));
+                if (isLanding && !seen && !userCached) {
+                  document.documentElement.classList.add('tsehay-loading');
+                } else {
                   document.documentElement.classList.remove('tsehay-loading');
                 }
-              } catch (e) {}
+              } catch (e) {
+                document.documentElement.classList.remove('tsehay-loading');
+              }
             `,
           }}
         />

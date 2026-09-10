@@ -788,17 +788,23 @@ export default function UpcomingEventsSection() {
                   {/* Action Buttons Row */}
                   <div className="flex items-center gap-2.5">
                     {isAlreadyRegistered ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveTicket(userTicket);
-                          setIsTicketModalOpen(true);
-                        }}
-                        className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.35)] border border-emerald-400/40 active:scale-95"
-                      >
-                        <i className="fa-solid fa-circle-check text-white text-sm"></i>
-                        <span>ቲኬት ቆርጠዋል (Already Registered)</span>
-                      </button>
+                      <div className="flex-1 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[11px] font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                          <span>Already Purchased / ትኬት ተቆርጧል</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTicket(userTicket);
+                            setIsTicketModalOpen(true);
+                          }}
+                          className="w-full py-3 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.35)] border border-emerald-400/40 active:scale-95"
+                        >
+                          <i className="fa-solid fa-ticket text-white text-xs"></i>
+                          <span>ትኬትህን እይ (View Ticket)</span>
+                        </button>
+                      </div>
                     ) : isSoldOut ? (
                       <button
                         type="button"

@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TsehayEvent, EventTicket, formatEventBannerUrl, DEFAULT_EVENT_BANNER } from '@/lib/eventCache';
+import { TsehayEvent, EventTicket, formatEventBannerUrl, DEFAULT_EVENT_BANNER, getCachedUserTickets, saveCachedUserTicket } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { validateReferralCode, recordReferralUsage } from '@/lib/referralService';
-import { Check } from 'lucide-react';
+import { Check, CheckCircle2, Ticket, Mail } from 'lucide-react';
 
 interface TwoStageEventBookingModalProps {
   isOpen: boolean;
@@ -27,8 +27,10 @@ export default function TwoStageEventBookingModal({
 }: TwoStageEventBookingModalProps) {
   const { user } = useAuth();
 
-  // Step state: 1 = Attendee Info, 2 = Full LMS-Style Payment Modal
-  const [step, setStep] = useState<1 | 2>(1);
+  // Step state: 1 = Attendee Info, 2 = Payment/LMS Modal, 3 = Animated Success Confirmation Modal
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [confirmedTicket, setConfirmedTicket] = useState<EventTicket | null>(null);
+  const [alreadyRegisteredTicket, setAlreadyRegisteredTicket] = useState<EventTicket | null>(null);
 
   // Step 1: Attendee Information Form
   const [attendeeName, setAttendeeName] = useState('');
@@ -46,12 +48,47 @@ export default function TwoStageEventBookingModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  // Sync initial user info when opened
+  // 🔒 Strict Authentication Gating: Guest/Unauthenticated users CANNOT book tickets
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !user) {
+      onClose();
+      try {
+        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+          action: 'book_ticket',
+          eventId: event?.id,
+          eventSlug: event?.slug,
+          returnUrl: `/events/${event?.slug || event?.id}`
+        }));
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('open-auth-modal', {
+        detail: {
+          isSignupMode: false,
+          returnUrl: `/events/${event?.slug || event?.id}`,
+          message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+        }
+      }));
+    }
+  }, [isOpen, user, event, onClose]);
+
+  // Sync initial user info & check existing ticket when opened
+  useEffect(() => {
+    if (isOpen && user) {
       setStep(1);
       setStep1Error(null);
       setGeneralError(null);
+      setConfirmedTicket(null);
+
+      // Check if user already booked a ticket for this event (Strict 1-Ticket Policy)
+      if (event) {
+        const userTickets = getCachedUserTickets(user.id);
+        const existing = userTickets[event.id] || (event.slug ? userTickets[event.slug] : null);
+        if (existing) {
+          setAlreadyRegisteredTicket(existing);
+        } else {
+          setAlreadyRegisteredTicket(null);
+        }
+      }
+
       setAttendeeName(
         initialAttendeeName || 
         user?.displayName || 
@@ -79,7 +116,7 @@ export default function TwoStageEventBookingModal({
       }
       setAttendeePhone(resolvedPhone || '');
     }
-  }, [isOpen, user, initialAttendeeName, initialAttendeeEmail, initialAttendeePhone]);
+  }, [isOpen, user, event, initialAttendeeName, initialAttendeeEmail, initialAttendeePhone]);
 
   // Lock body scroll
   useEffect(() => {
@@ -177,6 +214,26 @@ export default function TwoStageEventBookingModal({
 
   // Execute Ticket Registration & Issuance
   const executeRegistration = async (pricePaid: number, method: string) => {
+    if (!user) {
+      onClose();
+      try {
+        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+          action: 'book_ticket',
+          eventId: event.id,
+          eventSlug: event.slug,
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('open-auth-modal', {
+        detail: {
+          isSignupMode: false,
+          returnUrl: `/events/${event.slug || event.id}`,
+          message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+        }
+      }));
+      return;
+    }
+
     setIsProcessing(true);
     setGeneralError(null);
     setStep1Error(null);
@@ -202,7 +259,7 @@ export default function TwoStageEventBookingModal({
           email: attendeeEmail.trim().toLowerCase(),
           attendeePhone: attendeePhone.trim(),
           phone: attendeePhone.trim(),
-          userId: user?.uid || `guest_${Date.now()}`,
+          userId: user.id || user.uid,
           pricePaid: pricePaid,
           price: pricePaid,
           amount: pricePaid,
@@ -213,17 +270,29 @@ export default function TwoStageEventBookingModal({
       });
 
       const data = await res.json();
+      if (data.alreadyRegistered && data.ticket) {
+        const enriched = {
+          ...data.ticket,
+          eventImage: data.ticket.eventImage || event.image || '',
+          image: data.ticket.image || event.image || ''
+        };
+        saveCachedUserTicket(enriched, user.id);
+        setAlreadyRegisteredTicket(enriched);
+        return;
+      }
+
       if (res.ok && data.success && data.ticket) {
         const ticketCode = data.ticket.ticketCode || data.ticket.ticket_code || data.ticket.ticketId || `TKT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
         const unifiedTicket: EventTicket = {
           ticketId: data.ticket.ticketId || data.ticket.id || ticketCode,
           id: data.ticket.id || `TKT-${Date.now()}`,
           ticketCode: ticketCode,
-          userId: data.ticket.userId || user?.uid || `guest_${Date.now()}`,
+          userId: user.id || user.uid,
           pricePaid: Number(data.ticket.pricePaid ?? data.ticket.amount ?? pricePaid) || 0,
           isUsed: Boolean(data.ticket.isUsed ?? false),
           issuedAt: data.ticket.issuedAt || data.ticket.createdAt || new Date().toISOString(),
           eventId: data.ticket.eventId || event.id,
+          eventSlug: data.ticket.eventSlug || event.slug,
           eventTitle: data.ticket.eventTitle || event.title,
           eventDate: data.ticket.eventDate || event.date,
           eventTime: data.ticket.eventTime || event.time,
@@ -244,8 +313,10 @@ export default function TwoStageEventBookingModal({
           eventImage: data.ticket.eventImage || event.image || '',
           image: data.ticket.image || event.image || ''
         };
-        onSuccess(unifiedTicket);
-        onClose();
+
+        saveCachedUserTicket(unifiedTicket, user.id);
+        setConfirmedTicket(unifiedTicket);
+        setStep(3);
       } else {
         const msg = data?.error || 'ትኬት መቁረጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
         if (step === 1) setStep1Error(msg);
@@ -261,8 +332,28 @@ export default function TwoStageEventBookingModal({
   };
 
   const handleCompletePayment = async () => {
-    const trimmedName = attendeeName.trim() || user?.displayName || 'Student';
-    const trimmedEmail = attendeeEmail.trim().toLowerCase() || user?.email || '';
+    if (!user) {
+      onClose();
+      try {
+        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+          action: 'book_ticket',
+          eventId: event.id,
+          eventSlug: event.slug,
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('open-auth-modal', {
+        detail: {
+          isSignupMode: false,
+          returnUrl: `/events/${event.slug || event.id}`,
+          message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+        }
+      }));
+      return;
+    }
+
+    const trimmedName = attendeeName.trim() || user.displayName || 'Student';
+    const trimmedEmail = attendeeEmail.trim().toLowerCase() || user.email || '';
     const trimmedPhone = attendeePhone.trim();
 
     // 🌟 If Paid Event, initiate dynamic hosted checkout session for chosen gateway
@@ -282,7 +373,7 @@ export default function TwoStageEventBookingModal({
             referralCode: appliedCode || null,
             discountPercent: discountPercent,
             userEmail: trimmedEmail,
-            userId: user?.uid || `guest_${Date.now()}`,
+            userId: user.id || user.uid,
             phone: trimmedPhone,
             phone_number: trimmedPhone,
             phoneNumber: trimmedPhone,
@@ -327,7 +418,7 @@ export default function TwoStageEventBookingModal({
       }
     }
 
-    // Free ticket or manual CBE direct bank deposit
+    // Free ticket or 100% discounted pass
     executeRegistration(finalPrice, paymethod);
   };
 
@@ -364,13 +455,25 @@ export default function TwoStageEventBookingModal({
           <div className="px-5 py-4 sm:px-6 sm:py-4.5 border-b border-gray-800/80 flex items-center justify-between bg-[#0d1424]">
             <div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
-                <span className="text-[10px] sm:text-[11px] font-black tracking-widest uppercase text-[#f9b03c]">
-                  {step === 1 ? 'ደረጃ 1 ፦ የተሳታፊ መረጃ (Step 1/2)' : 'ደረጃ 2 ፦ የተሟላ ክፍያ እና ቅናሽ (Step 2/2)'}
+                <span className={`w-2 h-2 rounded-full animate-pulse ${alreadyRegisteredTicket || step === 3 ? 'bg-emerald-400' : 'bg-[#f9b03c]'}`}></span>
+                <span className={`text-[10px] sm:text-[11px] font-black tracking-widest uppercase ${alreadyRegisteredTicket || step === 3 ? 'text-emerald-400' : 'text-[#f9b03c]'}`}>
+                  {alreadyRegisteredTicket
+                    ? 'ትኬት አስቀድሞ ተቆርጧል (Already Purchased)'
+                    : step === 3
+                    ? 'የተሳካ ትኬት (Confirmed Pass)'
+                    : step === 1
+                    ? 'ደረጃ 1 ፦ የተሳታፊ መረጃ (Step 1/2)'
+                    : 'ደረጃ 2 ፦ የተሟላ ክፍያ እና ቅናሽ (Step 2/2)'}
                 </span>
               </div>
               <h3 className="font-heading font-black text-base sm:text-lg text-white line-clamp-1 mt-0.5">
-                {step === 1 ? 'የትኬት ምዝገባ ማረጋገጫ' : 'ደህንነቱ የተጠበቀ ክፍያ'}
+                {alreadyRegisteredTicket
+                  ? 'የተመዘገበ የክስተት ትኬት'
+                  : step === 3
+                  ? 'ቲኬትዎ በተሳካ ሁኔታ ተቆርጧል!'
+                  : step === 1
+                  ? 'የትኬት ምዝገባ ማረጋገጫ'
+                  : 'ደህንነቱ የተጠበቀ ክፍያ'}
               </h3>
             </div>
 
@@ -386,32 +489,46 @@ export default function TwoStageEventBookingModal({
           </div>
 
           {/* Stepper Progress Indicator */}
-          <div className="px-5 sm:px-6 py-2.5 bg-black/40 border-b border-white/5 flex items-center justify-between text-[11px] font-bold">
-            <div className={`flex items-center gap-1.5 ${step === 1 ? 'text-[#f9b03c]' : 'text-emerald-400'}`}>
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
-                step === 1 ? 'bg-[#f9b03c] text-slate-950' : 'bg-emerald-500 text-white'
-              }`}>
-                {step === 2 ? <Check className="w-3 h-3 stroke-[3]" aria-hidden="true" /> : '1'}
+          {alreadyRegisteredTicket || step === 3 ? (
+            <div className="px-5 sm:px-6 py-2.5 bg-emerald-950/40 border-b border-emerald-500/20 flex items-center justify-between text-[11px] font-bold text-emerald-400">
+              <div className="flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black">
+                  <Check className="w-3 h-3 stroke-[3]" aria-hidden="true" />
+                </span>
+                <span>{alreadyRegisteredTicket ? 'ትኬት ተቆርጧል' : 'ቲኬቱ በተሳካ ሁኔታ ተቆርጧል'}</span>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black">
+                100% ተረጋግጧል
               </span>
-              <span>የተሳታፊ መረጃ</span>
             </div>
+          ) : (
+            <div className="px-5 sm:px-6 py-2.5 bg-black/40 border-b border-white/5 flex items-center justify-between text-[11px] font-bold">
+              <div className={`flex items-center gap-1.5 ${step === 1 ? 'text-[#f9b03c]' : 'text-emerald-400'}`}>
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                  step === 1 ? 'bg-[#f9b03c] text-slate-950' : 'bg-emerald-500 text-white'
+                }`}>
+                  {step === 2 ? <Check className="w-3 h-3 stroke-[3]" aria-hidden="true" /> : '1'}
+                </span>
+                <span>የተሳታፊ መረጃ</span>
+              </div>
 
-            <div className={`flex-1 h-[2px] mx-3 rounded-full ${step === 2 ? 'bg-gradient-to-r from-emerald-400 to-[#f9b03c]' : 'bg-white/10'}`} />
+              <div className={`flex-1 h-[2px] mx-3 rounded-full ${step === 2 ? 'bg-gradient-to-r from-emerald-400 to-[#f9b03c]' : 'bg-white/10'}`} />
 
-            <div className={`flex items-center gap-1.5 ${step === 2 ? 'text-[#f9b03c]' : 'text-slate-400'}`}>
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
-                step === 2 ? 'bg-[#f9b03c] text-slate-950' : 'bg-white/10 text-slate-400'
-              }`}>
-                2
-              </span>
-              <span>የክፍያ አማራጭ</span>
+              <div className={`flex items-center gap-1.5 ${step === 2 ? 'text-[#f9b03c]' : 'text-slate-400'}`}>
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                  step === 2 ? 'bg-[#f9b03c] text-slate-950' : 'bg-white/10 text-slate-400'
+                }`}>
+                  2
+                </span>
+                <span>የክፍያ አማራጭ</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Modal Body */}
           <div className="p-5 sm:p-6 space-y-4 max-h-[78vh] overflow-y-auto">
             
-            {/* Event Summary Pill (Compact on both steps) */}
+            {/* Event Summary Pill (Compact on all steps) */}
             <div className="flex items-center gap-3 bg-[#121a2d] p-3 rounded-2xl border border-gray-800 shadow-inner">
               <img
                 src={bannerImg}
@@ -438,6 +555,145 @@ export default function TwoStageEventBookingModal({
                 </span>
               </div>
             </div>
+
+            {/* ========================================================= */}
+            {/* ALREADY REGISTERED VIEW (Strict 1-Ticket Policy)          */}
+            {/* ========================================================= */}
+            {alreadyRegisteredTicket ? (
+              <div className="py-4 px-2 sm:px-4 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                <div className="relative w-20 h-20 mx-auto flex items-center justify-center my-1">
+                  <div className="absolute inset-0 rounded-full bg-emerald-500/20 blur-xl animate-pulse"></div>
+                  <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-teal-500/20 border-2 border-emerald-400 text-emerald-400 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.5)]">
+                    <CheckCircle2 className="w-9 h-9 text-emerald-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-black uppercase tracking-wider">
+                    Already Purchased / ትኬት ተቆርጧል
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-black text-white font-heading">
+                    ለዚህ ዝግጅት አስቀድመው ትኬት ቆርጠዋል!
+                  </h3>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    በአንድ አካውንት አንድ ትኬት ብቻ ነው የሚፈቀደው (Strict 1-Ticket Per Account)። ትኬትዎን ከስር ባለው ቁልፍ መመልከት ይችላሉ።
+                  </p>
+                </div>
+
+                <div className="bg-[#121a2d] p-3.5 rounded-2xl border border-emerald-500/30 text-left space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400">የትኬት ኮድ:</span>
+                    <span className="font-mono font-black text-[#f9b03c]">{alreadyRegisteredTicket.ticketCode || alreadyRegisteredTicket.ticketId}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400">ተሳታፊ:</span>
+                    <span className="font-bold text-white">{alreadyRegisteredTicket.attendeeName}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400">የተመዘገበበት ቀን:</span>
+                    <span className="font-medium text-slate-300">{event.date} • {event.time}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSuccess(alreadyRegisteredTicket);
+                      onClose();
+                    }}
+                    className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(16,185,129,0.4)] cursor-pointer"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    <span>ትኬትህን እይ (View Digital Pass)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs sm:text-sm transition cursor-pointer"
+                  >
+                    ዝጋ
+                  </button>
+                </div>
+              </div>
+            ) : step === 3 && confirmedTicket ? (
+              /* ========================================================= */
+              /* STEP 3: HIGH-END ANIMATED CONFIRMATION MODAL              */
+              /* ========================================================= */
+              <div className="py-4 px-2 sm:px-4 text-center space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                {/* Glowing Animated Emerald/Gold Checkmark */}
+                <div className="relative w-24 h-24 mx-auto flex items-center justify-center my-2">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-emerald-500/35 via-[#f9b03c]/30 to-emerald-500/35 blur-2xl animate-pulse"></div>
+                  <div className="absolute -inset-2 rounded-full border-2 border-emerald-400/40 animate-ping opacity-40"></div>
+                  <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-600 border-2 border-emerald-300 shadow-[0_0_40px_rgba(16,185,129,0.85),0_0_25px_rgba(249,176,60,0.6)] flex items-center justify-center">
+                    <svg className="w-10 h-10 text-white drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3.2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-xl sm:text-2xl font-black text-white font-heading tracking-wide">
+                    ቲኬትዎ በተሳካ ሁኔታ ተቆርጧል!
+                  </h3>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs sm:text-sm font-black shadow-inner">
+                    <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>ሙሉ መረጃው ወደ ኢሜይልዎ ተልኳል</span>
+                  </div>
+                  {confirmedTicket.attendeeEmail && (
+                    <p className="text-xs text-slate-300 font-mono">
+                      {confirmedTicket.attendeeEmail}
+                    </p>
+                  )}
+                </div>
+
+                {/* Ticket Details Card */}
+                <div className="bg-[#121a2d]/90 p-4 rounded-2xl border border-white/10 text-left space-y-2.5 shadow-xl">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <span className="text-xs text-slate-400">ክስተት (Event):</span>
+                    <span className="text-xs font-black text-white line-clamp-1 max-w-[200px]">{event.title}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <span className="text-xs text-slate-400">ቀን እና ሰዓት:</span>
+                    <span className="text-xs font-bold text-amber-300">{event.date} • {event.time}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <span className="text-xs text-slate-400">የትኬት ቁጥር (Ticket ID):</span>
+                    <span className="font-mono font-black text-sm text-[#f9b03c]">{confirmedTicket.ticketCode || confirmedTicket.ticketId}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400">ተሳታፊ (Attendee):</span>
+                    <span className="text-xs font-bold text-white">{confirmedTicket.attendeeName}</span>
+                  </div>
+                </div>
+
+                {/* CTAs */}
+                <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSuccess(confirmedTicket);
+                      onClose();
+                    }}
+                    className="w-full sm:flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:brightness-110 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(16,185,129,0.5)] cursor-pointer active:scale-98 transition"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    <span>ዲጂታል ትኬቴን አሳይ (View Digital Pass)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSuccess(confirmedTicket);
+                      onClose();
+                    }}
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs sm:text-sm transition cursor-pointer border border-white/10"
+                  >
+                    ተጠናቋል (Done)
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
 
             {/* ========================================================= */}
             {/* STEP 1: ATTENDEE INFORMATION FORM                          */}
@@ -744,6 +1000,8 @@ export default function TwoStageEventBookingModal({
                 </div>
               </div>
             )}
+            </>
+          )}
 
           </div>
         </div>

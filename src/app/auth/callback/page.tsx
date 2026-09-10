@@ -79,102 +79,16 @@ function AuthCallbackHandler() {
   // 2. Resolve authentication session & evaluate profile completion
   useEffect(() => {
     let isMounted = true;
-
-    const resolveSession = async () => {
-      try {
-        // A. Check for OAuth error in URL parameters
-        const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-        const oAuthError = searchParams?.get('error') || urlParams?.get('error');
-        const oAuthErrorDesc = searchParams?.get('error_description') || urlParams?.get('error_description');
-
-        if (oAuthError) {
-          if (isMounted) {
-            setStatus('error');
-            setErrorMessage(oAuthErrorDesc || 'የGoogle መግቢያ ተሰርዟል ወይም አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።');
-          }
-          return;
-        }
-
-        // B. Handle Supabase PKCE code exchange if ?code= is in the URL
-        const code = searchParams?.get('code') || urlParams?.get('code');
-        let userSession: any = null;
-
-        if (code) {
-          try {
-            const { data: exchangeData, error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
-            if (!exchangeErr && exchangeData?.session?.user) {
-              userSession = exchangeData.session.user;
-            }
-          } catch (codeErr) {
-            console.warn("PKCE code exchange error:", codeErr);
-          }
-        }
-
-        // C. If session not obtained via PKCE exchange, try getSession()
-        if (!userSession) {
-          const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
-          if (sessionErr) throw sessionErr;
-          userSession = session?.user;
-        }
-
-        // D. Fallback: Wait briefly (max 2.5s) for onAuthStateChange
-        if (!userSession) {
-          let resolved = false;
-
-          const timeout = setTimeout(() => {
-            if (isMounted && !resolved && status === 'checking') {
-              // Final check in local storage before giving up
-              try {
-                const cached = localStorage.getItem('tsehay_auth_user_cache');
-                if (cached) {
-                  const parsed = JSON.parse(cached);
-                  if (parsed?.uid || parsed?.id) {
-                    resolved = true;
-                    evaluateProfile(parsed);
-                    return;
-                  }
-                }
-              } catch (e) {}
-
-              setStatus('error');
-              setErrorMessage('የGoogle ማረጋገጫ ክፍለ ጊዜ ማግኘት አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
-            }
-          }, 2500);
-
-          const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-            if (newSession?.user && isMounted && !resolved) {
-              resolved = true;
-              clearTimeout(timeout);
-              subscription.unsubscribe();
-              await evaluateProfile(newSession.user);
-            }
-          });
-
-          return () => {
-            clearTimeout(timeout);
-            subscription.unsubscribe();
-          };
-        }
-
-        await evaluateProfile(userSession);
-      } catch (err: any) {
-        console.error("Auth callback error:", err);
-        if (isMounted) {
-          setStatus('error');
-          const rawErr = err?.message || '';
-          const cleanErr = /supabase|postgres|vwkjmag/i.test(rawErr)
-            ? 'የመግቢያ ሂደቱን ማጠናቀቅ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።'
-            : rawErr || 'የመግቢያ ሂደቱን ማጠናቀቅ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።';
-          setErrorMessage(cleanErr);
-        }
-      }
-    };
+    let hasResolved = false;
 
     const evaluateProfile = async (rawUser: any) => {
+      if (hasResolved || !isMounted) return;
+      hasResolved = true;
+
       const formatted = formatSupabaseUser(rawUser);
       if (!formatted) {
         setStatus('error');
-        setErrorMessage('የተጠቃሚ መረጃ ማግኘት አልተቻለም።');
+        setErrorMessage('የተጠቃሚ መረጃ ማግኘት አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
         return;
       }
 
@@ -207,7 +121,15 @@ function AuthCallbackHandler() {
           }
         } catch (e) {}
 
-        // Step 2: Query server API check-registration with 1500ms race timeout protection
+        // Immediate pass if phone is already cached locally or in user metadata
+        const userMetaPhone = (formatted as any)?.phone || formatted.user_metadata?.phone || localPhone;
+        if (userMetaPhone && String(userMetaPhone).trim().length >= 7) {
+          setStatus('redirecting');
+          navigatePostAuth();
+          return;
+        }
+
+        // Step 2: Query server API check-registration with 800ms race timeout protection
         const checkPromise = fetch('/api/auth/check-registration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -231,9 +153,9 @@ function AuthCallbackHandler() {
           }
         })();
 
-        // Hard 1500ms safety timeout: Never leave user stuck on spinner screen
+        // Hard 800ms safety timeout: Never leave user stuck on spinner screen
         const timeoutPromise = new Promise<{ isTimeout: boolean }>(resolve => {
-          setTimeout(() => resolve({ isTimeout: true }), 1500);
+          setTimeout(() => resolve({ isTimeout: true }), 800);
         });
 
         const raceResult = await Promise.race([
@@ -250,7 +172,7 @@ function AuthCallbackHandler() {
         }
 
         const resolvedProfile = serverCheck?.profile || clientProfile;
-        const existingPhone = resolvedProfile?.phone || resolvedProfile?.phone_number || (formatted as any)?.phone || localPhone || '';
+        const existingPhone = resolvedProfile?.phone || resolvedProfile?.phone_number || userMetaPhone || '';
         const hasValidPhone = Boolean(existingPhone && String(existingPhone).trim().length >= 7);
         const isRegisteredServer = Boolean(serverCheck?.isRegistered) || Boolean(resolvedProfile?.id);
 
@@ -292,10 +214,85 @@ function AuthCallbackHandler() {
       }
     };
 
-    resolveSession();
+    // A. Check for OAuth error in URL parameters immediately
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const oAuthError = searchParams?.get('error') || urlParams?.get('error');
+    const oAuthErrorDesc = searchParams?.get('error_description') || urlParams?.get('error_description');
+
+    if (oAuthError) {
+      setStatus('error');
+      setErrorMessage(oAuthErrorDesc || 'የGoogle መግቢያ ተሰርዟል ወይም አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።');
+      return;
+    }
+
+    // B. IMMEDIATE onAuthStateChange listener (attached FIRST to prevent missed events)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (newSession?.user && isMounted && !hasResolved) {
+        evaluateProfile(newSession.user);
+      }
+    });
+
+    // C. Check existing session immediately
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && isMounted && !hasResolved) {
+        evaluateProfile(session.user);
+      }
+    });
+
+    // D. If ?code= is in URL, perform safe PKCE code exchange
+    const code = searchParams?.get('code') || urlParams?.get('code');
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (!error && data?.session?.user && isMounted && !hasResolved) {
+          evaluateProfile(data.session.user);
+        }
+      }).catch((e) => {
+        console.warn("Code exchange notice:", e);
+      });
+    }
+
+    // E. Fast Polling fallback: check every 100ms for up to 1.5s
+    let pollCount = 0;
+    const pollInterval = setInterval(async () => {
+      if (hasResolved || !isMounted) {
+        clearInterval(pollInterval);
+        return;
+      }
+      pollCount++;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && !hasResolved) {
+          clearInterval(pollInterval);
+          evaluateProfile(session.user);
+          return;
+        }
+      } catch (e) {}
+
+      if (pollCount >= 15) {
+        clearInterval(pollInterval);
+        if (!hasResolved && isMounted) {
+          // Final fallback to cached auth
+          try {
+            const cached = localStorage.getItem('tsehay_auth_user_cache');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (parsed?.uid || parsed?.id) {
+                evaluateProfile(parsed);
+                return;
+              }
+            }
+          } catch (e) {}
+
+          setStatus('error');
+          setErrorMessage('የGoogle ማረጋገጫ ክፍለ ጊዜ ማግኘት አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+        }
+      }
+    }, 100);
 
     return () => {
       isMounted = false;
+      clearInterval(pollInterval);
+      subscription.unsubscribe();
     };
   }, []);
 
