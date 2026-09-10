@@ -298,51 +298,22 @@ export default function Navbar() {
       {/* ===================== 1. FLOATING CAPSULE (ONLY WHEN CLOSED) ===================== */}
       {!isCurtainOpen && (
         <div 
-          className="fixed top-3 flex items-center gap-2 pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-50 animate-in fade-in max-w-[95vw]"
+          className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-50 animate-in fade-in"
           title="ዋና ማውጫ / Menu"
         >
           {/* Subtle #f9b03c ambient breathing glow */}
           <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#f9b03c]/40 via-[#3268ba]/30 to-[#f9b03c]/40 blur-md pointer-events-none animate-pulse" />
 
-          {/* Main Menu Dropdown Capsule Button */}
+          {/* Main Menu Capsule Button */}
           <button
             type="button"
             onClick={openCurtain}
-            className="relative pointer-events-auto px-4 sm:px-5 py-1.5 sm:py-2 rounded-full flex items-center gap-1.5 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)] touch-manipulation"
+            className="relative pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)] touch-manipulation"
           >
             <span className="text-xs sm:text-[13px] font-black tracking-wide whitespace-nowrap flex items-center gap-1.5 font-heading text-white group-hover:text-[#f9b03c] transition-colors">
               ዋና ማውጫ ▾
             </span>
           </button>
-
-          {/* 🌟 1-Click Instant Login Button in Top Floating Capsule */}
-          {!mounted || !user ? (
-            <button
-              type="button"
-              onClick={handleLoginClick}
-              className="relative pointer-events-auto px-3.5 sm:px-4.5 py-1.5 sm:py-2 rounded-full flex items-center gap-1.5 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs sm:text-[13px] shadow-[0_0_25px_rgba(249,176,60,0.45),0_10px_25px_rgba(0,0,0,0.8)] border border-amber-300/80 hover:brightness-110 font-heading touch-manipulation"
-              title="ግባ / ይመዝገቡ (Login / Sign Up)"
-            >
-              <i className="fa-solid fa-arrow-right-to-bracket text-[11px] pointer-events-none" />
-              <span className="pointer-events-none">{lang === 'en' ? 'Login' : 'ይግቡ'}</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => navigateTo('/dashboard')}
-              className="relative pointer-events-auto px-3 py-1.5 sm:py-2 rounded-full flex items-center gap-1.5 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white shadow-lg touch-manipulation"
-              title="የተማሪ ዳሽቦርድ (Dashboard)"
-            >
-              <img
-                src={navUserPhoto}
-                alt={navUserName}
-                className="w-5 h-5 rounded-full border border-[#f9b03c] object-cover shrink-0 pointer-events-none"
-              />
-              <span className="hidden sm:inline text-xs font-bold text-slate-200 pointer-events-none">
-                {navUserName.split(' ')[0]}
-              </span>
-            </button>
-          )}
         </div>
       )}
 
