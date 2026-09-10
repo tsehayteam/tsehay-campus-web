@@ -254,18 +254,20 @@ export default function Navbar() {
   }, []);
 
   const handleLoginClick = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
-    if (e) {
+    if (e && typeof e.stopPropagation === 'function') {
       e.stopPropagation();
     }
-    openAuthModal(false);
-    closeCurtain();
+    setIsAuthModalOpen(true);
+    setIsSignupMode(false);
+    setIsCurtainOpen(false);
+    setIsSearchActive(false);
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('open-auth-modal', { 
         detail: { isSignupMode: false, isSignUp: false } 
       }));
     }
-  }, [openAuthModal]);
+  }, []);
 
   const handleSignOut = async () => {
     try {

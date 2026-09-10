@@ -37,7 +37,7 @@ function AuthCallbackHandler() {
     }
   }, []);
 
-  // Post-Auth Direct Routing (Checks pending action or goes to dashboard)
+  // Post-Auth Direct Routing (Checks pending action, origin return URL, or dashboard)
   const navigatePostAuth = () => {
     if (typeof document !== 'undefined') {
       document.documentElement.classList.remove('tsehay-loading');
@@ -49,6 +49,7 @@ function AuthCallbackHandler() {
       } catch (e) {}
     }
 
+    // 1. Pending specific actions (e.g. free course enrollment or direct checkout)
     try {
       const pendingRaw = sessionStorage.getItem('tsehay_pending_course_action') ||
                          sessionStorage.getItem('tsehay_pending_action');
@@ -73,6 +74,19 @@ function AuthCallbackHandler() {
       }
     } catch (e) {}
 
+    // 2. Smart Return-to-Origin Navigation:
+    // If user came from a specific page (e.g. /courses/..., /events/..., /about, /),
+    // return them immediately to that exact origin page!
+    try {
+      const returnUrl = sessionStorage.getItem('tsehay_auth_return_url');
+      if (returnUrl && !returnUrl.startsWith('/auth') && returnUrl !== '/auth/callback') {
+        sessionStorage.removeItem('tsehay_auth_return_url');
+        window.location.replace(returnUrl);
+        return;
+      }
+    } catch (e) {}
+
+    // 3. Default fallback to student dashboard
     window.location.replace('/dashboard');
   };
 
@@ -94,7 +108,7 @@ function AuthCallbackHandler() {
 
       setCurrentUser(formatted);
 
-      // Pre-cache authenticated user immediately so dashboard is ready instantly
+      // Pre-cache authenticated user immediately so navigation is instant
       try {
         localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(formatted));
       } catch (e) {}
@@ -103,9 +117,9 @@ function AuthCallbackHandler() {
       window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: formatted }));
 
       // =========================================================================
-      // 🌟 ZERO-LAG COMPREHENSIVE REGISTRATION STATUS CHECK
-      // Existing student with complete info -> AUTOMATIC INSTANT PASS
-      // New visitor -> Mandatory Onboarding Form
+      // 🌟 ZERO-LAG SMART ROLE & PROFILE ROUTING
+      // Returning Student -> AUTOMATIC INSTANT PASS (Zero extra forms)
+      // New Visitor -> Mandatory Onboarding Form
       // =========================================================================
       try {
         // Step 1: Check instant local cache first for zero network delay
@@ -129,7 +143,7 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // Step 2: Query server API check-registration with 800ms race timeout protection
+        // Step 2: Query server API check-registration with 2000ms race timeout protection
         const checkPromise = fetch('/api/auth/check-registration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -153,9 +167,9 @@ function AuthCallbackHandler() {
           }
         })();
 
-        // Hard 800ms safety timeout: Never leave user stuck on spinner screen
+        // 2000ms safety timeout: prevents false onboarding triggers on mobile networks
         const timeoutPromise = new Promise<{ isTimeout: boolean }>(resolve => {
-          setTimeout(() => resolve({ isTimeout: true }), 800);
+          setTimeout(() => resolve({ isTimeout: true }), 2000);
         });
 
         const raceResult = await Promise.race([
@@ -176,8 +190,8 @@ function AuthCallbackHandler() {
         const hasValidPhone = Boolean(existingPhone && String(existingPhone).trim().length >= 7);
         const isRegisteredServer = Boolean(serverCheck?.isRegistered) || Boolean(resolvedProfile?.id);
 
-        // Case A: Existing Student with COMPLETE registration (Valid phone & full info) -> AUTOMATIC PASS
-        if ((isRegisteredServer || Boolean(resolvedProfile)) && hasValidPhone) {
+        // Case A: Existing Student (Valid profile record, enrollments, or phone) -> AUTOMATIC PASS
+        if ((isRegisteredServer || Boolean(resolvedProfile)) && (hasValidPhone || resolvedProfile?.name || resolvedProfile?.full_name)) {
           const finalUser: User = {
             ...formatted,
             displayName: resolvedProfile?.name || resolvedProfile?.full_name || resolvedProfile?.displayName || formatted.displayName,
@@ -199,7 +213,7 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // Case B: Brand New Visitor or Incomplete Info -> Detect as New & Require Full Information (Onboarding)
+        // Case B: Brand New Visitor -> Mandatory Onboarding Form
         const suggestedName = resolvedProfile?.name || resolvedProfile?.full_name || serverCheck?.suggestedName || formatted.displayName || '';
         setFullName(suggestedName);
         setPhone(existingPhone || '');
@@ -208,7 +222,6 @@ function AuthCallbackHandler() {
 
       } catch (evalErr) {
         console.warn("Notice evaluating profile:", evalErr);
-        // Fallback: If evaluation encountered unexpected error, show onboarding form
         setFullName(formatted.displayName || '');
         setStatus('onboarding');
       }
@@ -251,7 +264,7 @@ function AuthCallbackHandler() {
       });
     }
 
-    // E. Fast Polling fallback: check every 100ms for up to 1.5s
+    // E. Fast Polling fallback: check every 100ms for up to 6.0s
     let pollCount = 0;
     const pollInterval = setInterval(async () => {
       if (hasResolved || !isMounted) {
@@ -268,7 +281,7 @@ function AuthCallbackHandler() {
         }
       } catch (e) {}
 
-      if (pollCount >= 15) {
+      if (pollCount >= 60) {
         clearInterval(pollInterval);
         if (!hasResolved && isMounted) {
           // Final fallback to cached auth
@@ -381,6 +394,7 @@ function AuthCallbackHandler() {
       };
       try {
         localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(updatedUser));
+        localStorage.setItem('tsehay_user_phone', cleanPhone);
       } catch (e) {}
 
       window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: updatedUser }));

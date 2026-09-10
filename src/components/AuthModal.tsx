@@ -355,6 +355,11 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           sessionStorage.setItem('tsehay_preloader_shown', 'true');
           sessionStorage.setItem('tsehay_preloader_seen', 'true');
           document.documentElement.classList.remove('tsehay-loading');
+
+          const currentOrigin = window.location.pathname + window.location.search + window.location.hash;
+          if (currentOrigin && !currentOrigin.startsWith('/auth')) {
+            sessionStorage.setItem('tsehay_auth_return_url', currentOrigin);
+          }
         } catch (e) {}
       }
 
@@ -746,6 +751,22 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         }
       } catch (e) {}
 
+      // Fail-Safe Sync Login Fallback (handles any propagation lag)
+      if (!authedUser) {
+        try {
+          const syncRes = await fetch('/api/auth/sync-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: targetEmail, password: cleanPass })
+          });
+          const syncData = await syncRes.json().catch(() => ({}));
+          if (syncData?.success && syncData?.user) {
+            authedUser = formatSupabaseUser(syncData.user);
+            supabase.auth.signInWithPassword({ email: targetEmail, password: cleanPass }).catch(() => {});
+          }
+        } catch (syncErr) {}
+      }
+
       setResetStep('success');
       setResendSuccessMessage('የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!');
       setTimeout(() => {
@@ -968,23 +989,42 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
     setLoading(true);
     try {
+      let authedUser: User | null = null;
       const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password
       });
 
-      if (signInErr) {
-        throw signInErr;
+      if (!signInErr && signInData?.user) {
+        authedUser = formatSupabaseUser(signInData.user);
+      } else {
+        // Fail-Safe: Verify against synced credentials in database before throwing error
+        try {
+          const syncRes = await fetch('/api/auth/sync-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: cleanEmail, password })
+          });
+          const syncData = await syncRes.json().catch(() => ({}));
+          if (syncData?.success && syncData?.user) {
+            authedUser = formatSupabaseUser(syncData.user);
+            supabase.auth.signInWithPassword({ email: cleanEmail, password }).catch(() => {});
+          } else if (signInErr) {
+            throw signInErr;
+          } else if (syncData?.error) {
+            throw new Error(syncData.error);
+          }
+        } catch (syncErr) {
+          if (signInErr) throw signInErr;
+          throw syncErr;
+        }
       }
 
-      if (signInData?.user) {
-        const formatted = formatSupabaseUser(signInData.user);
+      if (authedUser) {
         setError("");
-        if (formatted) {
-          handlePostAuthSuccess(formatted);
-        } else {
-          onClose();
-        }
+        handlePostAuthSuccess(authedUser);
+      } else {
+        onClose();
       }
     } catch (err: any) {
       console.error("Email login error:", err);

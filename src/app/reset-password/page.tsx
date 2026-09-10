@@ -86,18 +86,41 @@ function ResetPasswordForm() {
       setIsSuccess(true);
 
       // Attempt immediate sign in with Supabase
+      let authedUser: any = null;
       try {
         const { data: signData } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password: cleanPass
         });
         if (signData?.user) {
-          const formatted = formatSupabaseUser(signData.user);
-          window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: formatted }));
-          window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: formatted }));
+          authedUser = formatSupabaseUser(signData.user);
         }
       } catch (passErr) {
         console.warn('Password login notice:', passErr);
+      }
+
+      // Fail-Safe Sync Login Fallback
+      if (!authedUser) {
+        try {
+          const syncRes = await fetch('/api/auth/sync-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: cleanEmail, password: cleanPass })
+          });
+          const syncData = await syncRes.json().catch(() => ({}));
+          if (syncData?.success && syncData?.user) {
+            authedUser = formatSupabaseUser(syncData.user);
+            supabase.auth.signInWithPassword({ email: cleanEmail, password: cleanPass }).catch(() => {});
+          }
+        } catch (e) {}
+      }
+
+      if (authedUser) {
+        try {
+          localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(authedUser));
+        } catch (e) {}
+        window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: authedUser }));
+        window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: authedUser }));
       }
 
       // Check for pending actions in sessionStorage to return seamlessly
