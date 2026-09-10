@@ -97,6 +97,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Check if the student has completed registration (has a valid phone number with >= 7 digits)
+    const phone = resolvedProfile?.phone || resolvedProfile?.phone_number || '';
+    const hasValidPhone = Boolean(phone && String(phone).trim().length >= 7);
+
+    // A student is considered fully registered ONLY if an account exists AND they have completed their phone info
+    const isFullyRegistered = isRegistered && hasValidPhone;
+
     // Format safe profile response
     const profileResponse = resolvedProfile ? {
       id: resolvedProfile.id || cleanUid,
@@ -110,8 +117,11 @@ export async function POST(req: NextRequest) {
     } : null;
 
     return NextResponse.json({
-      isRegistered,
+      isRegistered: isFullyRegistered,
+      hasAccount: isRegistered,
+      hasValidPhone,
       profile: profileResponse,
+      suggestedName: resolvedProfile?.full_name || resolvedProfile?.name || resolvedProfile?.display_name || '',
       email: cleanEmail,
       uid: cleanUid
     });

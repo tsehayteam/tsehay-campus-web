@@ -36,7 +36,24 @@ export default function EventDetailClient() {
   const [event, setEvent] = useState<TsehayEvent | null>(() => getEventBySlugOrId(slug, getCachedEvents()));
   const [liveRegistrationsCount, setLiveRegistrationsCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [isPlayingVideo, setIsPlayingVideo] = useState(false);
+
+  // Auto-open video preview immediately if event has a video (just like Course Preview)
+  const [isPlayingVideo, setIsPlayingVideo] = useState(() => {
+    const initialEv = getEventBySlugOrId(slug, getCachedEvents());
+    const vid = (initialEv?.videoUrl || '').trim();
+    return Boolean(vid && vid !== 'none' && vid !== 'yelewim');
+  });
+
+  useEffect(() => {
+    if (event) {
+      const vid = (event.videoUrl || '').trim();
+      if (vid && vid !== 'none' && vid !== 'yelewim') {
+        setIsPlayingVideo(true);
+      } else {
+        setIsPlayingVideo(false);
+      }
+    }
+  }, [event?.id, event?.videoUrl]);
 
   // Booking & Payment Modal State
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -718,10 +735,10 @@ export default function EventDetailClient() {
               {/* Right Column (5 cols): Cinematic Banner & Universal Video Stage */}
               <div className="lg:col-span-5">
                 {(() => {
-                  const hasVideo = Boolean(event.videoUrl || (event.image && isMediaVideo(event.image)));
-                  const effectiveVideoUrl = event.videoUrl || (event.image && isMediaVideo(event.image) ? event.image : '');
-                  const parsedVideo = effectiveVideoUrl ? parseVideoEmbedUrl(effectiveVideoUrl, true) : null;
-                  const posterUrl = formatEventBannerUrl(event.image) || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
+                  const effectiveVideoUrl = (event.videoUrl || '').trim();
+                  const hasVideo = Boolean(effectiveVideoUrl && effectiveVideoUrl !== 'none' && effectiveVideoUrl !== 'yelewim');
+                  const parsedVideo = hasVideo ? parseVideoEmbedUrl(effectiveVideoUrl, true) : null;
+                  const posterUrl = formatEventBannerUrl(event.image) || (hasVideo ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
 
                   if (hasVideo && isPlayingVideo && parsedVideo && parsedVideo.src) {
                     return (

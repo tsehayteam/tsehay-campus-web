@@ -406,8 +406,9 @@ export default function EventsClient() {
             {filteredEvents.map((evt) => {
               const remaining = getRemainingSeats(evt);
               const isSoldOut = remaining <= 0;
-              const hasVideo = Boolean(evt.videoUrl || (evt.image && isMediaVideo(evt.image)));
-              const effectiveVideoUrl = evt.videoUrl || (evt.image && isMediaVideo(evt.image) ? evt.image : '');
+              const cleanVid = (evt.videoUrl || '').trim();
+              const hasVideo = Boolean(cleanVid && cleanVid !== 'none' && cleanVid !== 'yelewim');
+              const effectiveVideoUrl = hasVideo ? cleanVid : '';
               const imageUrl = formatEventBannerUrl(evt.image || '') || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
 
               return (
@@ -628,7 +629,8 @@ export default function EventsClient() {
             {/* Video Player Stage */}
             <div className="relative aspect-video w-full bg-black">
               {(() => {
-                const vidUrl = previewVideoEvent.videoUrl || (previewVideoEvent.image && isMediaVideo(previewVideoEvent.image) ? previewVideoEvent.image : '');
+                const cleanVid = (previewVideoEvent.videoUrl || '').trim();
+                const vidUrl = (cleanVid && cleanVid !== 'none' && cleanVid !== 'yelewim') ? cleanVid : '';
                 const parsed = parseVideoEmbedUrl(vidUrl, true);
                 if (parsed.type === 'video') {
                   return (

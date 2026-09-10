@@ -3119,16 +3119,14 @@ export default function AdminDashboard() {
       const cleanSlug = (eventForm.slug || '').trim() || generateEventSlug(eventForm.title, eventId);
 
       let cleanVideoUrl = (eventForm.videoUrl || '').trim();
+      if (cleanVideoUrl === 'none' || cleanVideoUrl === 'yelewim') {
+        cleanVideoUrl = '';
+      }
       let rawImage = (eventForm.image || '').trim();
 
-      // If rawImage is a video link and cleanVideoUrl is empty, treat as videoUrl
-      if (rawImage && isMediaVideo(rawImage) && !cleanVideoUrl) {
-        cleanVideoUrl = rawImage;
-      }
-
-      // If image is empty or default, but cleanVideoUrl exists, extract high-res thumbnail
+      // If image is set, format it; otherwise fallback to video thumbnail or default banner
       let cleanImage = '';
-      if (rawImage && !isMediaVideo(rawImage)) {
+      if (rawImage) {
         cleanImage = formatEventBannerUrl(rawImage) || rawImage;
       } else if (cleanVideoUrl) {
         cleanImage = getMediaThumbnail(cleanVideoUrl);
@@ -4507,7 +4505,7 @@ export default function AdminDashboard() {
                                       (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
                                     }}
                                   />
-                                  {Boolean(event.videoUrl || (event.image && isMediaVideo(event.image))) && (
+                                  {Boolean(event.videoUrl) && (
                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white" title="ቪዲዮ አለው">
                                       <i className="fa-solid fa-play text-[9px] text-[#f9b03c]"></i>
                                     </div>
@@ -4528,10 +4526,15 @@ export default function AdminDashboard() {
                                         የተደበቀ (Inactive)
                                       </span>
                                     )}
-                                    {Boolean(event.videoUrl || (event.image && isMediaVideo(event.image))) && (
+                                    {Boolean(event.videoUrl) ? (
                                       <span className="text-[10px] bg-red-500/15 text-red-500 px-1.5 py-0.2 rounded-md font-bold flex items-center gap-1">
                                         <i className="fa-solid fa-play text-[7px]"></i>
-                                        <span>ቪዲዮ</span>
+                                        <span>ቪዲዮ አለው</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] bg-slate-500/15 text-slate-400 px-1.5 py-0.2 rounded-md font-bold flex items-center gap-1">
+                                        <i className="fa-solid fa-ban text-[7px]"></i>
+                                        <span>ቪዲዮ የለውም</span>
                                       </span>
                                     )}
                                   </div>
@@ -9539,37 +9542,84 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* 2. Video Promo URL Input */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
-                    <i className="fa-solid fa-film text-[#f9b03c]"></i>
-                    <span>የቪዲዮ ማስተዋወቂያ / የቀጥታ ስርጭት ሊንክ (Promo Video / Live Stream URL)</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={eventForm.videoUrl}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setEventForm(prev => {
-                        const next = { ...prev, videoUrl: val };
-                        const yId = extractYouTubeId(val);
-                        if (yId && (!prev.image || prev.image === DEFAULT_EVENT_BANNER)) {
-                          next.image = `https://img.youtube.com/vi/${yId}/maxresdefault.jpg`;
-                        }
-                        return next;
-                      });
-                    }}
-                    placeholder="e.g. YouTube (Watch/Shorts/Embed), Google Drive Video Link, Dropbox Video, Direct MP4, Vimeo, ወይም <iframe> Embed"
-                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono"
-                  />
-                  <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] text-gray-500 dark:text-gray-400 font-medium">
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">YouTube</span>
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Google Drive Video</span>
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Dropbox Stream</span>
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Direct MP4</span>
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Vimeo</span>
-                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Iframe Embed</span>
+                {/* 2. Video Promo URL Input with 'ቪዲዮ የለውም' Quick Button */}
+                <div className="sm:col-span-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
+                      <i className="fa-solid fa-film text-[#f9b03c]"></i>
+                      <span>የቪዲዮ ማስተዋወቂያ / የቀጥታ ስርጭት ሊንክ (Promo Video URL)</span>
+                    </label>
+
+                    {/* Quick Video Toggle Buttons */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEventForm(prev => ({ ...prev, videoUrl: '' }));
+                        }}
+                        className={`text-[11px] font-bold px-3 py-1 rounded-xl transition flex items-center gap-1.5 cursor-pointer border ${
+                          !eventForm.videoUrl || eventForm.videoUrl.trim() === ''
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-white/10 hover:bg-red-500/10 hover:text-red-400'
+                        }`}
+                        title="ለዚህ ክንውን ቪዲዮ አያስፈልግም - ንጹህ ባነር ብቻ ይታያል"
+                      >
+                        <i className={`fa-solid ${!eventForm.videoUrl || eventForm.videoUrl.trim() === '' ? 'fa-check' : 'fa-ban'} text-[10px]`}></i>
+                        <span>🚫 ቪዲዮ የለውም (No Video)</span>
+                      </button>
+
+                      {eventForm.videoUrl && eventForm.videoUrl.trim() !== '' && (
+                        <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-lg font-bold flex items-center gap-1">
+                          <i className="fa-solid fa-play text-[8px]"></i>
+                          <span>ቪዲዮ አለው</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {(!eventForm.videoUrl || eventForm.videoUrl.trim() === '') ? (
+                    <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between text-xs text-emerald-400 font-medium">
+                      <div className="flex items-center gap-2.5">
+                        <i className="fa-solid fa-circle-check text-emerald-400 text-base shrink-0"></i>
+                        <span>ይህ ክንውን ቪዲዮ የለውም፤ በዋናው ገጽና በዝርዝር ገጹ ላይ <strong>ንጹህ ባነር ብቻ</strong> ያለምንም "ቪዲዮ/Trailer" ጽሑፍ ይታያል።</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEventForm(prev => ({ ...prev, videoUrl: 'https://' }))}
+                        className="text-[11px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-3 py-1.5 rounded-xl transition shrink-0 font-bold ml-2 cursor-pointer border border-emerald-500/30"
+                      >
+                        + ቪዲዮ ጨምር
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <textarea
+                        rows={2}
+                        value={eventForm.videoUrl}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEventForm(prev => {
+                            const next = { ...prev, videoUrl: val };
+                            const yId = extractYouTubeId(val);
+                            if (yId && (!prev.image || prev.image === DEFAULT_EVENT_BANNER)) {
+                              next.image = `https://img.youtube.com/vi/${yId}/maxresdefault.jpg`;
+                            }
+                            return next;
+                          });
+                        }}
+                        placeholder="e.g. YouTube (Watch/Shorts/Embed), Google Drive Video Link, Dropbox Video, Direct MP4, Vimeo, ወይም <iframe> Embed"
+                        className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono"
+                      />
+                      <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                        <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">YouTube</span>
+                        <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Google Drive Video</span>
+                        <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Dropbox Stream</span>
+                        <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Direct MP4</span>
+                        <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Vimeo</span>
+                        <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">Iframe Embed</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* 3. Live Media Preview Stage (Resilient, No Red Cross / Failed State) */}

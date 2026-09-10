@@ -601,8 +601,9 @@ export default function UpcomingEventsSection() {
 
             const userTicket = userBookedTickets[event.id] || (event.slug ? userBookedTickets[event.slug] : null);
             const isAlreadyRegistered = Boolean(userTicket);
-            const hasVideo = Boolean(event.videoUrl || (event.image && isMediaVideo(event.image)));
-            const effectiveVideoUrl = event.videoUrl || (event.image && isMediaVideo(event.image) ? event.image : '');
+            const cleanVid = (event.videoUrl || '').trim();
+            const hasVideo = Boolean(cleanVid && cleanVid !== 'none' && cleanVid !== 'yelewim');
+            const effectiveVideoUrl = hasVideo ? cleanVid : '';
             const posterUrl = formatEventBannerUrl(event.image) || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
 
             return (
@@ -855,7 +856,8 @@ export default function UpcomingEventsSection() {
             {/* Video Player Stage */}
             <div className="relative aspect-video w-full bg-black">
               {(() => {
-                const vidUrl = previewVideoEvent.videoUrl || (previewVideoEvent.image && isMediaVideo(previewVideoEvent.image) ? previewVideoEvent.image : '');
+                const cleanVid = (previewVideoEvent.videoUrl || '').trim();
+                const vidUrl = (cleanVid && cleanVid !== 'none' && cleanVid !== 'yelewim') ? cleanVid : '';
                 const parsed = parseVideoEmbedUrl(vidUrl, true);
                 if (parsed.type === 'video') {
                   return (

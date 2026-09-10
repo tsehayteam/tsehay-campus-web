@@ -218,11 +218,13 @@ function AuthCallbackHandler() {
           clientProfilePromise
         ]);
 
-        const isRegisteredServer = Boolean(serverCheck?.isRegistered);
         const resolvedProfile = serverCheck?.profile || clientProfile;
+        const existingPhone = resolvedProfile?.phone || resolvedProfile?.phone_number || (formatted as any)?.phone || '';
+        const hasValidPhone = Boolean(existingPhone && String(existingPhone).trim().length >= 7);
+        const isRegisteredServer = Boolean(serverCheck?.isRegistered);
 
-        // Case A: Student is ALREADY REGISTERED -> AUTOMATIC PASS (Zero Delay)
-        if (isRegisteredServer || resolvedProfile) {
+        // Case A: Existing Student with COMPLETE registration (Valid phone & full info) -> AUTOMATIC PASS
+        if (isRegisteredServer && hasValidPhone) {
           const finalUser: User = {
             ...formatted,
             displayName: resolvedProfile?.name || resolvedProfile?.full_name || resolvedProfile?.displayName || formatted.displayName,
@@ -241,11 +243,11 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // Case B: Brand New Student -> Detect & Continue to Onboarding Form
-        const suggestedName = formatted.displayName || '';
+        // Case B: Brand New Visitor or Incomplete Info -> Detect as New & Require Full Information
+        const suggestedName = resolvedProfile?.name || resolvedProfile?.full_name || serverCheck?.suggestedName || formatted.displayName || '';
         setFullName(suggestedName);
-        setPhone('');
-        setCity('');
+        setPhone(existingPhone || '');
+        setCity(resolvedProfile?.city || '');
         setStatus('onboarding');
 
       } catch (evalErr) {
