@@ -332,6 +332,14 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setError("");
     setLoading(true);
     try {
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('tsehay_preloader_shown', 'true');
+          sessionStorage.setItem('tsehay_preloader_seen', 'true');
+          document.documentElement.classList.remove('tsehay-loading');
+        } catch (e) {}
+      }
+
       const { error: oAuthErr } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

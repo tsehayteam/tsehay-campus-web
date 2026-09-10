@@ -52,7 +52,9 @@ export default function LusionPreloader() {
         const isAuthCallback = window.location.hash.includes('access_token') || 
                                window.location.hash.includes('refresh_token') || 
                                window.location.search.includes('code=') ||
-                               window.location.pathname.startsWith('/auth/');
+                               window.location.pathname.startsWith('/auth/') ||
+                               window.location.pathname.startsWith('/dashboard') ||
+                               Boolean(localStorage.getItem('tsehay_auth_user_cache'));
         if (isAuthCallback) {
           sessionStorage.setItem('tsehay_preloader_shown', 'true');
           sessionStorage.setItem('tsehay_preloader_seen', 'true');
@@ -80,13 +82,15 @@ export default function LusionPreloader() {
   const progressRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
 
-  // If already shown or if on auth callback, immediately unblock document and dispatch complete
+  // If already shown or if on auth callback / dashboard, immediately unblock document and dispatch complete
   useEffect(() => {
     if (typeof document !== 'undefined') {
       const isAuthCallback = window.location.hash.includes('access_token') || 
                              window.location.hash.includes('refresh_token') || 
                              window.location.search.includes('code=') ||
-                             window.location.pathname.startsWith('/auth/');
+                             window.location.pathname.startsWith('/auth/') ||
+                             window.location.pathname.startsWith('/dashboard') ||
+                             Boolean(localStorage.getItem('tsehay_auth_user_cache'));
       if (isAuthCallback || shouldRemove) {
         document.documentElement.classList.remove('tsehay-loading');
         window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));

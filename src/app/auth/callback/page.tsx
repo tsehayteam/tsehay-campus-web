@@ -37,32 +37,113 @@ function AuthCallbackHandler() {
     }
   }, []);
 
+  // Post-Auth Direct Routing (Checks pending action or goes to dashboard)
+  const navigatePostAuth = () => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('tsehay-loading');
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('tsehay_preloader_shown', 'true');
+        sessionStorage.setItem('tsehay_preloader_seen', 'true');
+      } catch (e) {}
+    }
+
+    try {
+      const pendingRaw = sessionStorage.getItem('tsehay_pending_course_action') ||
+                         sessionStorage.getItem('tsehay_pending_action');
+
+      if (pendingRaw) {
+        const pending = JSON.parse(pendingRaw);
+        sessionStorage.removeItem('tsehay_pending_course_action');
+        sessionStorage.removeItem('tsehay_pending_action');
+
+        if (pending.type === 'enroll_free') {
+          const cId = pending.courseId || pending.course?.id || 'digital_marketing_free';
+          window.location.replace(`/dashboard?view=classroom&courseId=${encodeURIComponent(cId)}&lesson=0`);
+          return;
+        }
+        if (pending.type === 'buy' || pending.type === 'buy_course') {
+          const cId = pending.courseId || pending.course?.id;
+          if (cId) {
+            window.location.replace(`/courses/${encodeURIComponent(cId)}?checkout=true`);
+            return;
+          }
+        }
+      }
+    } catch (e) {}
+
+    window.location.replace('/dashboard');
+  };
+
   // 2. Resolve authentication session & evaluate profile completion
   useEffect(() => {
     let isMounted = true;
 
     const resolveSession = async () => {
       try {
-        // Allow URL hash/query tokens to parse
-        const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
-        
-        if (sessionErr) {
-          throw sessionErr;
+        // A. Check for OAuth error in URL parameters
+        const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const oAuthError = searchParams?.get('error') || urlParams?.get('error');
+        const oAuthErrorDesc = searchParams?.get('error_description') || urlParams?.get('error_description');
+
+        if (oAuthError) {
+          if (isMounted) {
+            setStatus('error');
+            setErrorMessage(oAuthErrorDesc || 'የGoogle መግቢያ ተሰርዟል ወይም አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።');
+          }
+          return;
         }
 
-        let userSession = session?.user;
+        // B. Handle Supabase PKCE code exchange if ?code= is in the URL
+        const code = searchParams?.get('code') || urlParams?.get('code');
+        let userSession: any = null;
 
-        // If session not ready yet, wait briefly for Supabase onAuthStateChange
+        if (code) {
+          try {
+            const { data: exchangeData, error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
+            if (!exchangeErr && exchangeData?.session?.user) {
+              userSession = exchangeData.session.user;
+            }
+          } catch (codeErr) {
+            console.warn("PKCE code exchange error:", codeErr);
+          }
+        }
+
+        // C. If session not obtained via PKCE exchange, try getSession()
         if (!userSession) {
+          const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+          if (sessionErr) throw sessionErr;
+          userSession = session?.user;
+        }
+
+        // D. Fallback: Wait briefly (max 2.5s) for onAuthStateChange
+        if (!userSession) {
+          let resolved = false;
+
           const timeout = setTimeout(() => {
-            if (isMounted && status === 'checking') {
+            if (isMounted && !resolved && status === 'checking') {
+              // Final check in local storage before giving up
+              try {
+                const cached = localStorage.getItem('tsehay_auth_user_cache');
+                if (cached) {
+                  const parsed = JSON.parse(cached);
+                  if (parsed?.uid || parsed?.id) {
+                    resolved = true;
+                    evaluateProfile(parsed);
+                    return;
+                  }
+                }
+              } catch (e) {}
+
               setStatus('error');
               setErrorMessage('የGoogle ማረጋገጫ ክፍለ ጊዜ ማግኘት አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
             }
-          }, 4500);
+          }, 2500);
 
-          const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-            if (newSession?.user && isMounted) {
+          const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+            if (newSession?.user && isMounted && !resolved) {
+              resolved = true;
               clearTimeout(timeout);
               subscription.unsubscribe();
               await evaluateProfile(newSession.user);
@@ -94,36 +175,92 @@ function AuthCallbackHandler() {
       }
 
       setCurrentUser(formatted);
+
+      // Pre-cache authenticated user immediately so dashboard is ready instantly
       try {
         localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(formatted));
       } catch (e) {}
 
-      // Query Supabase profiles table to check if phone and details exist
+      window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: formatted }));
+      window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: formatted }));
+
+      // =========================================================================
+      // 🌟 COMPREHENSIVE REGISTRATION STATUS CHECK
+      // "automaticly yilef alredy yetemezegebe temari kehone kaltemezegebe detect argo endetelemedew yiketil"
+      // =========================================================================
       try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', formatted.uid)
-          .maybeSingle();
+        // Step 1: Query server API check-registration with 3-second timeout protection
+        const checkPromise = fetch('/api/auth/check-registration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid: formatted.uid,
+            email: formatted.email
+          })
+        }).then(res => res.json()).catch(() => null);
 
-        const hasPhone = Boolean(profile?.phone || profile?.phone_number || (formatted as any)?.phone);
-        const hasName = Boolean(profile?.name || profile?.full_name || profile?.displayName || formatted.displayName);
+        // Client query fallback in parallel
+        const clientProfilePromise = (async () => {
+          try {
+            const { data } = await supabase
+              .from('profiles')
+              .select('*')
+              .or(`id.eq.${formatted.uid},email.ilike.${formatted.email || ''}`)
+              .limit(1);
+            return data && data.length > 0 ? data[0] : null;
+          } catch (e) {
+            return null;
+          }
+        })();
 
-        // A. Existing Student with Complete Profile -> Instant Direct Pass
-        if (hasPhone && hasName && String(profile?.phone || '').trim().length >= 7) {
+        const [serverCheck, clientProfile] = await Promise.all([
+          checkPromise,
+          clientProfilePromise
+        ]);
+
+        const isRegisteredServer = Boolean(serverCheck?.isRegistered);
+        const resolvedProfile = serverCheck?.profile || clientProfile;
+
+        // Case A: Student is ALREADY REGISTERED -> AUTOMATIC PASS (Zero Delay)
+        if (isRegisteredServer || resolvedProfile) {
+          const finalUser: User = {
+            ...formatted,
+            displayName: resolvedProfile?.name || resolvedProfile?.full_name || resolvedProfile?.displayName || formatted.displayName,
+            photoURL: resolvedProfile?.photoURL || resolvedProfile?.avatar_url || formatted.photoURL,
+          };
+
+          try {
+            localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(finalUser));
+          } catch (e) {}
+
+          window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: finalUser }));
+          window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: finalUser }));
+
           setStatus('redirecting');
           navigatePostAuth();
           return;
         }
 
-        // B. New User / Incomplete Profile -> Mandatory Onboarding Step
-        setFullName(formatted.displayName || profile?.full_name || '');
-        setPhone(profile?.phone || '');
-        setCity(profile?.city || '');
+        // Case B: Brand New Student -> Detect & Continue to Onboarding Form
+        const suggestedName = formatted.displayName || '';
+        setFullName(suggestedName);
+        setPhone('');
+        setCity('');
         setStatus('onboarding');
-      } catch (profileErr) {
-        console.warn("Notice checking profile:", profileErr);
-        // Fallback: If error querying profile, request phone number to be safe
+
+      } catch (evalErr) {
+        console.warn("Notice evaluating profile:", evalErr);
+        // Fallback: If evaluation encountered unexpected error, check if user already has course caches
+        try {
+          const hasCachedCourses = localStorage.getItem(`tsehay_user_courses_${formatted.uid}`);
+          if (hasCachedCourses) {
+            setStatus('redirecting');
+            navigatePostAuth();
+            return;
+          }
+        } catch (e) {}
+
+        // Otherwise show onboarding form
         setFullName(formatted.displayName || '');
         setStatus('onboarding');
       }
@@ -136,36 +273,7 @@ function AuthCallbackHandler() {
     };
   }, []);
 
-  // Post-Auth Direct Routing (Checks pending action or goes to dashboard)
-  const navigatePostAuth = () => {
-    try {
-      const pendingRaw = sessionStorage.getItem('tsehay_pending_course_action') ||
-                         sessionStorage.getItem('tsehay_pending_action');
-
-      if (pendingRaw) {
-        const pending = JSON.parse(pendingRaw);
-        sessionStorage.removeItem('tsehay_pending_course_action');
-        sessionStorage.removeItem('tsehay_pending_action');
-
-        if (pending.type === 'enroll_free') {
-          const cId = pending.courseId || pending.course?.id || 'digital_marketing_free';
-          window.location.replace(`/dashboard?view=classroom&courseId=${encodeURIComponent(cId)}&lesson=0`);
-          return;
-        }
-        if (pending.type === 'buy' || pending.type === 'buy_course') {
-          const cId = pending.courseId || pending.course?.id;
-          if (cId) {
-            window.location.replace(`/courses/${encodeURIComponent(cId)}?checkout=true`);
-            return;
-          }
-        }
-      }
-    } catch (e) {}
-
-    window.location.replace('/dashboard');
-  };
-
-  // Submit Mandatory Profile Onboarding
+  // Submit Mandatory Profile Onboarding for NEW students
   const handleOnboardingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setOnboardingError('');
@@ -201,6 +309,7 @@ function AuthCallbackHandler() {
         id: currentUser.uid,
         full_name: cleanName,
         display_name: cleanName,
+        email: currentUser.email || null,
         phone: cleanPhone,
         city: cleanCity,
         source: source || 'Google',
@@ -257,7 +366,7 @@ function AuthCallbackHandler() {
       setStatus('redirecting');
       setTimeout(() => {
         navigatePostAuth();
-      }, 500);
+      }, 300);
     } catch (err: any) {
       console.error("Onboarding submission error:", err);
       setOnboardingError('መረጃዎን ማስቀመጥ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
@@ -293,7 +402,7 @@ function AuthCallbackHandler() {
       {/* ========================================================= */}
       {status === 'redirecting' && (
         <div className="py-8 space-y-4 animate-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center text-3xl border border-emerald-500/40">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center text-3xl border border-emerald-500/40 animate-bounce">
             <i className="fa-solid fa-check"></i>
           </div>
           <h2 className="text-xl font-black text-white font-heading">
@@ -454,9 +563,9 @@ function AuthCallbackHandler() {
           <div className="pt-4 flex flex-col gap-2">
             <Link
               href="/"
-              className="w-full py-3 rounded-xl bg-[#f9b03c] text-black font-black text-xs hover:bg-amber-400 transition text-center"
+              className="w-full py-3 rounded-xl bg-[#f9b03c] text-black font-black text-xs hover:bg-amber-400 transition text-center shadow-lg cursor-pointer"
             >
-              ወደ ዋናው ገጽ ተመለስ
+              ወደ ዋናው ገጽ ተመለስ (Back to Home)
             </Link>
           </div>
         </div>
