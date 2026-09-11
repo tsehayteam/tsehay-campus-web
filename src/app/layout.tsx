@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Script from "next/script";
-import { Geist, Geist_Mono, Montserrat, Noto_Sans_Ethiopic } from "next/font/google";
+import { Noto_Sans_Ethiopic, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
@@ -14,28 +14,28 @@ import TsehayExperienceProvider from "@/components/experience/TsehayExperiencePr
 
 import GlobalModals from "@/components/GlobalModals";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const montserrat = Montserrat({
-  variable: "--font-heading-var",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
-
+// 1. Primary Amharic Font
 const notoSansEthiopic = Noto_Sans_Ethiopic({
-  variable: "--font-ethiopic-var",
   subsets: ["ethiopic"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-primary-amharic",
   display: "swap",
-  weight: ["400", "500", "600", "700", "800", "900"],
+});
+
+// 2. Secondary Display/Headings Font
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-secondary-heading",
+  display: "swap",
+});
+
+// 3. Tertiary Monospace Font (Prices, Metrics, Badges)
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-tertiary-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -116,7 +116,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="am" className="dark notranslate" translate="no" suppressHydrationWarning>
+    <html
+      lang="am"
+      className={`${notoSansEthiopic.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} dark notranslate`}
+      translate="no"
+      suppressHydrationWarning
+    >
       <head>
         <meta name="google" content="notranslate" />
         <meta name="googlebot" content="notranslate" />
@@ -212,7 +217,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} ${notoSansEthiopic.variable} antialiased pt-0 notranslate`}
+        className={`${notoSansEthiopic.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} font-primary antialiased pt-0 notranslate`}
         translate="no"
         suppressHydrationWarning
       >

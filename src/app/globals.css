@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-primary: var(--font-primary-amharic), 'Noto Sans Ethiopic', sans-serif;
+  --font-secondary: var(--font-secondary-heading), 'Plus Jakarta Sans', var(--font-primary-amharic), 'Noto Sans Ethiopic', sans-serif;
+  --font-tertiary: var(--font-tertiary-mono), 'JetBrains Mono', monospace;
+
+  /* Aliases for backwards compatibility & standard utility classes */
+  --font-sans: var(--font-primary-amharic), var(--font-secondary-heading), 'Noto Sans Ethiopic', 'Plus Jakarta Sans', sans-serif;
+  --font-heading: var(--font-secondary-heading), 'Plus Jakarta Sans', var(--font-primary-amharic), 'Noto Sans Ethiopic', sans-serif;
+  --font-body: var(--font-primary-amharic), 'Noto Sans Ethiopic', var(--font-secondary-heading), 'Plus Jakarta Sans', sans-serif;
+  --font-mono: var(--font-tertiary-mono), 'JetBrains Mono', monospace;
 
   --color-primary: #F9B03C;
   --color-secondary: #3268BA;
@@ -14,8 +21,6 @@
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
 
-  --font-heading: var(--font-heading-var), Montserrat, 'Noto Sans Ethiopic', sans-serif;
-  --font-body: var(--font-ethiopic-var), var(--font-heading-var), Inter, Roboto, sans-serif;
   --font-serif: 'Playfair Display', serif;
   --font-script: 'Great Vibes', cursive;
 
@@ -27,10 +32,33 @@
 }
 
 :root {
+  --font-primary-amharic: 'Noto Sans Ethiopic', sans-serif;
+  --font-secondary-heading: 'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif;
+  --font-tertiary-mono: 'JetBrains Mono', monospace;
+  --font-heading-var: var(--font-secondary-heading);
+  --font-ethiopic-var: var(--font-primary-amharic);
+  --font-geist-sans: var(--font-primary-amharic);
+  --font-geist-mono: var(--font-tertiary-mono);
+
   --background: #f8fafc;
   --foreground: #0f172a;
   --plyr-color-main: #f59e0b;
   --bodyBg: #f8fafc;
+}
+
+/* ==========================================================================
+   🖋️ Typography Utility Classes (Primary Amharic, Secondary Headings, Tertiary Mono)
+   ========================================================================== */
+.font-primary {
+  font-family: var(--font-primary-amharic), 'Noto Sans Ethiopic', sans-serif;
+}
+
+.font-secondary {
+  font-family: var(--font-secondary-heading), 'Plus Jakarta Sans', var(--font-primary-amharic), 'Noto Sans Ethiopic', sans-serif;
+}
+
+.font-tertiary {
+  font-family: var(--font-tertiary-mono), 'JetBrains Mono', monospace;
 }
 
 :root.dark, html.dark {
@@ -153,7 +181,7 @@ html:not(.dark) .modal-backdrop {
 }
 
 body {
-  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  font-family: var(--font-primary-amharic), 'Noto Sans Ethiopic', var(--font-body), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
   max-width: 100%;
   width: 100%;
