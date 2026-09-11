@@ -151,8 +151,13 @@ export default function RootLayout({
                 visibility: hidden !important;
                 pointer-events: none !important;
               }
+              html:not(.tsehay-loading) #tsehay-lusion-preloader {
+                display: none !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+              }
               #tsehay-page-wrapper {
-                transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s;
+                transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s;
               }
             `,
           }}
@@ -161,19 +166,46 @@ export default function RootLayout({
           id="tsehay-preloader-session-detector"
           dangerouslySetInnerHTML={{
             __html: `
-              try {
-                var p = location.pathname;
-                var isLanding = (p === '/' || p === '');
-                var seen = sessionStorage.getItem('tsehay_preloader_shown') === 'true' || sessionStorage.getItem('tsehay_preloader_seen') === 'true';
-                var userCached = Boolean(localStorage.getItem('tsehay_auth_user_cache'));
-                if (isLanding && !seen && !userCached) {
-                  document.documentElement.classList.add('tsehay-loading');
-                } else {
+              (function() {
+                try {
+                  // 1. Strict Back/Forward Navigation Guard: NEVER lock page or show preloader on history pop
+                  var nav = window.performance && window.performance.getEntriesByType && window.performance.getEntriesByType('navigation')[0];
+                  var isBackForward = (nav && nav.type === 'back_forward') || (window.performance && window.performance.navigation && window.performance.navigation.type === 2);
+                  if (isBackForward) {
+                    document.documentElement.classList.remove('tsehay-loading');
+                    return;
+                  }
+
+                  var p = location.pathname;
+                  var isLanding = (p === '/' || p === '');
+                  var seen = sessionStorage.getItem('tsehay_preloader_shown') === 'true' || 
+                             sessionStorage.getItem('tsehay_preloader_seen') === 'true' ||
+                             localStorage.getItem('tsehay_preloader_seen') === 'true';
+                  var userCached = Boolean(localStorage.getItem('tsehay_auth_user_cache'));
+
+                  if (isLanding && !seen && !userCached) {
+                    document.documentElement.classList.add('tsehay-loading');
+                  } else {
+                    document.documentElement.classList.remove('tsehay-loading');
+                  }
+
+                  // 2. Proactive listeners to immediately unlock on popstate (browser back/forward) or pageshow (BFCache restore)
+                  window.addEventListener('popstate', function() {
+                    document.documentElement.classList.remove('tsehay-loading');
+                    var pl = document.getElementById('tsehay-lusion-preloader');
+                    if (pl) pl.style.display = 'none';
+                  }, { passive: true });
+
+                  window.addEventListener('pageshow', function() {
+                    document.documentElement.classList.remove('tsehay-loading');
+                    var pl = document.getElementById('tsehay-lusion-preloader');
+                    if (pl) pl.style.display = 'none';
+                  }, { passive: true });
+
+                } catch (e) {
                   document.documentElement.classList.remove('tsehay-loading');
                 }
-              } catch (e) {
-                document.documentElement.classList.remove('tsehay-loading');
-              }
+              })();
             `,
           }}
         />

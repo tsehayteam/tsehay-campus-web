@@ -448,19 +448,11 @@ export default function HomeClient({
         } catch (authErr) {}
 
         const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
-        if (typeof window !== 'undefined') {
-          window.location.href = targetUrl;
-        } else {
-          router.push(targetUrl);
-        }
+        router.push(targetUrl);
       } catch (err: any) {
          console.error("Free enrollment failed:", err);
          const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
-         if (typeof window !== 'undefined') {
-           window.location.href = targetUrl;
-         } else {
-           router.push(targetUrl);
-         }
+         router.push(targetUrl);
       } finally {
          setIsEnrolling(false);
       }

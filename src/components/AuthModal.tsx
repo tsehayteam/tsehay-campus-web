@@ -50,6 +50,16 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       backdropPointerDownRef.current = false;
     }
   }, [isOpen]);
+
+  // Close modal smoothly on browser back navigation
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePopHistory = () => {
+      onClose();
+    };
+    window.addEventListener('popstate', handlePopHistory, { passive: true });
+    return () => window.removeEventListener('popstate', handlePopHistory);
+  }, [isOpen, onClose]);
   
   // 🌟 Smart User Existence Detection States
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);

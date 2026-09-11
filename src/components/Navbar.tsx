@@ -151,10 +151,20 @@ export default function Navbar() {
     window.addEventListener('close-nav-curtain', handleCloseCurtain);
     window.addEventListener('toggle-nav-curtain', handleToggleCurtain);
 
+    const handlePopHistory = () => {
+      setIsCurtainOpen(false);
+      setIsSearchActive(false);
+      setShowProfileDropdown(false);
+    };
+    window.addEventListener('popstate', handlePopHistory, { passive: true });
+    window.addEventListener('pageshow', handlePopHistory, { passive: true });
+
     return () => {
       window.removeEventListener('open-nav-curtain', handleOpenCurtain);
       window.removeEventListener('close-nav-curtain', handleCloseCurtain);
       window.removeEventListener('toggle-nav-curtain', handleToggleCurtain);
+      window.removeEventListener('popstate', handlePopHistory);
+      window.removeEventListener('pageshow', handlePopHistory);
     };
   }, []);
 

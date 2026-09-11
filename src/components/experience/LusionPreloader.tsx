@@ -48,10 +48,22 @@ export default function LusionPreloader() {
   const [shouldRemove, setShouldRemove] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
+      // 1. Never re-trigger on browser back/forward navigation
+      const navEntry = window.performance?.getEntriesByType?.('navigation')?.[0] as PerformanceNavigationTiming | undefined;
+      const isBackForward = (navEntry && navEntry.type === 'back_forward') || (window.performance?.navigation?.type === 2);
+      if (isBackForward) {
+        document.documentElement.classList.remove('tsehay-loading');
+        return true;
+      }
+
       if (window.location.pathname !== '/' && window.location.pathname !== '') {
         return true;
       }
-      if (sessionStorage.getItem('tsehay_preloader_shown') === 'true' || sessionStorage.getItem('tsehay_preloader_seen') === 'true') {
+      if (
+        sessionStorage.getItem('tsehay_preloader_shown') === 'true' || 
+        sessionStorage.getItem('tsehay_preloader_seen') === 'true' ||
+        localStorage.getItem('tsehay_preloader_seen') === 'true'
+      ) {
         return true;
       }
 
@@ -65,6 +77,7 @@ export default function LusionPreloader() {
       if (isAuthOrDashboard) {
         sessionStorage.setItem('tsehay_preloader_shown', 'true');
         sessionStorage.setItem('tsehay_preloader_seen', 'true');
+        localStorage.setItem('tsehay_preloader_seen', 'true');
         return true;
       }
 
@@ -97,6 +110,26 @@ export default function LusionPreloader() {
       }
     }
   }, [shouldRemove]);
+
+  // 🌟 Suppress preloader immediately on history pop (browser back/forward) or pageshow
+  useEffect(() => {
+    const handleHistoryPop = () => {
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.remove('tsehay-loading');
+      }
+      setShouldRemove(true);
+      setIsDone(true);
+      window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
+    };
+
+    window.addEventListener('popstate', handleHistoryPop, { passive: true });
+    window.addEventListener('pageshow', handleHistoryPop, { passive: true });
+
+    return () => {
+      window.removeEventListener('popstate', handleHistoryPop);
+      window.removeEventListener('pageshow', handleHistoryPop);
+    };
+  }, []);
 
   // Dynamic Subtitle Typing Animation State
   const [typedText, setTypedText] = useState('');
@@ -255,10 +288,11 @@ export default function LusionPreloader() {
       progressRef.current = 100;
 
       setTimeout(() => {
-        // 1. Mark completed in sessionStorage
+        // 1. Mark completed in both sessionStorage and localStorage
         try {
           sessionStorage.setItem('tsehay_preloader_shown', 'true');
           sessionStorage.setItem('tsehay_preloader_seen', 'true');
+          localStorage.setItem('tsehay_preloader_seen', 'true');
         } catch (e) {}
 
         // 2. Smoothly reveal main page content by removing tsehay-loading gatekeeper
@@ -319,6 +353,7 @@ export default function LusionPreloader() {
 
   return (
     <div
+      id="tsehay-lusion-preloader"
       className={`fixed inset-0 z-[9999999] bg-[#03060d] text-white flex flex-col justify-between overflow-hidden select-none transition-transform duration-900 ease-[cubic-bezier(0.85,0,0.15,1)] ${
         isDone ? '-translate-y-full pointer-events-none' : 'translate-y-0 pointer-events-auto'
       }`}

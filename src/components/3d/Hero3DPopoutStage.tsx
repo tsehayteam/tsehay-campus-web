@@ -490,7 +490,9 @@ export default function Hero3DPopoutStage({
   // - Automatically RESUMES video when user scrolls back up to the video
   useEffect(() => {
     // 1. Initial play if preloader already finished
-    const hasPreloaderFinished = typeof window !== 'undefined' && !document.documentElement.classList.contains('tsehay-loading') && sessionStorage.getItem('tsehay_preloader_seen') === 'true';
+    const hasPreloaderFinished = typeof window !== 'undefined' && 
+      !document.documentElement.classList.contains('tsehay-loading') && 
+      (sessionStorage.getItem('tsehay_preloader_seen') === 'true' || localStorage.getItem('tsehay_preloader_seen') === 'true');
     let playTimer: NodeJS.Timeout | null = null;
     if (hasPreloaderFinished) {
       executePlay(false);
@@ -498,7 +500,7 @@ export default function Hero3DPopoutStage({
       setShowInitialThumbnail(false);
     }
 
-    // 2. Preloader completion listener
+    // 2. Preloader completion & History Back/Forward listener
     const onPreloaderComplete = () => {
       setShowInitialThumbnail(false);
       executePlay(false);
@@ -512,6 +514,8 @@ export default function Hero3DPopoutStage({
       );
     };
     window.addEventListener('tsehay-preloader-complete', onPreloaderComplete);
+    window.addEventListener('popstate', onPreloaderComplete, { passive: true });
+    window.addEventListener('pageshow', onPreloaderComplete, { passive: true });
 
     // 3. High-Precision Scroll Handler: Auto-pause when scrolled down, auto-resume when scrolled back up
     let scrollTicking = false;
@@ -648,6 +652,8 @@ export default function Hero3DPopoutStage({
     return () => {
       if (playTimer) clearTimeout(playTimer);
       window.removeEventListener('tsehay-preloader-complete', onPreloaderComplete);
+      window.removeEventListener('popstate', onPreloaderComplete);
+      window.removeEventListener('pageshow', onPreloaderComplete);
       window.removeEventListener('scroll', handleScroll);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (observer) observer.disconnect();

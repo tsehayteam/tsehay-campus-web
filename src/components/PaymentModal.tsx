@@ -1,18 +1,31 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { validateReferralCode, recordReferralUsage } from '@/lib/referralService';
 import { getCleanCourseImage } from '@/lib/courseCache';
 
 export default function PaymentModal({ course: propCourse, onClose: propOnClose }: any) {
+  const router = useRouter();
   const [internalCourse, setInternalCourse] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const course = propCourse || internalCourse;
   const isControlled = propCourse !== undefined;
+
+  // Close modal on browser back/forward history navigation
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePop = () => {
+      setIsOpen(false);
+      if (propOnClose) propOnClose();
+    };
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [isOpen, propOnClose]);
 
   const [paymethod, setPaymethod] = useState('lakipay');
   const [isPaying, setIsPaying] = useState(false);
@@ -232,9 +245,9 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           }).catch(e => console.warn("Background enrollment sync:", e));
         } catch (authErr) {}
 
-        if (typeof window !== 'undefined') {
-          window.location.href = `/dashboard?courseId=${targetCourseId}&lesson=0`;
-        }
+        router.push(`/dashboard?courseId=${targetCourseId}&lesson=0`);
+        setIsOpen(false);
+        if (propOnClose) propOnClose();
         return;
       } catch (err: any) {
         console.error("Free enrollment error:", err);
