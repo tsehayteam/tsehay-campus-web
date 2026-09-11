@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React from 'react';
 
 interface Tilt3DLoginButtonProps {
-  onClick: () => void;
+  onClick: (e?: React.MouseEvent | React.TouchEvent) => void;
   label?: string;
   className?: string;
 }
@@ -13,22 +13,27 @@ export default function Tilt3DLoginButton({
   label = "ይግቡ (Login)",
   className = "",
 }: Tilt3DLoginButtonProps) {
-  // Guaranteed, zero-lag single-click deterministic execution (0ms latency, zero dropped hit-tests)
-  const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
+  const handleTrigger = (e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    onClick();
-  }, [onClick]);
+    onClick(e);
+  };
 
   return (
-    <div className={className.includes('w-full') ? 'w-full block' : 'inline-block'}>
+    <div 
+      className={`relative z-30 pointer-events-auto ${className.includes('w-full') ? 'w-full block' : 'inline-block'}`}
+      onClick={(e) => e.stopPropagation()}
+    >
       <button
         type="button"
-        onClick={handleClick}
-        className={`relative group px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-full font-heading font-black text-xs sm:text-[13px] text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.5),0_10px_25px_rgba(0,0,0,0.85)] border border-amber-300/90 hover:border-white hover:brightness-110 active:scale-95 cursor-pointer select-none transition-all duration-150 overflow-hidden flex items-center gap-2 touch-manipulation ${className}`}
+        onClick={handleTrigger}
+        onTouchEnd={handleTrigger}
+        className={`relative z-30 group px-5 sm:px-6 py-2.5 sm:py-2.5 rounded-full font-heading font-black text-xs sm:text-[13px] text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.5),0_10px_25px_rgba(0,0,0,0.85)] border border-amber-300/90 hover:border-white hover:brightness-110 active:scale-95 cursor-pointer select-none transition-all duration-150 overflow-hidden flex items-center gap-2 pointer-events-auto touch-manipulation ${className}`}
         style={{
           WebkitTapHighlightColor: 'transparent',
+          touchAction: 'manipulation',
         }}
+        title={label}
+        aria-label={label}
       >
         {/* Continuous Animated Shimmer Sweep */}
         <div 
