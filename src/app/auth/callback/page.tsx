@@ -4,7 +4,7 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { formatSupabaseUser, User } from '@/context/AuthContext';
+import { formatSupabaseUser, User, clearUserSessionData } from '@/context/AuthContext';
 import { getStoredReferrerUid, clearStoredReferrerUid } from '@/lib/referralTrackingService';
 
 function AuthCallbackHandler() {
@@ -23,6 +23,20 @@ function AuthCallbackHandler() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [onboardingError, setOnboardingError] = useState('');
+
+  // Explicit Authentication Rollback: Ensures unverified guests never linger logged in
+  const handleCancelAndRollback = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
+    try {
+      clearUserSessionData();
+    } catch (e) {}
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: null }));
+      window.location.replace('/');
+    }
+  };
 
   // 1. Immediately eliminate preloader gatekeeper and unlock DOM
   useEffect(() => {
@@ -75,8 +89,6 @@ function AuthCallbackHandler() {
     } catch (e) {}
 
     // 2. Smart Return-to-Origin Navigation:
-    // If user came from a specific page (e.g. /courses/..., /events/..., /about, /),
-    // return them immediately to that exact origin page!
     try {
       const returnUrl = sessionStorage.getItem('tsehay_auth_return_url');
       if (returnUrl && !returnUrl.startsWith('/auth') && returnUrl !== '/auth/callback') {
@@ -108,13 +120,8 @@ function AuthCallbackHandler() {
 
       setCurrentUser(formatted);
 
-      // Pre-cache authenticated user immediately so navigation is instant
-      try {
-        localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(formatted));
-      } catch (e) {}
-
-      window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: formatted }));
-      window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: formatted }));
+      // Note: We deliberately do NOT cache unverified visitor in localStorage or dispatch global
+      // auth login event here. They must be validated as a registered student with phone or finish onboarding!
 
       // =========================================================================
       // 🌟 ZERO-LAG SMART ROLE & PROFILE ROUTING
@@ -455,6 +462,19 @@ function AuthCallbackHandler() {
       window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: updatedUser }));
       window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: updatedUser }));
 
+      // Dispatch Silicon Valley Welcome Email for new signups
+      if (currentUser?.email) {
+        fetch('/api/email/automation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'welcome',
+            userEmail: currentUser.email,
+            userName: cleanName
+          })
+        }).catch(() => {});
+      }
+
       setStatus('redirecting');
       setTimeout(() => {
         navigatePostAuth();
@@ -513,8 +533,20 @@ function AuthCallbackHandler() {
       {/* 3. MANDATORY PROFILE ONBOARDING FOR NEW USERS              */}
       {/* ========================================================= */}
       {status === 'onboarding' && (
-        <div className="text-left space-y-4 animate-in fade-in duration-300">
-          <div className="text-center space-y-1 mb-4">
+        <div className="text-left space-y-4 animate-in fade-in duration-300 relative">
+          
+          {/* Explicit "X" / Rollback Button: Prevents Ghost Logins */}
+          <button
+            type="button"
+            onClick={handleCancelAndRollback}
+            className="absolute -top-1.5 right-0 w-8 h-8 rounded-full bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-white/10 hover:border-red-500/30 flex items-center justify-center transition cursor-pointer z-20"
+            title="ዝጋ እና ውጣ (Cancel & Sign Out)"
+            aria-label="Cancel and Sign Out"
+          >
+            <i className="fa-solid fa-xmark text-sm"></i>
+          </button>
+
+          <div className="text-center space-y-1 mb-4 pr-6">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f9b03c]/15 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-black">
               <i className="fa-solid fa-user-plus text-[11px]"></i>
               <span>አዲስ ተማሪ ምዝገባ</span>
@@ -615,7 +647,7 @@ function AuthCallbackHandler() {
               </label>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -632,6 +664,16 @@ function AuthCallbackHandler() {
                     <i className="fa-solid fa-arrow-right text-xs"></i>
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCancelAndRollback}
+                disabled={isSubmitting}
+                className="w-full py-2.5 rounded-xl bg-transparent hover:bg-red-500/10 text-slate-400 hover:text-red-400 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-transparent hover:border-red-500/25"
+              >
+                <i className="fa-solid fa-arrow-right-from-bracket text-[11px]"></i>
+                <span>ሰርዝ እና ውጣ (Cancel & Sign Out)</span>
               </button>
             </div>
           </form>

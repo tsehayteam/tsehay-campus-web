@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 
 
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, isEmailAdmin, clearUserSessionData } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -118,14 +118,47 @@ function StudentDashboardContent() {
     }
   };
 
-  // Auth Guard: Only redirect if explicitly confirmed NOT authenticated after auth check completes
+  // Auth & Onboarding Guard: Protects dashboard from unauthenticated and incomplete ghost users
   useEffect(() => {
-    if (authInitialized && !authLoading && !user) {
+    if (!authInitialized || authLoading) return;
+
+    if (!user) {
       if (typeof window !== 'undefined') {
         window.location.href = '/';
       } else {
         router.replace('/');
       }
+      return;
+    }
+
+    // Admins are always authorized
+    if (user.email && isEmailAdmin(user.email)) return;
+
+    // Check if student profile is complete (phone number verified or active enrollments)
+    const cachedPhone = (typeof window !== 'undefined' && (localStorage.getItem('tsehay_user_phone') || (user as any).phone)) || '';
+    const cleanDigits = String(cachedPhone).replace(/[^0-9]/g, '');
+
+    if (cleanDigits.length < 7) {
+      // Check server if they are a registered student or an incomplete visitor
+      fetch('/api/auth/check-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.uid, email: user.email })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data && !data.isStudent && !data.hasEnrollments && !data.hasValidPhone) {
+            console.warn('[Dashboard Guard] Incomplete onboarding detected. Rolling back ghost session.');
+            supabase.auth.signOut().catch(() => {});
+            clearUserSessionData();
+            if (typeof window !== 'undefined') {
+              window.location.replace('/');
+            } else {
+              router.replace('/');
+            }
+          }
+        })
+        .catch(() => {});
     }
   }, [authInitialized, authLoading, user, router]);
 

@@ -27,6 +27,23 @@ export interface SendEmailOptions {
 /**
  * Universal Resend Email Dispatcher with automated fail-safes
  */
+import { 
+  getWelcomeEmailHtml, 
+  getCourseEnrollmentEmailHtml, 
+  type CourseEnrollmentEmailData, 
+  type WelcomeEmailData 
+} from './premiumEmailTemplates';
+
+export { 
+  getWelcomeEmailHtml, 
+  getCourseEnrollmentEmailHtml, 
+  type CourseEnrollmentEmailData, 
+  type WelcomeEmailData 
+};
+
+/**
+ * Universal Resend & Postmark Email Dispatcher with automated fail-safes (Silicon Valley Standard)
+ */
 export async function sendEmail({
   to,
   subject,
@@ -34,57 +51,160 @@ export async function sendEmail({
   from,
   replyTo
 }: SendEmailOptions): Promise<{ success: boolean; data?: any; error?: string }> {
-  const apiKey = (process.env.RESEND_API_KEY || process.env.RESEND_KEY || '').trim();
-
-  if (!apiKey) {
-    console.warn('[Resend Warning] RESEND_API_KEY is not configured in environment.');
-    return { success: false, error: 'RESEND_API_KEY is not configured' };
-  }
+  const resendApiKey = (process.env.RESEND_API_KEY || process.env.RESEND_KEY || '').trim();
+  const postmarkToken = (process.env.POSTMARK_SERVER_TOKEN || process.env.POSTMARK_API_KEY || '').trim();
 
   const recipients = Array.isArray(to) ? to : [to];
   const primaryFrom = from || SENDER_EMAIL;
-  const fallbackFromList = [
-    primaryFrom,
-    'Tsehay Campus <support@tsehaycampus.com>',
-    'Tsehay Campus <events@tsehaycampus.com>',
-    'Tsehay Campus <onboarding@resend.dev>',
-    'Tsehay Campus <noreply@tsehaycampus.com>'
-  ];
+  const replyToAddress = replyTo || 'support@tsehaycampus.com';
 
-  let lastError: any = null;
+  // 1. Primary Dispatch: RESEND API
+  if (resendApiKey) {
+    const fallbackFromList = [
+      primaryFrom,
+      'Tsehay Campus <support@tsehaycampus.com>',
+      'Tsehay Campus <events@tsehaycampus.com>',
+      'Tsehay Campus <onboarding@resend.dev>',
+      'Tsehay Campus <noreply@tsehaycampus.com>'
+    ];
 
-  for (const sender of Array.from(new Set(fallbackFromList))) {
+    let lastError: any = null;
+
+    for (const sender of Array.from(new Set(fallbackFromList))) {
+      try {
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: sender,
+            to: recipients,
+            subject,
+            html,
+            reply_to: replyToAddress
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok && data.id) {
+          return { success: true, data };
+        }
+
+        lastError = data.message || `Status ${response.status}`;
+        console.warn(`[Resend Attempt with ${sender}] failed:`, lastError);
+      } catch (err: any) {
+        lastError = err.message;
+        console.warn(`[Resend Fetch Error with ${sender}]:`, err);
+      }
+    }
+  }
+
+  // 2. Secondary Fail-Safe: POSTMARK API
+  if (postmarkToken) {
     try {
-      const response = await fetch('https://api.resend.com/emails', {
+      const response = await fetch('https://api.postmarkapp.com/email', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-Postmark-Server-Token': postmarkToken
         },
         body: JSON.stringify({
-          from: sender,
-          to: recipients,
-          subject,
-          html,
-          reply_to: replyTo || 'tsehayoperation@gmail.com'
+          From: primaryFrom,
+          To: recipients.join(','),
+          Subject: subject,
+          HtmlBody: html,
+          ReplyTo: replyToAddress,
+          MessageStream: 'outbound'
         })
       });
 
       const data = await response.json().catch(() => ({}));
-
-      if (response.ok && data.id) {
+      if (response.ok && (data.ErrorCode === 0 || data.MessageID)) {
         return { success: true, data };
       }
-
-      lastError = data.message || `Status ${response.status}`;
-      console.warn(`[Resend Attempt with ${sender}] failed:`, lastError);
-    } catch (err: any) {
-      lastError = err.message;
-      console.warn(`[Resend Fetch Error with ${sender}]:`, err);
+      console.warn('[Postmark Attempt failed]:', data.Message || data);
+    } catch (pmErr: any) {
+      console.warn('[Postmark Fetch Error]:', pmErr);
     }
   }
 
-  return { success: false, error: lastError || 'Failed to dispatch email via Resend' };
+  if (!resendApiKey && !postmarkToken) {
+    console.warn('[Email Warning] Neither RESEND_API_KEY nor POSTMARK_SERVER_TOKEN is configured.');
+    return { success: false, error: 'Email service credentials not configured' };
+  }
+
+  return { success: false, error: 'Failed to dispatch email via both Resend and Postmark' };
+}
+
+/**
+ * 🚀 High-Level Helper: Send Silicon Valley Standard Welcome Email for New Signups
+ */
+export async function sendWelcomeEmail({
+  to,
+  name
+}: {
+  to: string;
+  name?: string;
+}): Promise<{ success: boolean; data?: any; error?: string }> {
+  const recipientEmail = (to || '').trim();
+  if (!recipientEmail) return { success: false, error: 'Recipient email required' };
+
+  const subject = "እንኳን ወደ Tsehay Campus በደህና መጡ! 🚀";
+  const html = getWelcomeEmailHtml({
+    name: name || recipientEmail.split('@')[0],
+    email: recipientEmail
+  });
+
+  return sendEmail({
+    to: recipientEmail,
+    subject,
+    html
+  });
+}
+
+/**
+ * 🎓 High-Level Helper: Send Course Enrollment Confirmation & Motivation Email
+ */
+export async function sendCourseEnrollmentEmail({
+  to,
+  name,
+  courseTitle,
+  courseDescription,
+  price,
+  referenceId,
+  accessUrl
+}: {
+  to: string;
+  name?: string;
+  courseTitle: string;
+  courseDescription?: string;
+  price?: number | string;
+  referenceId?: string;
+  accessUrl?: string;
+}): Promise<{ success: boolean; data?: any; error?: string }> {
+  const recipientEmail = (to || '').trim();
+  if (!recipientEmail) return { success: false, error: 'Recipient email required' };
+
+  const subject = `ምዝገባዎ ተረጋግጧል፡ ${courseTitle} | Tsehay Campus`;
+  const html = getCourseEnrollmentEmailHtml({
+    name: name || recipientEmail.split('@')[0],
+    email: recipientEmail,
+    courseTitle,
+    courseDescription,
+    price,
+    referenceId,
+    accessUrl
+  });
+
+  return sendEmail({
+    to: recipientEmail,
+    subject,
+    html
+  });
 }
 
 /**
@@ -392,113 +512,7 @@ export function getEventTicketEmailHtml(ticket: EventTicket | any): string {
   `;
 }
 
-/**
- * 🌟 3. BRANDED COURSE ENROLLMENT WELCOME & RECEIPT
- */
-export function getCourseEnrollmentEmailHtml(data: {
-  name: string;
-  courseTitle: string;
-  price: number | string;
-  referenceId?: string;
-  accessUrl?: string;
-}): string {
-  const displayName = data.name || 'የተከበሩ ተማሪ';
-  const classroomUrl = data.accessUrl || `${SITE_URL}/dashboard`;
-  const priceDisplay = Number(data.price) === 0 || data.price === 'Free' ? '100% ነፃ (Free)' : `${Number(data.price).toLocaleString()} ETB`;
 
-  return `
-  <!DOCTYPE html>
-  <html lang="am">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>እንኳን ወደ ኮርሱ በደህና መጡ! - Tsehay Campus</title>
-  </head>
-  <body style="margin: 0; padding: 30px 10px; background-color: #030509; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff; -webkit-font-smoothing: antialiased;">
-    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; margin: 0 auto; background-color: #070b14; border: 2px solid #f9b03c; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.95), 0 0 50px rgba(249,176,60,0.3);">
-      
-      <!-- Brand Header -->
-      <tr>
-        <td align="center" style="padding: 35px 25px 20px; background: linear-gradient(180deg, #121c33 0%, #070b14 100%); border-bottom: 1px dashed rgba(249, 176, 60, 0.4);">
-          <div style="display: inline-block; background: #ffffff; padding: 8px 18px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <img src="${BRAND_LOGO_URL}" alt="Tsehay Campus" width="140" style="display: block; max-width: 140px; height: auto;" />
-          </div>
-          <br>
-          <div style="display: inline-block; background: rgba(249, 176, 60, 0.15); border: 1px solid #f9b03c; color: #f9b03c; font-size: 11px; font-weight: 900; padding: 5px 18px; border-radius: 100px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">
-            🎓 ENROLLMENT CONFIRMED
-          </div>
-          <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; margin: 6px 0 4px; line-height: 1.3;">
-            እንኳን ወደ ኮርሱ <span style="color: #f9b03c;">በደህና መጡ!</span>
-          </h1>
-          <p style="color: #94a3b8; font-size: 13px; margin: 0;">Course Enrollment & Access Receipt</p>
-        </td>
-      </tr>
-
-      <!-- Message Content -->
-      <tr>
-        <td style="padding: 30px 25px 20px;">
-          <p style="font-size: 15px; color: #cbd5e1; line-height: 1.6; margin: 0 0 15px 0;">
-            ሰላም <strong>${displayName}</strong>፣
-          </p>
-          <p style="font-size: 14px; color: #94a3b8; line-height: 1.7; margin: 0 0 25px 0;">
-            ወደ <strong>"${data.courseTitle}"</strong> ስልጠና በደስታ ተቀብለኖታል! አሁን በቀጥታ ወደ መማሪያ ክፍልዎ በመግባት ቪዲዮዎችን መከታተል፣ ፋይሎችን ማውረድ እና በ AI መማሪያ እርዳታ ማግኘት ይችላሉ።
-          </p>
-
-          <!-- Receipt Details Card -->
-          <div style="background: #0d1527; border: 1.5px solid #3268ba; border-radius: 20px; padding: 20px; margin-bottom: 25px;">
-            <div style="color: #38bdf8; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
-              የምዝገባ ደረሰኝ (ENROLLMENT RECEIPT)
-            </div>
-            
-            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td style="padding: 6px 0; color: #94a3b8; font-size: 13px;">ኮርስ (Course):</td>
-                <td style="padding: 6px 0; color: #ffffff; font-size: 13px; font-weight: 700; text-align: right;">${data.courseTitle}</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 0; color: #94a3b8; font-size: 13px;">የተከፈለ መጠን (Amount):</td>
-                <td style="padding: 6px 0; color: #f9b03c; font-size: 14px; font-weight: 900; text-align: right;">${priceDisplay}</td>
-              </tr>
-              ${data.referenceId ? `
-              <tr>
-                <td style="padding: 6px 0; color: #94a3b8; font-size: 13px;">መለያ ቁጥር (Ref ID):</td>
-                <td style="padding: 6px 0; color: #cbd5e1; font-size: 12px; font-family: monospace; text-align: right;">${data.referenceId}</td>
-              </tr>
-              ` : ''}
-              <tr>
-                <td style="padding: 6px 0; color: #94a3b8; font-size: 13px;">መዳረሻ (Access):</td>
-                <td style="padding: 6px 0; color: #34d399; font-size: 13px; font-weight: 700; text-align: right;">የህይወት ዘመን (Lifetime)</td>
-              </tr>
-            </table>
-          </div>
-
-          <!-- Direct Access Button -->
-          <div style="text-align: center; margin-bottom: 25px;">
-            <a href="${classroomUrl}" style="display: inline-block; background: linear-gradient(135deg, #f9b03c 0%, #e09825 100%); color: #030509; font-size: 14px; font-weight: 900; text-decoration: none; padding: 15px 36px; border-radius: 14px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 10px 30px rgba(249, 176, 60, 0.45);">
-              ወደ መማሪያ ክፍል ግባ (Enter Classroom) →
-            </a>
-          </div>
-
-        </td>
-      </tr>
-
-      <!-- Footer -->
-      <tr>
-        <td align="center" style="padding: 20px 25px; background-color: #050811; border-top: 1px solid rgba(255,255,255,0.06);">
-          <p style="color: #64748b; font-size: 11px; margin: 0 0 6px 0;">
-            © ${new Date().getFullYear()} Tsehay Campus. All rights reserved.
-          </p>
-          <p style="color: #475569; font-size: 11px; margin: 0;">
-            አዲስ አበባ፣ ኢትዮጵያ • <a href="${SITE_URL}" style="color: #f9b03c; text-decoration: none;">tsehaycampus.com</a>
-          </p>
-        </td>
-      </tr>
-
-    </table>
-  </body>
-  </html>
-  `;
-}
 
 /**
  * 🌟 4. BRANDED ADMIN 2FA OTP CODE

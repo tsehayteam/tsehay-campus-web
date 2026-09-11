@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer, supabaseAdmin } from '@/lib/supabase/server';
+import { sendWelcomeEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,6 +75,14 @@ export async function POST(req: NextRequest) {
       });
     } catch (uErr) {
       console.warn('[complete-profile] users table upsert notice:', uErr);
+    }
+
+    // 3. Dispatch Silicon Valley Welcome Email for new signups
+    if (cleanEmail) {
+      sendWelcomeEmail({
+        to: cleanEmail,
+        name: cleanName
+      }).catch((e) => console.warn('[complete-profile] Welcome email dispatch notice:', e));
     }
 
     return NextResponse.json({

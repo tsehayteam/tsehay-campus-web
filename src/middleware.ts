@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const isMaintenanceMode = false; // Toggle to false when done
+  const isMaintenanceMode = false; // System is 100% active and live in production
+
+  // 1. Never serve /maintenance when maintenance mode is inactive (Redirects Googlebot and visitors to /)
+  if (!isMaintenanceMode && request.nextUrl.pathname.startsWith('/maintenance')) {
+    return NextResponse.redirect(new URL('/', request.url), 307);
+  }
+
   if (
     isMaintenanceMode && 
     !request.nextUrl.pathname.startsWith('/maintenance') &&
@@ -34,5 +40,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|tc-logo.jpg|maintenance).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|favicon.png|icon.png|tc-logo.jpg).*)'],
 };

@@ -1,10 +1,15 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
-  title: 'ማሻሻያ ላይ ነን (Under Maintenance) • Tsehay Campus',
-  description: 'የበለጠ ጥራት ያለው እና የተሻለ አገልግሎት ለመስጠት ዌብሳይታችንን በማሻሻል ላይ እንገኛለን። በቅርቡ እንመለሳለን!',
+  title: 'Tsehay Campus | የቀጣዩ ትውልድ የክህሎት ማዕከል',
+  description: 'በTsehay Campus ዘመናዊና ተግባር-ተኮር የፊልም ስራ፣ ዲጂታል ማርኬቲንግ እና የቴክኖሎጂ ኮርሶችን ከባለሙያዎች ይማሩ።',
+  robots: {
+    index: false,
+    follow: false,
+  },
   icons: {
     icon: '/tc-logo.jpg',
     apple: '/tc-logo.jpg',
@@ -12,6 +17,8 @@ export const metadata: Metadata = {
 };
 
 export default function MaintenancePage() {
+  // If anyone lands on /maintenance while site is live, redirect immediately to /
+  redirect('/');
   return (
     <main className="min-h-screen bg-[#030509] text-white flex flex-col justify-between relative overflow-hidden select-none font-sans">
       {/*  Dynamic Ambient Background Glows */}

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTsehayInteractions } from '@/hooks/useTsehayInteractions';
 import { useLanguage } from '@/context/LanguageContext';
-import { VolumeX } from 'lucide-react';
+import { Volume2, VolumeX } from 'lucide-react';
 
 /**
  * TsehayAudio - Synesthetic Sound System & Ethiopian Rhythmic Soundscape
@@ -721,37 +721,14 @@ export default function TsehayAudio() {
 
   return (
     <div className="fixed bottom-5 left-5 z-40 select-none notranslate" translate="no">
-      <style jsx>{`
-        @keyframes eq1 {
-          0%, 100% { height: 4px; }
-          50% { height: 16px; }
-        }
-        @keyframes eq2 {
-          0%, 100% { height: 14px; }
-          50% { height: 5px; }
-        }
-        @keyframes eq3 {
-          0%, 100% { height: 7px; }
-          50% { height: 17px; }
-        }
-        @keyframes eq4 {
-          0%, 100% { height: 15px; }
-          50% { height: 6px; }
-        }
-        .animate-eq-1 { animation: eq1 1.1s ease-in-out infinite; }
-        .animate-eq-2 { animation: eq2 0.85s ease-in-out infinite; }
-        .animate-eq-3 { animation: eq3 1.3s ease-in-out infinite; }
-        .animate-eq-4 { animation: eq4 0.95s ease-in-out infinite; }
-      `}</style>
-
       <button
         type="button"
         onClick={toggleMute}
-        className={`group relative flex items-center gap-2.5 px-3.5 py-2 rounded-full backdrop-blur-2xl border transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.7)] cursor-pointer text-xs active:scale-95 ${
+        className={`group relative flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full backdrop-blur-2xl border transition-all duration-300 shadow-[0_8px_24px_rgba(0,0,0,0.6)] cursor-pointer active:scale-90 ${
           isActuallyPlaying
-            ? 'bg-[#0b1222]/90 hover:bg-[#0f1b33] border-[#f9b03c]/60 hover:border-[#f9b03c] text-white shadow-[0_0_25px_rgba(249,176,60,0.3)] ring-1 ring-[#f9b03c]/30'
+            ? 'bg-[#0b1222]/90 hover:bg-[#0f1b33] border-[#f9b03c]/60 hover:border-[#f9b03c] text-[#f9b03c] shadow-[0_0_20px_rgba(249,176,60,0.3)] ring-1 ring-[#f9b03c]/30'
             : isMuted
-            ? 'bg-black/75 hover:bg-black/90 border-white/10 text-slate-400 hover:text-slate-200'
+            ? 'bg-black/80 hover:bg-black/95 border-white/10 text-slate-400 hover:text-white'
             : 'bg-[#080d1a]/85 hover:bg-[#0c1428] border-white/15 hover:border-[#f9b03c]/50 text-slate-300'
         }`}
         title={
@@ -765,39 +742,17 @@ export default function TsehayAudio() {
             : (lang === 'en' ? 'Mute Background Music' : 'የጀርባ ሙዚቃ አጥፋ')
         }
       >
-        {/* Glow ambient bloom */}
+        {/* Ambient pulse bloom when audio is playing */}
         {isActuallyPlaying && (
-          <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#f9b03c]/30 via-amber-500/20 to-[#3268ba]/30 blur-sm pointer-events-none -z-10 animate-pulse" />
+          <span className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#f9b03c]/25 via-amber-500/20 to-[#3268ba]/25 blur-sm pointer-events-none -z-10 animate-pulse" />
         )}
 
-        {/* Dynamic 4-Bar Equalizer Visualizer */}
-        <div className="flex items-end gap-[2px] h-4 w-4 shrink-0 pb-0.5 justify-center">
-          {isActuallyPlaying ? (
-            <>
-              <span className="w-[2.5px] rounded-full bg-[#f9b03c] animate-eq-1" />
-              <span className="w-[2.5px] rounded-full bg-[#f9b03c] animate-eq-2" />
-              <span className="w-[2.5px] rounded-full bg-[#f9b03c] animate-eq-3" />
-              <span className="w-[2.5px] rounded-full bg-[#f9b03c] animate-eq-4" />
-            </>
-          ) : (
-            <div className="flex items-center justify-center text-slate-400 group-hover:text-white transition-colors">
-              <VolumeX className="w-3.5 h-3.5" />
-            </div>
-          )}
-        </div>
-
-        {/* Text & Status Badge */}
-        <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-tight">
-          <span className={isActuallyPlaying ? 'text-[#f9b03c]' : 'text-slate-400'}>
-            {isActuallyPlaying ? 'SOUND' : 'MUTED'}
-          </span>
-          <span className="w-1 h-1 rounded-full bg-slate-500 hidden sm:inline-block" />
-          <span className="text-[10px] text-slate-400 hidden sm:inline font-sans">
-            {isActuallyPlaying 
-              ? (lang === 'en' ? 'Ambient' : 'የጀርባ ሙዚቃ') 
-              : (lang === 'en' ? 'Off' : 'ጠፍቷል')}
-          </span>
-        </div>
+        {/* Minimalist Icon: Volume2 when playing, VolumeX when muted */}
+        {isActuallyPlaying ? (
+          <Volume2 className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+        ) : (
+          <VolumeX className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+        )}
       </button>
     </div>
   );

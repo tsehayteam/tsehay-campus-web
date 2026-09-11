@@ -203,6 +203,20 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     onClose();
   }, [onClose]);
 
+  // Rollback incomplete sessions on modal close to prevent ghost logins
+  const handleSafeClose = useCallback(async () => {
+    if (pendingGoogleAuth || (isSignupMode && signupStep > 1)) {
+      try {
+        const cachedPhone = typeof window !== 'undefined' ? localStorage.getItem('tsehay_user_phone') : null;
+        if (!cachedPhone) {
+          await supabase.auth.signOut();
+        }
+      } catch (e) {}
+      setPendingGoogleAuth(null);
+    }
+    onClose();
+  }, [pendingGoogleAuth, isSignupMode, signupStep, onClose]);
+
   // 🌟 Smart User Existence Detection (API Call with debounce)
   const performSmartEmailCheck = async (targetEmail: string) => {
     const cleanEmail = targetEmail.trim().toLowerCase();
@@ -1064,7 +1078,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           isOpen && 
           (Date.now() - openTimestampRef.current > 350)
         ) {
-          onClose(); 
+          handleSafeClose(); 
         }
         backdropPointerDownRef.current = false;
       }}
@@ -1078,7 +1092,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         <div className="bg-gradient-to-r from-[#182a4d] to-[#0a1224] dark:bg-[#030509] p-5 sm:p-6 text-white text-center relative border-b border-amber-400/20 dark:border-white/[0.08] shrink-0">
           <button 
             type="button" 
-            onClick={onClose} 
+            onClick={handleSafeClose} 
             disabled={loading}
             className="absolute top-4 right-4 text-white/70 hover:text-white transition text-2xl z-50 p-2 cursor-pointer"
             title="ዝጋ (Close)"

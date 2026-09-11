@@ -493,7 +493,7 @@ export default function Navbar() {
                   />
                 </div>
               ) : (
-                <div className="relative" ref={profileDropdownRef}>
+                <div className="hidden sm:block relative" ref={profileDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setShowProfileDropdown(prev => !prev)}

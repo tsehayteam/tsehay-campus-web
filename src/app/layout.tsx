@@ -39,12 +39,13 @@ const notoSansEthiopic = Noto_Sans_Ethiopic({
 });
 
 export const metadata: Metadata = {
-  title: "Tsehay Campus - ፀሐይ ካምፓስ | የኦንላይን እና የተግባር የክህሎት ማሰልጠኛ ፕላትፎርም",
-  description: "በፀሐይ ካምፓስ (Tsehay Campus) የቴክኖሎጂ፣ የዲጂታል ማርኬቲንግ፣ የኢኮሜርስ እና የቢዝነስ ክህሎቶችን በኦንላይን እና በተግባር ይማሩ። በ AI የታገዘ ዘመናዊ ስልጠና ወስደው ገቢዎን ያሳድጉ!",
+  title: "Tsehay Campus | የቀጣዩ ትውልድ የክህሎት ማዕከል",
+  description: "በTsehay Campus ዘመናዊና ተግባር-ተኮር የፊልም ስራ፣ ዲጂታል ማርኬቲንግ እና የቴክኖሎጂ ኮርሶችን ከባለሙያዎች ይማሩ።",
   keywords: [
     "Tsehay Campus", "ፀሐይ ካምፓስ", "Eyoub Sahle", "የኦንላይን ትምህርት", "የክህሎት ስልጠና", 
     "ዲጂታል ማርኬቲንግ", "ኢኮሜርስ", "Python", "Full-Stack", "Online Learning Ethiopia", 
-    "Ethiopian e-learning", "Social Media Marketing", "Dropshipping Ethiopia", "Digital Skills"
+    "Ethiopian e-learning", "Social Media Marketing", "Dropshipping Ethiopia", "Digital Skills",
+    "ፊልም ስራ", "ቪዲዮ ኤዲቲንግ"
   ],
   authors: [{ name: "Eyoub Sahle" }, { name: "Tsehay Campus Team" }],
   creator: "Tsehay Campus",
@@ -72,8 +73,8 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png"
   },
   openGraph: {
-    title: "Tsehay Campus - ፀሐይ ካምፓስ | የኦንላይን እና የተግባር የክህሎት ማሰልጠኛ",
-    description: "በማንኛውም ቦታና ሰዓት በሀገራችን ቋንቋ የቴክኖሎጂ፣ የቢዝነስ እና የዲጂታል ክህሎት ስልጠናዎችን በኦንላይን እና በተግባር የሚወስዱበት ዘመናዊ ፕላትፎርም።",
+    title: "Tsehay Campus | የቀጣዩ ትውልድ የክህሎት ማዕከል",
+    description: "በTsehay Campus ዘመናዊና ተግባር-ተኮር የፊልም ስራ፣ ዲጂታል ማርኬቲንግ እና የቴክኖሎጂ ኮርሶችን ከባለሙያዎች ይማሩ።",
     url: "https://www.tsehaycampus.com",
     siteName: "Tsehay Campus",
     images: [
@@ -81,7 +82,7 @@ export const metadata: Metadata = {
         url: "https://www.tsehaycampus.com/tc-logo.jpg",
         width: 1200,
         height: 1200,
-        alt: "Tsehay Campus - ፀሐይ ካምፓስ Logo"
+        alt: "Tsehay Campus Logo"
       }
     ],
     locale: "am_ET",
@@ -89,8 +90,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tsehay Campus - ፀሐይ ካምፓስ | የኦንላይን እና የተግባር የክህሎት ማሰልጠኛ",
-    description: "በሀገራችን ቋንቋ የቴክኖሎጂ፣ የቢዝነስ እና የዲጂታል ክህሎት ስልጠናዎች በኦንላይን እና በተግባር",
+    title: "Tsehay Campus | የቀጣዩ ትውልድ የክህሎት ማዕከል",
+    description: "በTsehay Campus ዘመናዊና ተግባር-ተኮር የፊልም ስራ፣ ዲጂታል ማርኬቲንግ እና የቴክኖሎጂ ኮርሶችን ከባለሙያዎች ይማሩ።",
     images: ["https://www.tsehaycampus.com/tc-logo.jpg"]
   },
   robots: {
