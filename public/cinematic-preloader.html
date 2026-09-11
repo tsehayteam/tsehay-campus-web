@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="am" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tsehay Campus - Cinematic Split-Curtain Preloader</title>
+  <meta name="description" content="Cinematic split-curtain preloader with Amharic kinetic text reveal and high-performance GSAP transitions." />
+
+  <!-- Google Fonts: Noto Sans Ethiopic, Outfit, & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Ethiopic:wght@400;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- GSAP 3 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <style>
+    /* ==========================================================================
+       RESET & ROOT VARIABLES
+       ========================================================================== */
+    :root {
+      --bg-dark: #07090e;
+      --curtain-bg: #0d1117;
+      --gold-primary: #f9b03c;
+      --gold-bright: #ffd066;
+      --gold-deep: #e59819;
+      --gold-glow: rgba(249, 176, 60, 0.45);
+      --royal-blue: #3268ba;
+      --text-white: #ffffff;
+      --text-muted: #94a3b8;
+      --font-ethiopic: 'Noto Sans Ethiopic', 'Outfit', sans-serif;
+      --font-latin: 'Outfit', 'Inter', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      font-family: var(--font-latin);
+      overflow-x: hidden;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ==========================================================================
+       CINEMATIC SPLIT-CURTAIN PRELOADER
+       ========================================================================== */
+    #cinematic-preloader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999999;
+      pointer-events: auto;
+      overflow: hidden;
+    }
+
+    /* Left Curtain Panel */
+    .curtain-panel {
+      position: absolute;
+      top: 0;
+      width: 50vw;
+      height: 100vh;
+      background: #0d1117;
+      background: radial-gradient(circle at center, #131924 0%, #0d1117 75%);
+      will-change: transform;
+      z-index: 2;
+    }
+
+    .curtain-left {
+      left: 0;
+      border-right: 1px solid rgba(249, 176, 60, 0.22);
+      box-shadow: inset -20px 0 60px rgba(0, 0, 0, 0.6);
+    }
+
+    .curtain-right {
+      right: 0;
+      border-left: 1px solid rgba(249, 176, 60, 0.12);
+      box-shadow: inset 20px 0 60px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Subtle vertical theater crease down center */
+    .curtain-seam-glow {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg, transparent 0%, rgba(249, 176, 60, 0.75) 30%, rgba(255, 255, 255, 0.9) 50%, rgba(249, 176, 60, 0.75) 70%, transparent 100%);
+      box-shadow: 0 0 16px rgba(249, 176, 60, 0.65), 0 0 32px rgba(249, 176, 60, 0.35);
+      z-index: 4;
+      pointer-events: none;
+      will-change: opacity;
+    }
+
+    /* Ambient Celestial Glow Behind Text */
+    .curtain-ambient-orb {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(249, 176, 60, 0.16) 0%, rgba(50, 104, 186, 0.1) 45%, transparent 70%);
+      filter: blur(50px);
+      z-index: 3;
+      pointer-events: none;
+      border-radius: 50%;
+    }
+
+    /* Centered Kinetic Text Container */
+    .kinetic-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      pointer-events: none;
+      width: 100%;
+      max-width: 800px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    /* Motivational Words */
+    .kinetic-word {
+      position: absolute;
+      font-family: var(--font-ethiopic);
+      font-weight: 900;
+      font-size: clamp(3.2rem, 9vw, 6.5rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(35px);
+      will-change: transform, opacity;
+      user-select: none;
+      
+      /* Vibrant Gold/Amber Gradient Fill */
+      background: linear-gradient(135deg, #ffffff 0%, #ffe299 28%, #f9b03c 65%, #e58700 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 35px rgba(249, 176, 60, 0.6)) drop-shadow(0 8px 24px rgba(0, 0, 0, 0.9));
+    }
+
+    /* Subtle Brand Sub-Badge during Kinetic Intro */
+    .preloader-brand-badge {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(249, 176, 60, 0.25);
+      backdrop-filter: blur(12px);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.75);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .preloader-brand-badge span.accent {
+      color: var(--gold-primary);
+    }
+
+    /* ==========================================================================
+       MAIN WEBSITE CONTENT (REVEALED CONCURRENTLY WITH CURTAINS)
+       ========================================================================== */
+    #main-website {
+      opacity: 0;
+      transform: scale(0.95);
+      will-change: transform, opacity;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Luxury Glass Navbar */
+    .mock-navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(7, 9, 14, 0.75);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 50;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-logo img {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid rgba(249, 176, 60, 0.4);
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .brand-title .gold {
+      color: var(--gold-primary);
+    }
+
+    .nav-btn {
+      background: linear-gradient(135deg, var(--gold-primary), #e58700);
+      color: #000000;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 10px 22px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .nav-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(249, 176, 60, 0.4);
+    }
+
+    /* Hero Section */
+    .hero-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 140px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-bg-glow {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(249, 176, 60, 0.12) 0%, rgba(50, 104, 186, 0.08) 50%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      border-radius: 999px;
+      background: rgba(249, 176, 60, 0.1);
+      border: 1px solid rgba(249, 176, 60, 0.35);
+      color: var(--gold-bright);
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title {
+      font-family: var(--font-ethiopic);
+      font-size: clamp(2.5rem, 6vw, 4.8rem);
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -1px;
+      max-width: 980px;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title .highlight {
+      background: linear-gradient(135deg, #ffffff 0%, var(--gold-primary) 60%, #e58700 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--text-muted);
+      max-width: 680px;
+      line-height: 1.6;
+      margin-bottom: 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-primary {
+      padding: 16px 36px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--gold-primary), #e58700);
+      color: #000;
+      font-weight: 900;
+      font-size: 16px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 35px rgba(249, 176, 60, 0.35);
+      transition: all 0.2s;
+    }
+    .cta-primary:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 16px 45px rgba(249, 176, 60, 0.5);
+    }
+
+    .cta-secondary {
+      padding: 16px 32px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s;
+    }
+    .cta-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--gold-primary);
+      transform: translateY(-2px);
+    }
+
+    /* Floating Interactive Replay Control */
+    .replay-control {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 22px;
+      border-radius: 999px;
+      background: rgba(13, 17, 23, 0.85);
+      border: 1px solid rgba(249, 176, 60, 0.45);
+      color: var(--gold-bright);
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(249, 176, 60, 0.2);
+      backdrop-filter: blur(12px);
+      transition: all 0.25s;
+    }
+    .replay-control:hover {
+      background: var(--gold-primary);
+      color: #000000;
+      transform: translateY(-3px) scale(1.04);
+      box-shadow: 0 12px 35px rgba(249, 176, 60, 0.5);
+    }
+    .replay-control i {
+      transition: transform 0.4s ease;
+    }
+    .replay-control:hover i {
+      transform: rotate(-180deg);
+    }
+
+    @media (max-width: 640px) {
+      .mock-navbar {
+        padding: 16px 20px;
+      }
+      .kinetic-word {
+        font-size: 3.5rem;
+      }
+      .hero-section {
+        padding: 120px 16px 60px;
+      }
+      .replay-control {
+        bottom: 16px;
+        right: 16px;
+        padding: 10px 18px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================
+       CINEMATIC SPLIT-CURTAIN PRELOADER OVERLAY
+       ======================================================================== -->
+  <div id="cinematic-preloader" aria-label="Tsehay Campus Loading Experience">
+    <!-- Left Curtain Panel (Pinned to left 50%) -->
+    <div class="curtain-panel curtain-left" id="curtain-left"></div>
+
+    <!-- Right Curtain Panel (Pinned to right 50%) -->
+    <div class="curtain-panel curtain-right" id="curtain-right"></div>
+
+    <!-- Subtle Vertical Theater Seam Dividing Center Line -->
+    <div class="curtain-seam-glow" id="curtain-seam"></div>
+
+    <!-- Ambient Celestial Light Halo -->
+    <div class="curtain-ambient-orb" id="curtain-orb"></div>
+
+    <!-- Centered Kinetic Container with 3 Sequential Amharic Words -->
+    <div class="kinetic-container" aria-live="polite">
+      <!-- Word 1: "ተማር።" (Learn.) -->
+      <div class="kinetic-word" id="word-1">ተማር።</div>
+
+      <!-- Word 2: "ተግብር።" (Execute / Practice.) -->
+      <div class="kinetic-word" id="word-2">ተግብር።</div>
+
+      <!-- Word 3: "እደግ።" (Grow.) -->
+      <div class="kinetic-word" id="word-3">እደግ።</div>
+    </div>
+
+    <!-- Preloader Brand Badge -->
+    <div class="preloader-brand-badge" id="preloader-badge">
+      <i class="fa-solid fa-sun text-[#f9b03c]"></i>
+      <span>TSEHAY <span class="accent">CAMPUS</span></span>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MAIN WEBSITE HERO (Fades in & Scales 0.95 -> 1.0 with Curtains)
+       ======================================================================== -->
+  <div id="main-website">
+    <!-- Navbar Mockup -->
+    <header class="mock-navbar">
+      <a href="#" class="brand-logo">
+        <img src="/tc-logo.jpg" alt="Tsehay Campus" onerror="this.src='/favicon.png'" />
+        <span class="brand-title"><span class="gold">Tsehay</span> Campus</span>
+      </a>
+      <button class="nav-btn">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <span>ኮርሶችን ይመልከቱ</span>
+      </button>
+    </header>
+
+    <!-- Main Hero -->
+    <main class="hero-section">
+      <div class="hero-bg-glow"></div>
+      
+      <div class="hero-badge">
+        <i class="fa-solid fa-sparkles text-[#f9b03c]"></i>
+        <span>የወደፊቱን የክህሎት ጉዞ ዛሬ ይጀምሩ</span>
+      </div>
+
+      <h1 class="hero-title">
+        በተግባር የተመሰረተ <br />
+        <span class="highlight">ዘመናዊ የኦንላይን ትምህርት</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        በኢትዮጵያ ቀዳሚው የተግባራዊ ክህሎት ማሰልጠኛ ፕላትፎርም። በ AI፣ በኢኮሜርስ፣ በዲጂታል ማርኬቲንግ እና በቪዲዮ ኤዲቲንግ እውቀትዎን ወደ ገቢ ይቀይሩ!
+      </p>
+
+      <div class="cta-group">
+        <button class="cta-primary">
+          <i class="fa-solid fa-rocket mr-2"></i> አሁኑኑ ይመዝገቡ
+        </button>
+        <button class="cta-secondary">
+          <i class="fa-solid fa-circle-play mr-2"></i> ገለጻውን ይመልከቱ
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Replay Button (For Testing and Demonstrating) -->
+  <button class="replay-control" id="replay-btn" title="Replay Preloader Animation">
+    <i class="fa-solid fa-rotate-right"></i>
+    <span>Replay Intro Animation</span>
+  </button>
+
+  <!-- ========================================================================
+       GSAP TIMELINE ANIMATION SCRIPT
+       ======================================================================== -->
+  <script>
+    (function () {
+      const preloader = document.getElementById('cinematic-preloader');
+      const curtainLeft = document.getElementById('curtain-left');
+      const curtainRight = document.getElementById('curtain-right');
+      const curtainSeam = document.getElementById('curtain-seam');
+      const curtainOrb = document.getElementById('curtain-orb');
+      const preloaderBadge = document.getElementById('preloader-badge');
+      const word1 = document.getElementById('word-1');
+      const word2 = document.getElementById('word-2');
+      const word3 = document.getElementById('word-3');
+      const mainWebsite = document.getElementById('main-website');
+      const replayBtn = document.getElementById('replay-btn');
+
+      let timeline = null;
+      let hasCompleted = false;
+
+      function createPreloaderTimeline() {
+        if (timeline) timeline.kill();
+        hasCompleted = false;
+
+        // Reset elements to initial states
+        preloader.style.display = 'block';
+        preloader.style.pointerEvents = 'auto';
+
+        gsap.set([curtainLeft, curtainRight], { xPercent: 0 });
+        gsap.set(curtainSeam, { opacity: 1, scaleY: 1 });
+        gsap.set(curtainOrb, { opacity: 0.8, scale: 1 });
+        gsap.set(preloaderBadge, { opacity: 1, y: 0 });
+        gsap.set([word1, word2, word3], { opacity: 0, y: 35 });
+        gsap.set(mainWebsite, { opacity: 0, scale: 0.95 });
+
+        // Build Master GSAP Timeline (Duration <= ~2.5s)
+        const tl = gsap.timeline({
+          onComplete: () => {
+            finishPreloader();
+          }
+        });
+
+        // ----------------------------------------------------
+        // Step A: Kinetic Text Stagger (Sequential Amharic Words)
+        // ----------------------------------------------------
+        // Word 1: "ተማር።" (Learn.)
+        tl.to(word1, {
+          opacity: 1,
+          y: 0,
+          duration: 0.32,
+          ease: "power2.out"
+        })
+        .to(word1, {
+          opacity: 0,
+          y: -28,
+          duration: 0.22,
+          ease: "power2.in",
+          delay: 0.28
+        })
+
+        // Word 2: "ተግብር።" (Execute / Practice.)
+        .to(word2, {
+          opacity: 1,
+          y: 0,
+          duration: 0.32,
+          ease: "power2.out"
+        })
+        .to(word2, {
+          opacity: 0,
+          y: -28,
+          duration: 0.22,
+          ease: "power2.in",
+          delay: 0.28
+        })
+
+        // Word 3: "እደግ።" (Grow.)
+        .to(word3, {
+          opacity: 1,
+          y: 0,
+          duration: 0.34,
+          ease: "power2.out"
+        })
+        .to(word3, {
+          opacity: 0,
+          y: -28,
+          duration: 0.24,
+          ease: "power2.in",
+          delay: 0.32
+        })
+
+        // Fade badge & ambient elements before curtain split
+        .to(preloaderBadge, {
+          opacity: 0,
+          y: 15,
+          duration: 0.2,
+          ease: "power2.in"
+        }, "-=0.2")
+        .to(curtainSeam, {
+          opacity: 0,
+          duration: 0.15,
+          ease: "power1.out"
+        }, "-=0.1")
+        .to(curtainOrb, {
+          opacity: 0,
+          scale: 1.4,
+          duration: 0.35,
+          ease: "power2.out"
+        }, "-=0.2")
+
+        // ----------------------------------------------------
+        // Step B: Split Curtain Reveal (Simultaneous Horizontal Slide)
+        // ----------------------------------------------------
+        .to(curtainLeft, {
+          xPercent: -100,
+          duration: 0.95,
+          ease: "power3.inOut" // Theater-style smooth acceleration/deceleration
+        }, "splitCurtain")
+        .to(curtainRight, {
+          xPercent: 100,
+          duration: 0.95,
+          ease: "power3.inOut"
+        }, "splitCurtain")
+
+        // ----------------------------------------------------
+        // Step C: Content Entrance (Concurrently with Curtains)
+        // ----------------------------------------------------
+        .to(mainWebsite, {
+          opacity: 1,
+          scale: 1,
+          duration: 0.92,
+          ease: "power2.out"
+        }, "splitCurtain+=0.06");
+
+        return tl;
+      }
+
+      function finishPreloader() {
+        if (hasCompleted) return;
+        hasCompleted = true;
+        preloader.style.display = 'none';
+        preloader.style.pointerEvents = 'none';
+        gsap.set(mainWebsite, { opacity: 1, scale: 1, clearProps: "transform" });
+      }
+
+      // Fallback timeout (max 3.5s) to guarantee curtains open even if lag occurs
+      const safetyFallbackTimer = setTimeout(() => {
+        if (!hasCompleted) {
+          console.warn('[Preloader] Fallback timeout triggered at 3.5s');
+          if (timeline) timeline.progress(1);
+          finishPreloader();
+        }
+      }, 3500);
+
+      // Start preloader on page load
+      window.addEventListener('DOMContentLoaded', () => {
+        timeline = createPreloaderTimeline();
+      });
+
+      // Interactive Replay Functionality
+      replayBtn.addEventListener('click', () => {
+        timeline = createPreloaderTimeline();
+      });
+    })();
+  </script>
+</body>
+</html>

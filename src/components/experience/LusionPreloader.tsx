@@ -1,54 +1,23 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
 
 /**
- * AnalogRollingDigit - Vertical Rolling Odometer / Chronometer Digit Column
- * Scrolls vertically from bottom to top in ordered succession like a luxury analog chronograph.
- */
-function AnalogRollingDigit({ 
-  value, 
-  digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] 
-}: { 
-  value: number; 
-  digits?: number[]; 
-}) {
-  const itemHeightPercent = 100 / digits.length;
-  const foundIdx = digits.indexOf(value);
-  const targetIndex = foundIdx !== -1 ? foundIdx : Math.min(digits.length - 1, Math.max(0, value));
-
-  return (
-    <div className="relative h-[68px] sm:h-[88px] md:h-[108px] overflow-hidden leading-none select-none inline-flex items-center">
-      <div
-        className="transition-transform duration-200 ease-out flex flex-col will-change-transform"
-        style={{ transform: `translate3d(0, -${targetIndex * itemHeightPercent}%, 0)` }}
-      >
-        {digits.map((d, idx) => (
-          <div
-            key={idx}
-            className="h-[68px] sm:h-[88px] md:h-[108px] flex items-center justify-center font-mono font-black text-6xl sm:text-7xl md:text-8xl tracking-tight text-white antialiased subpixel-antialiased drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
-          >
-            {d}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/**
- * LusionPreloader - Luxury Minimalist Fullscreen Preloader
- * - Analog-style Vertical Rolling Odometer Counter (Sharp & High Contrast)
- * - Minimalist Header (Zero technical clutter, no 4K/Ultra labels)
- * - Fluid Animated 3D Central Logo with rotating solar rings
- * - Dynamic Subtitle Typing Animation
- * - Strict Asset Gatekeeping
+ * Cinematic Split-Curtain Preloader with Kinetic Text Reveal
+ * - Fullscreen fixed overlay with theater split curtain panels (50% left / 50% right)
+ * - Sleek #0d1117 aesthetic with subtle luminous center seam
+ * - Sequential kinetic reveal of 3 motivational Amharic words: "ተማር።" -> "ተግብር።" -> "እደግ።"
+ * - Dramatic split-curtain reveal with GSAP power3.inOut / expo.inOut
+ * - Concurrent hero content entrance (scale 0.95 -> 1.0, opacity 0 -> 1)
+ * - Strict ~2.4s duration budget with 3.5s safety fallback timeout
+ * - Zero-delay BFCache & History Pop suppression
  */
 export default function LusionPreloader() {
   const [shouldRemove, setShouldRemove] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
-      // 1. Never re-trigger on browser back/forward navigation
+      // 1. Never re-trigger on browser back/forward navigation (BFCache zero-delay return)
       const navEntry = window.performance?.getEntriesByType?.('navigation')?.[0] as PerformanceNavigationTiming | undefined;
       const isBackForward = (navEntry && navEntry.type === 'back_forward') || (window.performance?.navigation?.type === 2);
       if (isBackForward) {
@@ -56,9 +25,12 @@ export default function LusionPreloader() {
         return true;
       }
 
+      // 2. Only show on the primary landing page
       if (window.location.pathname !== '/' && window.location.pathname !== '') {
         return true;
       }
+
+      // 3. Skip if already seen in this session or local storage
       if (
         sessionStorage.getItem('tsehay_preloader_shown') === 'true' || 
         sessionStorage.getItem('tsehay_preloader_seen') === 'true' ||
@@ -67,13 +39,14 @@ export default function LusionPreloader() {
         return true;
       }
 
+      // 4. Skip on authentication redirects / dashboard routes
       const isAuthOrDashboard = window.location.hash.includes('access_token') || 
-                             window.location.hash.includes('refresh_token') || 
-                             window.location.search.includes('code=') ||
-                             window.location.pathname.startsWith('/auth/') ||
-                             window.location.pathname.startsWith('/dashboard') ||
-                             window.location.pathname.startsWith('/classroom') ||
-                             Boolean(localStorage.getItem('tsehay_auth_user_cache'));
+                               window.location.hash.includes('refresh_token') || 
+                               window.location.search.includes('code=') ||
+                               window.location.pathname.startsWith('/auth/') ||
+                               window.location.pathname.startsWith('/dashboard') ||
+                               window.location.pathname.startsWith('/classroom') ||
+                               Boolean(localStorage.getItem('tsehay_auth_user_cache'));
       if (isAuthOrDashboard) {
         sessionStorage.setItem('tsehay_preloader_shown', 'true');
         sessionStorage.setItem('tsehay_preloader_seen', 'true');
@@ -81,44 +54,42 @@ export default function LusionPreloader() {
         return true;
       }
 
-      return sessionStorage.getItem('tsehay_preloader_shown') === 'true';
+      return false;
     } catch (e) {
       return true;
     }
   });
 
-  const [progress, setProgress] = useState(0);
-  const [isDone, setIsDone] = useState(false);
-  const [is4KBuffered, setIs4KBuffered] = useState(false);
-  const progressRef = useRef(0);
-  const animationFrameRef = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const leftCurtainRef = useRef<HTMLDivElement>(null);
+  const rightCurtainRef = useRef<HTMLDivElement>(null);
+  const seamRef = useRef<HTMLDivElement>(null);
+  const orbRef = useRef<HTMLDivElement>(null);
+  const badgeRef = useRef<HTMLDivElement>(null);
+  const word1Ref = useRef<HTMLDivElement>(null);
+  const word2Ref = useRef<HTMLDivElement>(null);
+  const word3Ref = useRef<HTMLDivElement>(null);
 
-  // If already shown or if on auth callback / dashboard / internal route, immediately unblock document and dispatch complete
+  // If already skipped or on deep route, immediately unblock document and notify media
   useEffect(() => {
     if (typeof document !== 'undefined') {
       const isNotLanding = window.location.pathname !== '/' && window.location.pathname !== '';
-      const isAuthCallback = window.location.hash.includes('access_token') || 
-                             window.location.hash.includes('refresh_token') || 
-                             window.location.search.includes('code=') ||
-                             window.location.pathname.startsWith('/auth/') ||
-                             window.location.pathname.startsWith('/dashboard') ||
-                             window.location.pathname.startsWith('/classroom') ||
-                             Boolean(localStorage.getItem('tsehay_auth_user_cache'));
-      if (isNotLanding || isAuthCallback || shouldRemove) {
+      if (isNotLanding || shouldRemove) {
         document.documentElement.classList.remove('tsehay-loading');
+        document.documentElement.classList.remove('tsehay-curtain-revealing');
         window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
       }
     }
   }, [shouldRemove]);
 
-  // 🌟 Suppress preloader immediately on history pop (browser back/forward) or pageshow
+  // Suppress preloader immediately on history pop (browser back/forward) or pageshow
   useEffect(() => {
     const handleHistoryPop = () => {
       if (typeof document !== 'undefined') {
         document.documentElement.classList.remove('tsehay-loading');
+        document.documentElement.classList.remove('tsehay-curtain-revealing');
       }
       setShouldRemove(true);
-      setIsDone(true);
       window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
     };
 
@@ -131,417 +102,280 @@ export default function LusionPreloader() {
     };
   }, []);
 
-  // Dynamic Subtitle Typing Animation State
-  const [typedText, setTypedText] = useState('');
-  const [phraseIdx, setPhraseIdx] = useState(0);
-  const [charIdx, setCharIdx] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-
+  // Master GSAP Timeline Orchestration
   useEffect(() => {
-    if (shouldRemove) return;
+    if (shouldRemove || typeof window === 'undefined') return;
 
-    const TYPING_PHRASES = [
-      'የወደፊት የቢዝነስ እና የክህሎት ጉዞዎን ዛሬ ይጀምሩ',
-      'በኢትዮጵያ ቀዳሚው የተግባራዊ ክህሎት ማዕከል',
-      'የሺን፣ ዲጂታል ማርኬቲንግ እና የቪዲዮ ኤዲቲንግ ስልጠናዎች',
-      'እውቀትዎን ወደ ገቢ የሚቀይሩበት ትክክለኛ ካምፓስ',
-    ];
+    let isCompleted = false;
 
-    const currentPhrase = TYPING_PHRASES[phraseIdx % TYPING_PHRASES.length];
-    let timer: NodeJS.Timeout;
+    const cleanupAndDismiss = () => {
+      if (isCompleted) return;
+      isCompleted = true;
 
-    if (!isDeleting && charIdx < currentPhrase.length) {
-      timer = setTimeout(() => {
-        setTypedText(currentPhrase.slice(0, charIdx + 1));
-        setCharIdx(charIdx + 1);
-      }, 45);
-    } else if (!isDeleting && charIdx === currentPhrase.length) {
-      timer = setTimeout(() => {
-        setIsDeleting(true);
-      }, 1600);
-    } else if (isDeleting && charIdx > 0) {
-      timer = setTimeout(() => {
-        setTypedText(currentPhrase.slice(0, charIdx - 1));
-        setCharIdx(charIdx - 1);
-      }, 22);
-    } else if (isDeleting && charIdx === 0) {
-      setIsDeleting(false);
-      setPhraseIdx(prev => (prev + 1) % TYPING_PHRASES.length);
-    }
+      try {
+        sessionStorage.setItem('tsehay_preloader_shown', 'true');
+        sessionStorage.setItem('tsehay_preloader_seen', 'true');
+        localStorage.setItem('tsehay_preloader_seen', 'true');
+      } catch (e) {}
 
-    return () => clearTimeout(timer);
-  }, [charIdx, isDeleting, phraseIdx, shouldRemove]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || shouldRemove) return;
-
-    let fontsReady = false;
-    let imagesReady = false;
-    let windowReady = false;
-    let video4KReady = false;
-
-    // 0. Preconnect & Pre-buffer 4K CDN Domains
-    const videoCdnDomains = [
-      'https://www.youtube-nocookie.com',
-      'https://www.youtube.com',
-      'https://googlevideo.com',
-      'https://i.ytimg.com',
-      'https://img.youtube.com',
-    ];
-    videoCdnDomains.forEach((domain) => {
-      const link = document.createElement('link');
-      link.rel = 'preconnect';
-      link.href = domain;
-      link.crossOrigin = 'anonymous';
-      document.head.appendChild(link);
-
-      const dns = document.createElement('link');
-      dns.rel = 'dns-prefetch';
-      dns.href = domain;
-      document.head.appendChild(dns);
-    });
-
-    // Listen for 4K video buffer readiness from Hero3DPopoutStage or background pre-buffering
-    const handle4KBuffered = () => {
-      video4KReady = true;
-      setIs4KBuffered(true);
-    };
-    window.addEventListener('tsehay-4k-video-buffered', handle4KBuffered);
-
-    // Also initiate background probe pre-buffer for hero video
-    try {
-      const cachedVideo = localStorage.getItem('tsehay_landing_video_cache');
-      const targetUrl = cachedVideo || 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
-
-      if (/\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(targetUrl)) {
-        const probeVideo = document.createElement('video');
-        probeVideo.preload = 'auto';
-        probeVideo.muted = true;
-        probeVideo.playsInline = true;
-        probeVideo.src = targetUrl;
-        probeVideo.oncanplaythrough = () => {
-          handle4KBuffered();
-        };
-        probeVideo.load();
-      } else {
-        const ytMatch = targetUrl.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
-        const ytId = ytMatch ? ytMatch[1] : 'mgdOMtW6J8k';
-        const ytMaxRes = new Image();
-        ytMaxRes.src = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
-        ytMaxRes.onload = ytMaxRes.onerror = () => {
-          setTimeout(() => {
-            handle4KBuffered();
-          }, 350);
-        };
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.remove('tsehay-loading');
+        document.documentElement.classList.remove('tsehay-curtain-revealing');
+        
+        const pageWrapper = document.getElementById('tsehay-page-wrapper');
+        if (pageWrapper) {
+          gsap.set(pageWrapper, { opacity: 1, scale: 1, clearProps: 'transform,opacity' });
+        }
       }
-    } catch (e) {}
 
-    // Fallback safety timer: ensure video4KReady is guaranteed within 1800ms max so preloader never hangs indefinitely
-    const videoSafetyTimer = setTimeout(() => {
-      handle4KBuffered();
-    }, 1800);
+      window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
+      setShouldRemove(true);
+    };
 
-    // 1. Font Face Observer
-    if (document.fonts) {
-      document.fonts.ready.then(() => {
-        fontsReady = true;
-      }).catch(() => {
-        fontsReady = true;
+    // Fallback safety timeout (max 3.5s) to guarantee the curtain opens even if assets or events lag
+    const fallbackTimer = setTimeout(() => {
+      cleanupAndDismiss();
+    }, 3500);
+
+    const ctx = gsap.context(() => {
+      // 1. Initial GSAP state setups
+      gsap.set([leftCurtainRef.current, rightCurtainRef.current], { xPercent: 0 });
+      gsap.set(seamRef.current, { opacity: 1 });
+      gsap.set(orbRef.current, { opacity: 0.8, scale: 1 });
+      gsap.set(badgeRef.current, { opacity: 1, y: 0 });
+      gsap.set([word1Ref.current, word2Ref.current, word3Ref.current], { opacity: 0, y: 35 });
+
+      // 2. Build Master Animation Timeline (~2.4s total duration)
+      const tl = gsap.timeline({
+        onComplete: () => {
+          cleanupAndDismiss();
+        }
       });
-    } else {
-      fontsReady = true;
-    }
 
-    // 2. Critical Images Preload
-    const criticalImages = ['/tc-logo.jpg', '/assets/hero-bg-new.jpg', '/favicon.png'];
-    let loadedImgs = 0;
-    criticalImages.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = img.onerror = () => {
-        loadedImgs++;
-        if (loadedImgs >= criticalImages.length) {
-          imagesReady = true;
-        }
-      };
-    });
+      // ----------------------------------------------------------------------
+      // Step A: Kinetic Text Stagger (Amharic Motivational Words)
+      // ----------------------------------------------------------------------
+      // Word 1: "ተማር።" (Learn.)
+      tl.to(word1Ref.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.32,
+        ease: 'power2.out'
+      })
+      .to(word1Ref.current, {
+        opacity: 0,
+        y: -28,
+        duration: 0.22,
+        ease: 'power2.in',
+        delay: 0.28
+      })
 
-    // 3. Document Complete Observer
-    if (document.readyState === 'complete') {
-      windowReady = true;
-    } else {
-      const handleLoad = () => {
-        windowReady = true;
-      };
-      window.addEventListener('load', handleLoad, { once: true });
-    }
+      // Word 2: "ተግብር።" (Execute / Practice.)
+      .to(word2Ref.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.32,
+        ease: 'power2.out'
+      })
+      .to(word2Ref.current, {
+        opacity: 0,
+        y: -28,
+        duration: 0.22,
+        ease: 'power2.in',
+        delay: 0.28
+      })
 
-    // 4. Calibrated Smooth Stop-Watch Progression & Immediate Unlock at 100
-    const startTime = performance.now();
-    const durationMs = 1900;
-    let isUnlocked = false;
+      // Word 3: "እደግ።" (Grow.)
+      .to(word3Ref.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.34,
+        ease: 'power2.out'
+      })
+      .to(word3Ref.current, {
+        opacity: 0,
+        y: -28,
+        duration: 0.24,
+        ease: 'power2.in',
+        delay: 0.32
+      })
 
-    const finishPreloader = () => {
-      if (isUnlocked) return;
-      isUnlocked = true;
-      setProgress(100);
-      progressRef.current = 100;
+      // Seamlessly fade out badge, vertical seam, and celestial orb right before curtain split
+      .to(badgeRef.current, {
+        opacity: 0,
+        y: 15,
+        duration: 0.2,
+        ease: 'power2.in'
+      }, '-=0.2')
+      .to(seamRef.current, {
+        opacity: 0,
+        duration: 0.15,
+        ease: 'power1.out'
+      }, '-=0.1')
+      .to(orbRef.current, {
+        opacity: 0,
+        scale: 1.4,
+        duration: 0.35,
+        ease: 'power2.out'
+      }, '-=0.2')
 
-      setTimeout(() => {
-        // 1. Mark completed in both sessionStorage and localStorage
-        try {
-          sessionStorage.setItem('tsehay_preloader_shown', 'true');
-          sessionStorage.setItem('tsehay_preloader_seen', 'true');
-          localStorage.setItem('tsehay_preloader_seen', 'true');
-        } catch (e) {}
-
-        // 2. Smoothly reveal main page content by removing tsehay-loading gatekeeper
+      // ----------------------------------------------------------------------
+      // Step B: Theater-Style Split Curtain Reveal (Simultaneous -100% / +100%)
+      // ----------------------------------------------------------------------
+      .add(() => {
+        // Unlock page wrapper so it can be revealed concurrently
         if (typeof document !== 'undefined') {
-          document.documentElement.classList.remove('tsehay-loading');
+          document.documentElement.classList.add('tsehay-curtain-revealing');
         }
-
-        // 3. Notify hero video and background media to begin playback immediately
         window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
+      }, 'splitCurtains')
+      .to(leftCurtainRef.current, {
+        xPercent: -100,
+        duration: 0.95,
+        ease: 'power3.inOut'
+      }, 'splitCurtains')
+      .to(rightCurtainRef.current, {
+        xPercent: 100,
+        duration: 0.95,
+        ease: 'power3.inOut'
+      }, 'splitCurtains');
 
-        // 4. Instant slide-up fade-out transition with zero lag
-        setIsDone(true);
-        setTimeout(() => {
-          setShouldRemove(true);
-        }, 850);
-      }, 250);
-    };
-
-    const updateProgress = (now: number) => {
-      if (isUnlocked) return;
-
-      const elapsed = now - startTime;
-      const ratio = Math.min(1, elapsed / durationMs);
-
-      // Steady, monotonic stopwatch tick from 0 to 100
-      const calculatedTick = Math.min(100, Math.floor(ratio * 100));
-
-      setProgress(calculatedTick);
-      progressRef.current = calculatedTick;
-
-      if (calculatedTick < 100) {
-        animationFrameRef.current = requestAnimationFrame(updateProgress);
-      } else {
-        finishPreloader();
+      // ----------------------------------------------------------------------
+      // Step C: Content Entrance (Concurrently scales 0.95 -> 1.0, opacity 0 -> 1)
+      // ----------------------------------------------------------------------
+      const pageWrapper = document.getElementById('tsehay-page-wrapper');
+      if (pageWrapper) {
+        tl.fromTo(pageWrapper, 
+          { opacity: 0, scale: 0.95 },
+          { 
+            opacity: 1, 
+            scale: 1, 
+            duration: 0.92, 
+            ease: 'power2.out',
+            clearProps: 'transform'
+          }, 
+          'splitCurtains+=0.06'
+        );
       }
-    };
-
-    // Safety fallback: guaranteed unblock after 2.8s in case of any animation delay
-    const safetyUnblockTimer = setTimeout(() => {
-      if (!isUnlocked) {
-        finishPreloader();
-      }
-    }, 2800);
-
-    animationFrameRef.current = requestAnimationFrame(updateProgress);
+    }, containerRef);
 
     return () => {
-      clearTimeout(videoSafetyTimer);
-      clearTimeout(safetyUnblockTimer);
-      window.removeEventListener('tsehay-4k-video-buffered', handle4KBuffered);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+      clearTimeout(fallbackTimer);
+      ctx.revert();
     };
-  }, []);
+  }, [shouldRemove]);
 
   if (shouldRemove) return null;
 
   return (
     <div
+      ref={containerRef}
       id="tsehay-lusion-preloader"
-      className={`fixed inset-0 z-[9999999] bg-[#03060d] text-white flex flex-col justify-between overflow-hidden select-none transition-transform duration-900 ease-[cubic-bezier(0.85,0,0.15,1)] ${
-        isDone ? '-translate-y-full pointer-events-none' : 'translate-y-0 pointer-events-auto'
-      }`}
-      style={{ willChange: 'transform' }}
+      className="fixed inset-0 z-[9999999] overflow-hidden select-none pointer-events-auto"
+      style={{ width: '100vw', height: '100vh' }}
+      aria-label="Tsehay Campus Loading Experience"
     >
-      {/* Ambient Celestial Glow Orbs */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-radial from-[#f9b03c]/18 via-[#3268ba]/12 to-transparent rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:32px_32px] opacity-10 pointer-events-none" />
+      {/* 1. Left Curtain Panel (Width: 50vw, Pinned to Left Edge) */}
+      <div
+        ref={leftCurtainRef}
+        className="absolute top-0 left-0 w-1/2 h-full z-10 will-change-transform border-r border-[#f9b03c]/20"
+        style={{
+          background: '#0d1117',
+          backgroundImage: 'radial-gradient(circle at 80% 50%, #151c27 0%, #0d1117 70%)',
+          boxShadow: 'inset -25px 0 60px rgba(0, 0, 0, 0.7)'
+        }}
+      />
 
-      {/* Top Bar - Completely Clean & Minimalist (Zero noise, zero blinking dots) */}
-      <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-center justify-between pointer-events-none" />
+      {/* 2. Right Curtain Panel (Width: 50vw, Pinned to Right Edge) */}
+      <div
+        ref={rightCurtainRef}
+        className="absolute top-0 right-0 w-1/2 h-full z-10 will-change-transform border-l border-[#f9b03c]/15"
+        style={{
+          background: '#0d1117',
+          backgroundImage: 'radial-gradient(circle at 20% 50%, #151c27 0%, #0d1117 70%)',
+          boxShadow: 'inset 25px 0 60px rgba(0, 0, 0, 0.7)'
+        }}
+      />
 
-      {/* Center Motion Graphics Animated Logo with Dynamic Video Intro Aesthetic */}
-      <div className="relative z-10 flex flex-col items-center justify-center my-auto">
-        <div className="relative flex items-center justify-center animate-[mgLogoReveal_1.1s_cubic-bezier(0.16,1,0.3,1)_forwards]">
-          {/* Concentric Expanding Shockwave Waves */}
-          <div className="absolute w-36 h-36 sm:w-44 sm:h-44 rounded-full border border-[#f9b03c]/35 animate-[mgEnergyPulse_2.6s_ease-out_infinite] pointer-events-none" />
-          <div className="absolute w-36 h-36 sm:w-44 sm:h-44 rounded-full border border-[#3268ba]/40 animate-[mgEnergyPulse_2.6s_ease-out_infinite_1.3s] pointer-events-none" />
+      {/* 3. Luminous Vertical Seam Dividing Line */}
+      <div
+        ref={seamRef}
+        className="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 z-20 pointer-events-none will-change-opacity"
+        style={{
+          background: 'linear-gradient(180deg, transparent 0%, rgba(249, 176, 60, 0.7) 25%, rgba(255, 255, 255, 0.95) 50%, rgba(249, 176, 60, 0.7) 75%, transparent 100%)',
+          boxShadow: '0 0 16px rgba(249, 176, 60, 0.7), 0 0 30px rgba(249, 176, 60, 0.35)'
+        }}
+      />
 
-          {/* Outer Rotating Dashed Celestial Ring */}
-          <div className="absolute -inset-8 sm:-inset-10 rounded-full border border-dashed border-[#f9b03c]/45 animate-[mgRingSpin_9s_linear_infinite] pointer-events-none shadow-[0_0_25px_rgba(249,176,60,0.25)]" />
-          
-          {/* Inner Counter-Rotating Dotted Ring */}
-          <div className="absolute -inset-4 sm:-inset-5 rounded-full border border-dotted border-[#3268ba]/55 animate-[mgRingReverseSpin_6s_linear_infinite] pointer-events-none" />
+      {/* 4. Ambient Celestial Halo Behind Kinetic Text */}
+      <div
+        ref={orbRef}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] rounded-full z-20 pointer-events-none will-change-transform"
+        style={{
+          background: 'radial-gradient(circle, rgba(249, 176, 60, 0.18) 0%, rgba(50, 104, 186, 0.12) 45%, transparent 70%)',
+          filter: 'blur(55px)'
+        }}
+      />
 
-          {/* Orbiting Luminous Photon Particle */}
-          <div className="absolute w-full h-full flex items-center justify-center pointer-events-none animate-[mgOrbitParticle_3.8s_linear_infinite]">
-            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-amber-300 to-[#f9b03c] shadow-[0_0_12px_#f9b03c,0_0_20px_#ffffff]" />
-          </div>
-
-          {/* Glowing Aura Halo */}
-          <div className="absolute -inset-6 rounded-3xl bg-gradient-to-tr from-[#f9b03c]/45 via-amber-400/30 to-[#3268ba]/45 blur-2xl animate-[mgHaloBreathe_3.2s_ease-in-out_infinite]" />
-
-          {/* Logo Container with High-End Holographic Sheen Sweep */}
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-3xl p-[3px] bg-gradient-to-tr from-[#f9b03c] via-amber-300 to-[#3268ba] shadow-[0_0_55px_rgba(249,176,60,0.5)] overflow-hidden">
-            {/* Dynamic Laser Light Sheen Overlay */}
-            <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-[22px]">
-              <div className="w-24 h-[250%] -top-3/4 bg-gradient-to-r from-transparent via-white/70 to-transparent animate-[mgSheenSweep_2.8s_ease-in-out_infinite]" />
-            </div>
-
-            <img
-              src="/tc-logo.jpg"
-              alt="Tsehay Campus Logo"
-              className="w-full h-full object-cover rounded-[21px] bg-slate-950 relative z-10 select-none pointer-events-none"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/favicon.png';
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Dynamic Subtitle Typing Animation Under Logo */}
-        <div className="mt-8 sm:mt-10 flex flex-col items-center justify-center text-center px-4 max-w-xl">
-          <div className="min-h-[32px] sm:min-h-[38px] flex items-center justify-center">
-            <p className="font-heading font-semibold text-sm sm:text-base md:text-lg text-slate-100 tracking-wide drop-shadow-md">
-              {typedText}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Area: Precision Stop-Watch Vertical Rolling Counter */}
-      <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-end justify-between">
-        {/* Bottom-Left Sharp Stop-Watch Counter (1 digit for 0-9, 2 digits for 10-99, 3 digits for 100) */}
-        <div className="flex flex-col">
-          <div className="flex items-baseline px-4 sm:px-6 py-2 sm:py-3 rounded-2xl bg-[#040814]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.2)]">
-            {progress >= 100 ? (
-              <div className="flex items-baseline">
-                <AnalogRollingDigit value={1} digits={[0, 1]} />
-                <AnalogRollingDigit value={0} digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} />
-                <AnalogRollingDigit value={0} digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} />
-              </div>
-            ) : progress >= 10 ? (
-              <div className="flex items-baseline">
-                <AnalogRollingDigit 
-                  value={Math.floor(progress / 10)} 
-                  digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
-                />
-                <AnalogRollingDigit 
-                  value={progress % 10} 
-                  digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
-                />
-              </div>
-            ) : (
-              <AnalogRollingDigit 
-                value={progress} 
-                digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
-              />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Sleek Micro-Progress Bar (Hits 100% full exactly at 100) */}
-      <div className="absolute bottom-0 inset-x-0 h-[3px] bg-white/10">
+      {/* 5. Centered Kinetic Container for Sequential Amharic Words */}
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none w-full max-w-2xl h-36 flex items-center justify-center text-center px-4"
+        aria-live="polite"
+      >
+        {/* Word 1: "ተማር።" (Learn.) */}
         <div
-          className="h-full bg-gradient-to-r from-[#3268ba] via-amber-400 to-[#f9b03c] shadow-[0_0_15px_#f9b03c] transition-all duration-100 ease-out"
-          style={{ width: `${(progress / 100) * 100}%` }}
-        />
+          ref={word1Ref}
+          className="absolute font-black tracking-tight text-5xl sm:text-7xl md:text-8xl select-none will-change-transform"
+          style={{
+            fontFamily: 'var(--font-ethiopic-var), var(--font-heading-var), sans-serif',
+            background: 'linear-gradient(135deg, #ffffff 0%, #ffe299 28%, #f9b03c 65%, #e58700 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter: 'drop-shadow(0 0 35px rgba(249, 176, 60, 0.6)) drop-shadow(0 8px 24px rgba(0, 0, 0, 0.9))'
+          }}
+        >
+          ተማር።
+        </div>
+
+        {/* Word 2: "ተግብር።" (Execute / Practice.) */}
+        <div
+          ref={word2Ref}
+          className="absolute font-black tracking-tight text-5xl sm:text-7xl md:text-8xl select-none will-change-transform"
+          style={{
+            fontFamily: 'var(--font-ethiopic-var), var(--font-heading-var), sans-serif',
+            background: 'linear-gradient(135deg, #ffffff 0%, #ffe299 28%, #f9b03c 65%, #e58700 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter: 'drop-shadow(0 0 35px rgba(249, 176, 60, 0.6)) drop-shadow(0 8px 24px rgba(0, 0, 0, 0.9))'
+          }}
+        >
+          ተግብር።
+        </div>
+
+        {/* Word 3: "እደግ።" (Grow.) */}
+        <div
+          ref={word3Ref}
+          className="absolute font-black tracking-tight text-5xl sm:text-7xl md:text-8xl select-none will-change-transform"
+          style={{
+            fontFamily: 'var(--font-ethiopic-var), var(--font-heading-var), sans-serif',
+            background: 'linear-gradient(135deg, #ffffff 0%, #ffe299 28%, #f9b03c 65%, #e58700 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter: 'drop-shadow(0 0 35px rgba(249, 176, 60, 0.6)) drop-shadow(0 8px 24px rgba(0, 0, 0, 0.9))'
+          }}
+        >
+          እደግ።
+        </div>
       </div>
 
-      {/* Embedded CSS Keyframes for Motion Graphics Intro & Sleek Animations */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes mgLogoReveal {
-          0% {
-            transform: scale(0.62) rotate(-6deg);
-            opacity: 0;
-            filter: blur(12px) brightness(1.7);
-          }
-          45% {
-            transform: scale(1.07) rotate(1.5deg);
-            opacity: 1;
-            filter: blur(0px) brightness(1.2);
-          }
-          75% {
-            transform: scale(0.97) rotate(-0.5deg);
-          }
-          100% {
-            transform: scale(1) rotate(0deg);
-            opacity: 1;
-            filter: blur(0px) brightness(1);
-          }
-        }
-        @keyframes mgRingSpin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes mgRingReverseSpin {
-          from { transform: rotate(360deg); }
-          to { transform: rotate(0deg); }
-        }
-        @keyframes mgEnergyPulse {
-          0% {
-            transform: scale(0.85);
-            opacity: 0.8;
-          }
-          50% {
-            transform: scale(1.22);
-            opacity: 0.35;
-          }
-          100% {
-            transform: scale(1.5);
-            opacity: 0;
-          }
-        }
-        @keyframes mgSheenSweep {
-          0% {
-            transform: translateX(-160%) skewX(-25deg);
-            opacity: 0;
-          }
-          15% {
-            opacity: 0.95;
-          }
-          40% {
-            transform: translateX(260%) skewX(-25deg);
-            opacity: 0;
-          }
-          100% {
-            transform: translateX(260%) skewX(-25deg);
-            opacity: 0;
-          }
-        }
-        @keyframes mgHaloBreathe {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 0.65;
-          }
-          50% {
-            transform: scale(1.1);
-            opacity: 0.95;
-          }
-        }
-        @keyframes mgOrbitParticle {
-          0% {
-            transform: rotate(0deg) translateX(70px) rotate(0deg);
-            opacity: 0.8;
-          }
-          50% {
-            transform: rotate(180deg) translateX(74px) rotate(-180deg);
-            opacity: 1;
-          }
-          100% {
-            transform: rotate(360deg) translateX(70px) rotate(-360deg);
-            opacity: 0.8;
-          }
-        }
-      `}} />
+      {/* 6. Subtle Preloader Brand Badge */}
+      <div
+        ref={badgeRef}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-2.5 px-5 py-2 rounded-full border border-[#f9b03c]/25 bg-black/40 backdrop-blur-md text-xs font-bold tracking-widest text-slate-300 pointer-events-none select-none uppercase will-change-transform"
+      >
+        <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c]" />
+        <span>TSEHAY <span className="text-[#f9b03c]">CAMPUS</span></span>
+      </div>
     </div>
   );
 }
-

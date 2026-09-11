@@ -146,10 +146,14 @@ export default function RootLayout({
           id="tsehay-preloader-shield"
           dangerouslySetInnerHTML={{
             __html: `
-              html.tsehay-loading #tsehay-page-wrapper {
+              html.tsehay-loading:not(.tsehay-curtain-revealing) #tsehay-page-wrapper {
                 opacity: 0 !important;
                 visibility: hidden !important;
                 pointer-events: none !important;
+              }
+              html.tsehay-curtain-revealing #tsehay-page-wrapper {
+                visibility: visible !important;
+                pointer-events: auto !important;
               }
               html:not(.tsehay-loading) #tsehay-lusion-preloader {
                 display: none !important;
@@ -157,7 +161,7 @@ export default function RootLayout({
                 pointer-events: none !important;
               }
               #tsehay-page-wrapper {
-                transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s;
+                will-change: transform, opacity;
               }
             `,
           }}
