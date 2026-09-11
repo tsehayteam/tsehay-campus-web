@@ -88,7 +88,89 @@ export async function sendEmail({
 }
 
 /**
- * 🌟 1. BRANDED PASSWORD RESET & MAGIC LINK OTP TEMPLATE
+ * 🌟 1. BRANDED SIGNUP REGISTRATION VERIFICATION OTP TEMPLATE
+ */
+export function getSignupOtpEmailHtml(otp: string, email?: string): string {
+  return `
+  <!DOCTYPE html>
+  <html lang="am">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>የምዝገባ ማረጋገጫ ኮድ - Tsehay Campus</title>
+  </head>
+  <body style="margin: 0; padding: 30px 10px; background-color: #030509; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff; -webkit-font-smoothing: antialiased;">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; margin: 0 auto; background-color: #070b14; border: 1.5px solid #f9b03c; border-radius: 28px; overflow: hidden; box-shadow: 0 25px 70px rgba(0,0,0,0.9), 0 0 40px rgba(249,176,60,0.25);">
+      
+      <!-- Brand Header -->
+      <tr>
+        <td align="center" style="padding: 35px 25px 20px; background: linear-gradient(180deg, #161e31 0%, #070b14 100%); border-bottom: 1px solid rgba(249, 176, 60, 0.4);">
+          <div style="display: inline-block; background: #ffffff; padding: 8px 18px; border-radius: 16px; margin-bottom: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <img src="${BRAND_LOGO_URL}" alt="Tsehay Campus" width="140" style="display: block; max-width: 140px; height: auto;" />
+          </div>
+          <br>
+          <div style="display: inline-block; background: rgba(249, 176, 60, 0.15); border: 1px solid #f9b03c; color: #f9b03c; font-size: 11px; font-weight: 900; padding: 5px 18px; border-radius: 100px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">
+            ✨ WELCOME TO TSEHAY CAMPUS
+          </div>
+          <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; margin: 8px 0 6px; line-height: 1.3;">
+            የምዝገባ ማረጋገጫ <span style="color: #f9b03c;">ኮድ</span>
+          </h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">Account Registration Verification Code</p>
+        </td>
+      </tr>
+
+      <!-- Message Content -->
+      <tr>
+        <td style="padding: 30px 30px 20px;">
+          <p style="font-size: 16px; color: #ffffff; font-weight: 800; line-height: 1.6; margin: 0 0 12px 0;">
+            እንኳን ደህና መጡ!
+          </p>
+          <p style="font-size: 14px; color: #cbd5e1; line-height: 1.7; margin: 0 0 15px 0;">
+            ሰላም ${email ? `<strong>${email}</strong>` : 'አዲስ ተማሪ'}፣
+          </p>
+          <p style="font-size: 14px; color: #94a3b8; line-height: 1.7; margin: 0 0 25px 0;">
+            እንኳን ደህና መጡ! ምዝገባዎን ለማጠናቀቅ ይህንን የማረጋገጫ ኮድ ያስገቡ፦
+          </p>
+
+          <!-- OTP Box -->
+          <div style="background: rgba(13, 21, 39, 0.9); border: 2px solid #f9b03c; border-radius: 20px; padding: 25px 15px; text-align: center; margin-bottom: 25px; box-shadow: 0 10px 35px rgba(249, 176, 60, 0.25);">
+            <div style="color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">
+              የምዝገባ ማረጋገጫ ኮድ (VERIFICATION CODE)
+            </div>
+            <div style="display: inline-block; letter-spacing: 12px; font-size: 34px; font-weight: 900; color: #f9b03c; font-family: Courier, monospace; padding-left: 12px; text-shadow: 0 0 20px rgba(249, 176, 60, 0.5);">
+              ${otp}
+            </div>
+            <div style="color: #64748b; font-size: 11px; margin-top: 10px;">
+              ⏱️ ይህ ኮድ የሚያገለግለው ለ 15 ደቂቃዎች ብቻ ነው።
+            </div>
+          </div>
+
+          <p style="font-size: 12px; color: #64748b; line-height: 1.6; margin: 0; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px;">
+            ይህንን ምዝገባ እርስዎ ካልጀመሩ ይህንን ኢሜይል ችላ ይበሉት።
+          </p>
+        </td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td align="center" style="padding: 20px 25px; background-color: #050811; border-top: 1px solid rgba(255,255,255,0.06);">
+          <p style="color: #64748b; font-size: 11px; margin: 0 0 6px 0;">
+            © ${new Date().getFullYear()} Tsehay Campus (ፀሐይ ካምፓስ). All rights reserved.
+          </p>
+          <p style="color: #475569; font-size: 11px; margin: 0;">
+            አዲስ አበባ፣ ኢትዮጵያ • <a href="${SITE_URL}" style="color: #f9b03c; text-decoration: none;">tsehaycampus.com</a>
+          </p>
+        </td>
+      </tr>
+
+    </table>
+  </body>
+  </html>
+  `;
+}
+
+/**
+ * 🌟 2. BRANDED PASSWORD RESET & MAGIC LINK OTP TEMPLATE
  */
 export function getPasswordResetOtpEmailHtml(otp: string, email?: string, resetUrl?: string): string {
   const directLink = resetUrl || `${SITE_URL}/reset-password?code=${otp}&email=${encodeURIComponent(email || '')}`;

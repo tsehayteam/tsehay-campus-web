@@ -216,11 +216,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           displayName: data.displayName,
           photoURL: data.photoURL
         });
-
-        if (data.exists && isSignupMode && signupStep === 1) {
-          setIsSignupMode(false);
-          setError("");
-        }
       }
     } catch (e) {
       console.warn("Smart email check warning:", e);
@@ -274,7 +269,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       return 'ይህ የ Gmail አድራሻ አስቀድሞ ተመዝግቧል። እባክዎ የይለፍ ቃልዎን አስገብተው ይግቡ።';
     }
     if (rawMsg.includes('password should be at least')) {
-      return 'የይለፍ ቃሉ በጣም አጭር ወይም ደካማ ነው። እባክዎ ቢያንስ 6 ፊደላት ወይም ቁጥሮች ይጠቀሙ።';
+      return 'የይለፍ ቃሉ በጣም አጭር ነው። እባክዎ ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)።';
     }
     if (rawMsg.includes('rate limit') || rawMsg.includes('too many requests')) {
       return 'ብዙ ያልተሳኩ ሙከራዎች ተደርገዋል። እባክዎ ጥቂት ደቂቃዎችን ቆይተው በድጋሚ ይሞክሩ።';
@@ -406,8 +401,12 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         setError(emailValidation.errorMessage || 'ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።');
         return;
       }
-      if (!password || password.length < 6) {
-        setError('የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።');
+      if (smartUserStatus?.exists && smartUserStatus.checkedEmail === cleanEmail.toLowerCase()) {
+        setError("ይህ ኢሜይል አስቀድሞ ተመዝግቧል! እባክዎ በቀጥታ ይግቡ ወይም የይለፍ ቃልዎን ከረሱ 'Forgot Password' የሚለውን ይጫኑ");
+        return;
+      }
+      if (!password || password.length < 8) {
+        setError('የይለፍ ቃል ቢያንስ 8 ፊደላትና ቁጥሮች መሆን አለበት (Min. 8 characters)።');
         return;
       }
       setSlideDirection('next');
@@ -709,8 +708,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     const cleanConfirm = confirmPassword.trim();
     const targetEmail = (registeredEmail || email).trim().toLowerCase();
 
-    if (!cleanPass || cleanPass.length < 6) {
-      setError('አዲሱ የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።');
+    if (!cleanPass || cleanPass.length < 8) {
+      setError('አዲሱ የይለፍ ቃል ቢያንስ 8 ፊደላትና ቁጥሮች መሆን አለበት (Min. 8 characters)።');
       return;
     }
     if (cleanPass !== cleanConfirm) {
@@ -894,8 +893,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         setSignupStep(1);
         return;
       }
-      if (!password || password.length < 6) {
-        setError('የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።');
+      if (!password || password.length < 8) {
+        setError('የይለፍ ቃል ቢያንስ 8 ፊደላትና ቁጥሮች መሆን አለበት (Min. 8 characters)።');
         setSignupStep(2);
         return;
       }
@@ -1315,7 +1314,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                         onChange={(e) => setNewPassword(e.target.value)} 
                         required 
                         autoFocus
-                        placeholder="ቢያንስ 6 ፊደላት ወይም ቁጥሮች" 
+                        minLength={8}
+                        placeholder="ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)" 
                         className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 pl-4 pr-11 text-sm outline-none focus:border-[#f9b03c] dark:text-white transition" 
                       />
                       <button 
@@ -1326,6 +1326,9 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                         <i className={`fa-solid ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                       </button>
                     </div>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                      ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)
+                    </p>
                   </div>
 
                   {/* Confirm Password */}
@@ -1721,6 +1724,43 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                               {emailError}
                             </p>
                           )}
+
+                          {/* 🌟 Proactive Duplicate Email Alert */}
+                          {smartUserStatus?.exists && smartUserStatus.checkedEmail === email.trim().toLowerCase() && (
+                            <div className="mt-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 dark:bg-[#f9b03c]/15 dark:border-[#f9b03c]/40 text-left space-y-2.5 animate-in fade-in shadow-lg">
+                              <div className="flex items-start gap-2.5">
+                                <i className="fa-solid fa-circle-exclamation text-amber-500 dark:text-[#f9b03c] mt-0.5 shrink-0 text-base"></i>
+                                <span className="text-xs font-bold text-gray-900 dark:text-amber-100 leading-relaxed">
+                                  ይህ ኢሜይል አስቀድሞ ተመዝግቧል! እባክዎ በቀጥታ ይግቡ ወይም የይለፍ ቃልዎን ከረሱ &apos;Forgot Password&apos; የሚለውን ይጫኑ
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsSignupMode(false);
+                                    setError("");
+                                  }}
+                                  className="px-3.5 py-2 rounded-xl bg-[#f9b03c] hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                                >
+                                  <i className="fa-solid fa-right-to-bracket text-xs"></i>
+                                  <span>ቀጥታ ይግቡ (Login)</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsResetMode(true);
+                                    setResetStep('request');
+                                    setError("");
+                                  }}
+                                  className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition cursor-pointer flex items-center gap-1.5 border border-white/15 active:scale-95"
+                                >
+                                  <i className="fa-solid fa-key text-xs text-[#f9b03c]"></i>
+                                  <span>የይለፍ ቃል ረሱ? (Forgot Password)</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -1733,8 +1773,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                               value={password} 
                               onChange={(e) => setPassword(e.target.value)} 
                               required 
-                              placeholder="•••••••• (ቢያንስ 6 ፊደላት)" 
-                              minLength={6} 
+                              placeholder="ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)" 
+                              minLength={8} 
                               className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 pl-4 pr-11 text-sm outline-none focus:border-secondary dark:focus:border-[#f9b03c] dark:text-white transition" 
                             />
                             <button 
@@ -1745,6 +1785,9 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                               <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                             </button>
                           </div>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                            ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)
+                          </p>
                         </div>
 
                         <div className="flex items-center gap-3 pt-2">
@@ -1759,7 +1802,12 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                           <button 
                             type="button" 
                             onClick={handleNextStep}
-                            className="w-2/3 bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black py-3.5 rounded-2xl transition shadow-[0_0_20px_rgba(249,176,60,0.35)] flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer active:scale-[0.99]"
+                            disabled={Boolean(smartUserStatus?.exists && smartUserStatus.checkedEmail === email.trim().toLowerCase())}
+                            className={`w-2/3 py-3.5 rounded-2xl transition shadow-[0_0_20px_rgba(249,176,60,0.35)] flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-[0.99] ${
+                              smartUserStatus?.exists && smartUserStatus.checkedEmail === email.trim().toLowerCase()
+                                ? 'bg-gray-400 dark:bg-white/10 text-gray-200 dark:text-gray-500 cursor-not-allowed opacity-60'
+                                : 'bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black cursor-pointer'
+                            }`}
                           >
                             <span>ቀጣይ (Next: ማጠቃለያ)</span>
                             <i className="fa-solid fa-arrow-right text-xs"></i>

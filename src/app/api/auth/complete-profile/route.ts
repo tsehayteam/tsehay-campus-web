@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseServer, supabaseAdmin } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date().toISOString();
+    const db = supabaseAdmin || supabaseServer;
 
     const profileData = {
       id: cleanUid,
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
     };
 
     // 1. Upsert into profiles table
-    const { error: profileErr } = await supabaseServer
+    const { error: profileErr } = await db
       .from('profiles')
       .upsert(profileData);
 
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Upsert into users table for cross-compatibility
     try {
-      await supabaseServer.from('users').upsert({
+      await db.from('users').upsert({
         id: cleanUid,
         name: cleanName,
         email: cleanEmail || null,

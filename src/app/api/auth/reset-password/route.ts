@@ -20,9 +20,9 @@ export async function POST(req: NextRequest) {
     const cleanPass = String(newPassword).trim();
 
     // 1. Password length validation
-    if (cleanPass.length < 6) {
+    if (cleanPass.length < 8) {
       return NextResponse.json({ 
-        error: 'የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።' 
+        error: 'የይለፍ ቃል ቢያንስ 8 ፊደላትና ቁጥሮች መሆን አለበት (Min. 8 characters)።' 
       }, { status: 400 });
     }
 

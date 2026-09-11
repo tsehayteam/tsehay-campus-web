@@ -53,8 +53,8 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (cleanPass.length < 6) {
-      setError('አዲሱ የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።');
+    if (cleanPass.length < 8) {
+      setError('አዲሱ የይለፍ ቃል ቢያንስ 8 ፊደላትና ቁጥሮች መሆን አለበት (Min. 8 characters)።');
       return;
     }
 
@@ -257,10 +257,10 @@ function ResetPasswordForm() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
-                minLength={6}
+                minLength={8}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="ቢያንስ 6 ፊደላት ወይም ቁጥሮች"
+                placeholder="ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)"
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 focus:border-[#f9b03c] rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none transition-colors pr-10"
               />
               <button
@@ -271,6 +271,9 @@ function ResetPasswordForm() {
                 <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
               </button>
             </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)
+            </p>
           </div>
 
           {/* Confirm New Password */}
@@ -282,7 +285,7 @@ function ResetPasswordForm() {
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 required
-                minLength={6}
+                minLength={8}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="የይለፍ ቃሉን በድጋሚ ያስገቡ"

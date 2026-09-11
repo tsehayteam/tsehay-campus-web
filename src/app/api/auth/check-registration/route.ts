@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseServer, supabaseAdmin, supabaseServiceRoleKey } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +17,11 @@ export async function POST(req: NextRequest) {
 
     let isRegistered = false;
     let resolvedProfile: any = null;
+    const db = supabaseAdmin || supabaseServer;
 
     // 1. Check profiles table by UID or Email
     try {
-      let query = supabaseServer.from('profiles').select('*');
+      let query = db.from('profiles').select('*');
       if (cleanUid && cleanEmail) {
         query = query.or(`id.eq.${cleanUid},email.ilike.${cleanEmail}`);
       } else if (cleanUid) {
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
         // If the profile was found by email but has a different ID or empty ID, sync the UID
         if (cleanUid && found.id !== cleanUid) {
           try {
-            await supabaseServer
+            await db
               .from('profiles')
               .update({ id: cleanUid, updated_at: new Date().toISOString() })
               .eq('id', found.id);
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Check enrollments table if not already confirmed
     try {
-      let enrQuery = supabaseServer.from('enrollments').select('id, user_id, user_email, course_id, course_title');
+      let enrQuery = db.from('enrollments').select('id, user_id, user_email, course_id, course_title');
       if (cleanUid && cleanEmail) {
         enrQuery = enrQuery.or(`user_id.eq.${cleanUid},user_email.ilike.${cleanEmail}`);
       } else if (cleanUid) {
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
     // 3. Check users table if still not confirmed
     if (!isRegistered) {
       try {
-        let usersQuery = supabaseServer.from('users').select('*');
+        let usersQuery = db.from('users').select('*');
         if (cleanUid && cleanEmail) {
           usersQuery = usersQuery.or(`id.eq.${cleanUid},email.ilike.${cleanEmail}`);
         } else if (cleanUid) {
@@ -95,6 +96,33 @@ export async function POST(req: NextRequest) {
         }
       } catch (err) {
         console.warn('[check-registration] Users table query warning:', err);
+      }
+    }
+
+    // 4. Check Supabase Auth Users directly via Admin API if service role key exists
+    if (!isRegistered && supabaseServiceRoleKey) {
+      try {
+        const { data: { users }, error: listErr } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+        if (!listErr && users && users.length > 0) {
+          const match = users.find(u => (cleanUid && u.id === cleanUid) || (cleanEmail && u.email?.toLowerCase() === cleanEmail));
+          if (match) {
+            isRegistered = true;
+            if (!resolvedProfile) {
+              resolvedProfile = {
+                id: match.id,
+                full_name: match.user_metadata?.full_name || match.user_metadata?.name || '',
+                displayName: match.user_metadata?.full_name || match.user_metadata?.name || '',
+                email: match.email || cleanEmail,
+                phone: match.user_metadata?.phone || match.phone || '',
+                city: match.user_metadata?.city || '',
+                avatar_url: match.user_metadata?.avatar_url || match.user_metadata?.picture || '',
+                role: 'student'
+              };
+            }
+          }
+        }
+      } catch (authErr) {
+        console.warn('[check-registration] Auth admin fallback warning:', authErr);
       }
     }
 
