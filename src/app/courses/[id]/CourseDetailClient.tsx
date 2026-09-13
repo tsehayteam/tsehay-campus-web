@@ -40,6 +40,27 @@ function CoursePreviewContent() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
+  // Auto-duck / silence background ambient audio when course preview video is playing
+  useEffect(() => {
+    if (isPlaying) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+      }
+    } else {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      }
+    };
+  }, [isPlaying]);
+
   useEffect(() => {
     if (!id) {
       setLoading(false);

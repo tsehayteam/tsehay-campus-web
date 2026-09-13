@@ -923,13 +923,16 @@ export default function Hero3DPopoutStage({
             <button
               type="button"
               onClick={handleVideoClick}
-              className="pointer-events-auto group/unmute flex items-center gap-3.5 sm:gap-4.5 px-5 sm:px-7 py-3 sm:py-4 rounded-2xl sm:rounded-3xl bg-slate-950/85 hover:bg-black/95 backdrop-blur-2xl border-2 border-[#f9b03c]/70 hover:border-[#f9b03c] shadow-[0_20px_60px_rgba(0,0,0,0.95),0_0_35px_rgba(249,176,60,0.4)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation select-none"
+              className="pointer-events-auto group/unmute flex items-center gap-4 sm:gap-5 px-6 sm:px-8 py-3.5 sm:py-4.5 rounded-2xl sm:rounded-3xl bg-slate-950/90 hover:bg-black backdrop-blur-2xl border-2 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation select-none"
+              style={{ animation: 'heroUnmuteBreathing 3s ease-in-out infinite' }}
               aria-label="ድምፁን ለመክፈት ይጫኑ"
             >
-              {/* Circular Speaker Icon with Gold Glow */}
-              <div className="relative w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#ffe082] text-slate-950 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(249,176,60,0.6)] group-hover/unmute:scale-110 transition-transform">
-                <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950 animate-pulse" />
-                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-black shadow-[0_0_8px_#34d399] animate-ping" />
+              {/* Circular Speaker Icon with Dual-Color Breathing Glow */}
+              <div 
+                className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#ffe082] text-slate-950 flex items-center justify-center shrink-0 transition-transform group-hover/unmute:scale-110"
+                style={{ animation: 'heroUnmuteIconPulse 3s ease-in-out infinite' }}
+              >
+                <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950" />
               </div>
 
               {/* Text Stack */}
@@ -939,7 +942,7 @@ export default function Hero3DPopoutStage({
                 </p>
                 <p className="font-heading font-black text-xs sm:text-sm text-[#f9b03c] tracking-normal flex items-center gap-1.5 mt-0.5 group-hover/unmute:text-amber-300 transition-colors">
                   <span>ድምፁን ለመክፈት ይጫኑ</span>
-                  <i className="fa-solid fa-volume-high text-[11px] group-hover/unmute:scale-110 transition-transform" />
+                  <i className="fa-solid fa-volume-high text-xs group-hover/unmute:scale-110 transition-transform" />
                 </p>
               </div>
             </button>

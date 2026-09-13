@@ -448,6 +448,45 @@ function AboutHeroPlayer({
     };
   });
   const [isPlaying, setIsPlaying] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-duck / silence background ambient audio when About hero video is playing
+  useEffect(() => {
+    if (isPlaying) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+      }
+    } else {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      }
+    };
+  }, [isPlaying]);
+
+  // Scroll detection: auto-pause if user scrolls away from playing video
+  useEffect(() => {
+    if (!isPlaying || !containerRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting && entry.intersectionRatio < 0.15) {
+            setIsPlaying(false);
+          }
+        });
+      },
+      { threshold: [0, 0.15] }
+    );
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [isPlaying]);
 
   // Sync prop changes from SSR into active state
   useEffect(() => {
@@ -630,7 +669,7 @@ function AboutHeroPlayer({
   const activeThumbnail = getMediaThumbnail(customThumb, customThumb || videoData.videoUrl) || '/assets/about_video_cover.jpg';
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div ref={containerRef} className="max-w-4xl mx-auto">
       <div 
         className="relative rounded-[20px] p-[2.5px] overflow-hidden group shadow-[0_0_40px_rgba(249,176,60,0.25)] hover:shadow-[0_0_60px_rgba(249,176,60,0.45)] transition-shadow duration-500"
         style={{ borderRadius: '20px' }}
@@ -734,6 +773,49 @@ function AboutSingleReelSlider() {
   const [reels, setReels] = useState<ShortReel[]>(DEFAULT_REELS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const reelContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-duck / silence background ambient audio when reel video is playing
+  useEffect(() => {
+    if (isPlaying) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+      }
+    } else {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      }
+    };
+  }, [isPlaying]);
+
+  // Scroll detection: auto-pause reel if user scrolls away
+  useEffect(() => {
+    if (!isPlaying || !reelContainerRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting && entry.intersectionRatio < 0.15) {
+            const currentVid = videoRefs.current[currentIndex];
+            if (currentVid) {
+              currentVid.pause();
+            }
+            setIsPlaying(false);
+          }
+        });
+      },
+      { threshold: [0, 0.15] }
+    );
+    observer.observe(reelContainerRef.current);
+    return () => observer.disconnect();
+  }, [isPlaying, currentIndex]);
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
@@ -833,7 +915,7 @@ function AboutSingleReelSlider() {
   };
 
   return (
-    <div className="relative max-w-sm sm:max-w-md mx-auto flex flex-col items-center justify-center select-none py-2">
+    <div ref={reelContainerRef} className="relative max-w-sm sm:max-w-md mx-auto flex flex-col items-center justify-center select-none py-2">
       <div 
         className="relative w-full flex items-center justify-center"
         onTouchStart={handleTouchStart}

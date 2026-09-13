@@ -121,9 +121,10 @@ export default function TsehayAudio() {
     highPassFilter.connect(ctx.destination);
     masterGainRef.current = masterGain;
 
-    // 2. Dedicated UI Click & Feedback Gain (Direct to destination, NEVER silenced by video ducking)
+    // 2. Dedicated UI Click & Feedback Gain (Silenced if user is muted)
+    const initialMuted = typeof window !== 'undefined' && localStorage.getItem('tsehay_ambient_sound_muted') === 'true';
     const uiGain = ctx.createGain();
-    uiGain.gain.setValueAtTime(0.22, ctx.currentTime);
+    uiGain.gain.setValueAtTime(initialMuted ? 0 : 0.22, ctx.currentTime);
     uiGain.connect(ctx.destination);
     uiGainRef.current = uiGain;
 
@@ -351,10 +352,16 @@ export default function TsehayAudio() {
     if (ctx && master) {
       const now = ctx.currentTime;
       master.gain.cancelScheduledValues(now);
+      if (uiGainRef.current) {
+        uiGainRef.current.gain.cancelScheduledValues(now);
+      }
       if (nextMuted) {
         // Mute: smooth quick fade to silence
         master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), now);
         master.gain.linearRampToValueAtTime(0.0001, now + 0.25);
+        if (uiGainRef.current) {
+          uiGainRef.current.gain.setValueAtTime(0, now);
+        }
       } else {
         // Unmute: Resume ctx if needed, fade up to pleasant ambient volume
         if (ctx.state === 'suspended' || (ctx as any).state === 'interrupted') {
@@ -364,6 +371,9 @@ export default function TsehayAudio() {
         nextNoteTimeRef.current = ctx.currentTime + 0.1;
         master.gain.setValueAtTime(0.0001, now);
         master.gain.linearRampToValueAtTime(0.28, now + 0.6);
+        if (uiGainRef.current) {
+          uiGainRef.current.gain.setValueAtTime(0.22, now);
+        }
       }
     }
   }, [initAudioEngine, isMuted]);
@@ -541,11 +551,13 @@ export default function TsehayAudio() {
 
     const handleMediaPauseOrEnd = (e: Event) => {
       if (e.target instanceof HTMLMediaElement) {
-        const allMedia = Array.from(document.querySelectorAll('video, audio')) as HTMLMediaElement[];
-        const anyAudible = allMedia.some(m => !m.paused && !m.ended && !m.muted && m.volume > 0);
-        if (!anyAudible) {
-          setIsDucked(false);
-        }
+        setTimeout(() => {
+          const allMedia = Array.from(document.querySelectorAll('video, audio')) as HTMLMediaElement[];
+          const anyAudible = allMedia.some(m => !m.paused && !m.ended && !m.muted && m.volume > 0);
+          if (!anyAudible) {
+            setIsDucked(false);
+          }
+        }, 50);
       }
     };
 
@@ -572,20 +584,25 @@ export default function TsehayAudio() {
         }
         // Bunny Stream
         if (data?.channel === 'bunnystream') {
-          if (data.event === 'pause' || data.event === 'ended') {
+          if (data.event === 'play') {
+            setIsDucked(true);
+          } else if (data.event === 'pause' || data.event === 'ended') {
             setIsDucked(false);
           }
         }
         // Player.js
         if (data?.context === 'player.js') {
-          if (data.event === 'pause' || data.event === 'ended') {
+          if (data.event === 'play') {
+            setIsDucked(true);
+          } else if (data.event === 'pause' || data.event === 'ended') {
             setIsDucked(false);
           }
         }
         // YouTube API onStateChange
         if (data?.event === 'onStateChange') {
-          // Only unduck on pause/ended. Ducking is handled via explicit events (duck-ambient-audio / tsehay-hero-video-inview)
-          if (data.info === 2 || data.info === 0) {
+          if (data.info === 1) {
+            setIsDucked(true);
+          } else if (data.info === 2 || data.info === 0) {
             setIsDucked(false);
           }
         }
@@ -633,11 +650,14 @@ export default function TsehayAudio() {
     }
   }, [isQuietRoute, isDucked, isUnlocked, isMuted, isTabHidden]);
 
-  // 🔔 Distinct Interactive Click & Hover Audio Feedback (Always active, NEVER blocked by video ducking)
+  // 🔔 Tactile UI Audio Feedback (Subtle High-Tech Click SFX - strictly silenced when muted)
   useEffect(() => {
     // Crisp Tactile Micro-Tick on Hover
     const onHover = () => {
       if (isQuietRoute) return;
+      if (isMutedRef.current || (typeof window !== 'undefined' && localStorage.getItem('tsehay_ambient_sound_muted') === 'true')) {
+        return;
+      }
       const ctx = audioCtxRef.current;
       const uiGain = uiGainRef.current;
       if (!ctx || !uiGain || ctx.state !== 'running') return;
@@ -646,21 +666,25 @@ export default function TsehayAudio() {
       const osc = ctx.createOscillator();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(1800, now);
-      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.035);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.025);
 
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.02, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+      gain.gain.setValueAtTime(0.015, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.028);
 
       osc.connect(gain);
       gain.connect(uiGain);
       osc.start(now);
-      osc.stop(now + 0.045);
+      osc.stop(now + 0.030);
     };
 
-    // Primary vs Standard Button Click Feedback
+    // Primary vs Standard Button Click Feedback (Subtle, High-Tech Tap / Click SFX)
     const onPulse = (e: Event) => {
       if (isQuietRoute) return;
+      // 🔇 Audio Constraint & Mute Sync: Completely muted if global mute toggle is on
+      if (isMutedRef.current || (typeof window !== 'undefined' && localStorage.getItem('tsehay_ambient_sound_muted') === 'true')) {
+        return;
+      }
       const ctx = audioCtxRef.current;
       const uiGain = uiGainRef.current;
       if (!ctx || !uiGain) return;
@@ -672,37 +696,52 @@ export default function TsehayAudio() {
       const now = ctx.currentTime;
 
       if (isPrimary) {
-        // Golden Tizita Tri-Tone Chime for Primary CTAs (C5 + E5 + G5)
-        [523.25, 659.25, 783.99].forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.015);
+        // 🌟 Subtle High-Tech Primary Double Micro-Tap (Crisp, Ultra-Short, Zero Ear Strain)
+        // Micro-tap 1 (1500Hz -> 750Hz over 22ms)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(1500, now);
+        osc1.frequency.exponentialRampToValueAtTime(750, now + 0.022);
+        gain1.gain.setValueAtTime(0.0001, now);
+        gain1.gain.linearRampToValueAtTime(0.042, now + 0.002);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.024);
+        osc1.connect(gain1);
+        gain1.connect(uiGain);
+        osc1.start(now);
+        osc1.stop(now + 0.026);
 
-          const gain = ctx.createGain();
-          gain.gain.setValueAtTime(0.001, now + idx * 0.015);
-          gain.gain.linearRampToValueAtTime(0.08, now + idx * 0.015 + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.015 + 0.22);
-
-          osc.connect(gain);
-          gain.connect(uiGain);
-          osc.start(now + idx * 0.015);
-          osc.stop(now + idx * 0.015 + 0.25);
-        });
+        // Micro-tap 2 (1800Hz -> 880Hz over 20ms, offset by 16ms)
+        const t2 = now + 0.016;
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1800, t2);
+        osc2.frequency.exponentialRampToValueAtTime(880, t2 + 0.020);
+        gain2.gain.setValueAtTime(0.0001, t2);
+        gain2.gain.linearRampToValueAtTime(0.045, t2 + 0.002);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, t2 + 0.022);
+        osc2.connect(gain2);
+        gain2.connect(uiGain);
+        osc2.start(t2);
+        osc2.stop(t2 + 0.025);
       } else {
-        // Crisp Modern Tactile Snap for standard controls & links (1200Hz -> 550Hz, zero mud)
+        // 🌟 Modern Tactile High-Tech Tap / Click SFX (Buttons, Navbar Links, Cards, Tab Switches)
+        // Single ultra-short, smooth micro-click (1350Hz -> 540Hz over 26ms, gain 0.04)
         const osc = ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1200, now);
-        osc.frequency.exponentialRampToValueAtTime(550, now + 0.035);
-
         const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.09, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1350, now);
+        osc.frequency.exponentialRampToValueAtTime(540, now + 0.026);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.04, now + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.028);
 
         osc.connect(gain);
         gain.connect(uiGain);
         osc.start(now);
-        osc.stop(now + 0.045);
+        osc.stop(now + 0.030);
       }
     };
 
