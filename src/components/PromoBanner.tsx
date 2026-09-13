@@ -41,12 +41,24 @@ export default function PromoBanner() {
   useEffect(() => {
     if (shouldShow) {
       document.documentElement.classList.add('has-promo-banner');
+      const handleScroll = () => {
+        if (window.scrollY > 55) {
+          document.documentElement.classList.add('scrolled-past-banner');
+        } else {
+          document.documentElement.classList.remove('scrolled-past-banner');
+        }
+      };
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      handleScroll();
+      return () => {
+        document.documentElement.classList.remove('has-promo-banner');
+        document.documentElement.classList.remove('scrolled-past-banner');
+        window.removeEventListener('scroll', handleScroll);
+      };
     } else {
       document.documentElement.classList.remove('has-promo-banner');
+      document.documentElement.classList.remove('scrolled-past-banner');
     }
-    return () => {
-      document.documentElement.classList.remove('has-promo-banner');
-    };
   }, [shouldShow]);
 
   const handleCopy = useCallback((e?: React.MouseEvent) => {
@@ -85,6 +97,7 @@ export default function PromoBanner() {
       sessionStorage.setItem('tsehay_promo_shein15_dismissed', 'true');
     } catch (err) {}
     document.documentElement.classList.remove('has-promo-banner');
+    document.documentElement.classList.remove('scrolled-past-banner');
   }, []);
 
   if (!shouldShow) return null;
