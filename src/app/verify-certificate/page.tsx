@@ -484,7 +484,6 @@ export default function CertificateVerificationPage() {
 
   return (
     <div className="min-h-screen bg-[#030509] text-white flex flex-col selection:bg-[#f9b03c]/30 selection:text-[#f9b03c]">
-      <Navbar />
 
       <main className="flex-1 pt-24 sm:pt-28 pb-20 relative overflow-hidden">
         {/* Atmospheric Ambient Glow Spheres */}

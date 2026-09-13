@@ -462,7 +462,6 @@ export default function MentorshipClient() {
 
   return (
     <div className="min-h-screen bg-[#030509] text-white flex flex-col justify-between selection:bg-[#f9b03c] selection:text-black font-body">
-      <Navbar />
 
       <main className="flex-1 pt-28 pb-24 relative overflow-hidden">
         <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-[#f9b03c]/10 rounded-full blur-[180px] pointer-events-none" />

@@ -6,7 +6,6 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import Navbar from '@/components/Navbar';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
@@ -370,7 +369,6 @@ function CoursePreviewContent() {
 
   return (
     <div className="min-h-screen bg-[#030509] text-white flex flex-col selection:bg-[#f9b03c]/30 selection:text-[#f9b03c]">
-      <Navbar />
 
       {/* Dynamic Background Atmosphere (Dual Golden Yellow & Royal Blue Mesh) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">

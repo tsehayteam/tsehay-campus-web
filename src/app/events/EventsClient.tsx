@@ -420,7 +420,6 @@ export default function EventsClient() {
 
   return (
     <main className="min-h-screen bg-[#030509] text-white selection:bg-[#f9b03c]/30 selection:text-[#f9b03c]">
-      <Navbar />
 
       {/* Hero Header Section */}
       <section className="relative pt-32 pb-16 overflow-hidden border-b border-white/10">

@@ -578,7 +578,6 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
 
   return (
     <div className="min-h-screen bg-[#030509] text-white flex flex-col selection:bg-[#f9b03c]/30 selection:text-[#f9b03c]">
-      <Navbar />
 
       <div className="fixed top-20 left-1/4 w-[600px] h-[600px] bg-[#f9b03c]/10 rounded-full blur-[180px] pointer-events-none -z-10" />
       <div className="fixed bottom-10 right-1/4 w-[600px] h-[600px] bg-[#3268ba]/15 rounded-full blur-[180px] pointer-events-none -z-10" />

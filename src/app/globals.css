@@ -2543,4 +2543,49 @@ html.has-promo-banner:not(.scrolled-past-banner) #tsehay-navbar-capsule {
   }
 }
 
+/* 🌟 Dual-Color Alternating Glow Pulse for Top-Right Screen Expander */
+@keyframes dualPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(249, 176, 60, 0.45), 0 0 28px rgba(249, 176, 60, 0.2);
+    border-color: rgba(249, 176, 60, 0.75);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(50, 104, 186, 0.55), 0 0 30px rgba(50, 104, 186, 0.25);
+    border-color: rgba(50, 104, 186, 0.8);
+  }
+}
+
+/* 🌼 Promo Banner Floating & Breathing Animations */
+@keyframes bannerSubtleFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.015);
+  }
+}
+
+@keyframes flowerFloatAndGlow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+    box-shadow: 0 0 10px rgba(249, 176, 60, 0.35);
+  }
+  50% {
+    transform: translateY(-2.5px) rotate(6deg) scale(1.08);
+    box-shadow: 0 0 22px rgba(249, 176, 60, 0.7);
+  }
+}
+
+/* 🌟 Promo Code Pill Radiant Golden Glow Pulse */
+@keyframes goldPillGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(249, 176, 60, 0.35), inset 0 0 6px rgba(249, 176, 60, 0.15);
+    border-color: rgba(249, 176, 60, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(249, 176, 60, 0.75), inset 0 0 12px rgba(249, 176, 60, 0.35);
+    border-color: #f9b03c;
+  }
+}
+
 

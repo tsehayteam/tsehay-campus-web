@@ -468,7 +468,6 @@ function InboxContent() {
 
   return (
     <div className="min-h-screen bg-[#030509] text-slate-200 font-body selection:bg-[#f9b03c]/30 flex flex-col">
-      <Navbar />
 
       {toastMessage && (
         <div className={`fixed top-20 right-6 z-[9999] px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2 backdrop-blur-xl animate-in slide-in-from-top-4 duration-200 ${

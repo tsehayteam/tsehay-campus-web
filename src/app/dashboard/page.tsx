@@ -617,6 +617,7 @@ function StudentDashboardContent() {
         (document as any).webkitExitFullscreen();
       }
       setIsFullscreen(false);
+      setIsFocusMode(false);
       return;
     }
 
@@ -625,16 +626,8 @@ function StudentDashboardContent() {
       return;
     }
 
-    const el = videoContainerRef.current;
-    if (el && el.requestFullscreen) {
-      el.requestFullscreen().catch(() => {
-        setIsFocusMode(true);
-      });
-    } else if (el && (el as any).webkitRequestFullscreen) {
-      (el as any).webkitRequestFullscreen();
-    } else {
-      setIsFocusMode(true);
-    }
+    setIsFocusMode(true);
+    setIsSyllabusCollapsed(true);
   };
   
   // 🗑️ Tsehay AI 15-Day Recycle Bin State
@@ -2706,33 +2699,50 @@ function StudentDashboardContent() {
             </div>
           ) : (
           <div className={`${isFocusMode ? 'max-w-[1700px] w-full' : 'max-w-[1600px]'} mx-auto transition-all duration-500`}>
-            {/* Top Course Title & Action Header (Completely hidden during Focus Mode to eliminate clutter) */}
-            {!isFocusMode && (
-              <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Top Course Title & Action Header (Directly beneath Points Counter) */}
+            <div className={`${isFocusMode ? 'mb-3' : 'mb-6'} flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300`}>
+                {!isFocusMode ? (
                   <div>
                       <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title || 'የመማሪያ ክፍል (Classroom)'}</h1>
                       <p className="text-slate-400 font-body text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
                   </div>
-
-                  {/* Standalone Glowing Focus Mode Toggle Button (Icon Button Only - Zero Text) */}
-                  <div className="flex items-center gap-3">
-                      <button
-                          type="button"
-                          onClick={() => {
-                            setIsFocusMode(prev => !prev);
-                            setIsSyllabusCollapsed(true);
-                          }}
-                          className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#3268ba]/20 hover:bg-[#3268ba]/35 text-[#5a93e8] hover:text-white border border-[#3268ba]/50 hover:border-[#f9b03c] shadow-[0_0_20px_rgba(50,104,186,0.35)] hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 group"
-                          title="የትኩረት ሁነታ (Focus Theater Mode)"
-                          aria-label="Focus Theater Mode"
-                      >
-                          <svg className="w-5 h-5 text-blue-200 group-hover:text-white group-hover:scale-110 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                          </svg>
-                      </button>
+                ) : (
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#f9b03c] bg-[#f9b03c]/15 px-3 py-1 rounded-full border border-[#f9b03c]/30 shadow-inner">
+                      የትኩረት ሁነታ (Focus Theater Mode)
+                    </span>
+                    <span className="text-xs text-slate-400 font-bold truncate max-w-[200px] sm:max-w-[400px]">
+                      {(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title}
+                    </span>
                   </div>
-              </div>
-            )}
+                )}
+
+                {/* Enhanced Existing Screen Expander with Dual-Color Alternating Pulse */}
+                <div className="flex items-center gap-3 shrink-0">
+                    <button
+                        type="button"
+                        onClick={toggleFullscreen}
+                        className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-[#0c1326] via-[#101c3d] to-[#080d1a] text-white border transition-all duration-500 flex items-center justify-center cursor-pointer active:scale-95 group animate-[dualPulseGlow_3s_ease-in-out_infinite]"
+                        title={isFocusMode || isFullscreen ? "ስክሪን አሳንስ (Exit Focus Mode)" : "ስክሪን አስፋ (Focus Theater Mode)"}
+                        aria-label="Focus Theater Mode"
+                    >
+                        {/* Dual-Color Alternating Pulsing Corner Cue */}
+                        <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 pointer-events-none">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#3268ba] border border-white/40 shadow-sm animate-pulse"></span>
+                        </span>
+
+                        {/* Ambient dual-color sheen */}
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-[#3268ba]/20 to-[#f9b03c]/20 opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+                        {isFocusMode || isFullscreen ? (
+                          <Minimize2 className="w-5 h-5 text-[#f9b03c] group-hover:scale-110 transition-transform duration-200 relative z-10" />
+                        ) : (
+                          <Maximize className="w-5 h-5 text-amber-300 group-hover:text-white group-hover:scale-110 transition-transform duration-200 relative z-10" />
+                        )}
+                    </button>
+                </div>
+            </div>
 
             {/* Seamless Theater Video Arena (Expands to Full Theater View in Focus Mode) */}
             <div className={`w-full ${isFocusMode ? 'max-w-7xl 2xl:max-w-[1700px]' : 'max-w-6xl'} mx-auto flex flex-col gap-6 lg:gap-8 transition-all duration-500`}>
@@ -2745,27 +2755,6 @@ function StudentDashboardContent() {
                       ref={videoContainerRef}
                       className={`bg-dark ${isFocusMode ? 'rounded-2xl sm:rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] border-slate-700/80 ring-1 ring-white/10' : 'rounded-2xl shadow-2xl border-gray-800'} overflow-hidden relative border aspect-video flex items-center justify-center group/player transition-all duration-500`}
                     >
-                        {/* High-Visibility Floating Fullscreen / Theater Mode Button */}
-                        <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-40 pointer-events-auto">
-                          <button 
-                            type="button"
-                            onClick={toggleFullscreen}
-                            className="relative p-2.5 rounded-xl bg-black/60 border border-[#f9b03c]/40 hover:border-[#f9b03c] transition-all duration-300 shadow-lg group cursor-pointer active:scale-95"
-                            title={isFullscreen || isFocusMode ? "ስክሪን አሳንስ" : "ስክሪን አስፋ"}
-                          >
-                            {!(isFullscreen || isFocusMode) && (
-                              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#3268ba]"></span>
-                              </span>
-                            )}
-                            {(isFullscreen || isFocusMode) ? (
-                              <Minimize2 className="w-5 h-5 text-white group-hover:scale-110 transition-transform"/>
-                            ) : (
-                              <Maximize className="w-5 h-5 text-white group-hover:scale-110 transition-transform"/>
-                            )}
-                          </button>
-                        </div>
                         
                         {/* Auto-Resume Floating Toast */}
                         {resumeToast && (
