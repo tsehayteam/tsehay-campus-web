@@ -25,12 +25,13 @@ export default function PromoBanner() {
   const isTargetPage = Boolean(
     pathname === '/' ||
     pathname === '' ||
-    pathname?.startsWith('/courses')
+    pathname?.startsWith('/courses') ||
+    pathname?.startsWith('/classroom') ||
+    pathname?.startsWith('/dashboard')
   );
 
   const isExcludedPage = Boolean(
     pathname?.startsWith('/admin') ||
-    pathname?.startsWith('/classroom') ||
     pathname?.startsWith('/maintenance')
   );
 

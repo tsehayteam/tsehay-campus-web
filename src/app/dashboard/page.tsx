@@ -23,7 +23,7 @@ import FeedbackModal from '@/components/FeedbackModal';
 import { speakWithLanguageDetection } from '@/lib/ttsHelper';
 import { parseVideoUrl } from '@/lib/videoParser';
 import { supabase } from '@/lib/supabase/client';
-import { Crown, Check, Clock, X, Target, BookOpen, Sparkles, PartyPopper, Lightbulb, Rocket, Camera, FolderOpen, Palette, ChevronDown, ChevronUp } from 'lucide-react';
+import { Crown, Check, Clock, X, Target, BookOpen, Sparkles, PartyPopper, Lightbulb, Rocket, Camera, FolderOpen, Palette, ChevronDown, ChevronUp, Maximize, Minimize2 } from 'lucide-react';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (
@@ -587,6 +587,55 @@ function StudentDashboardContent() {
   const [openSidebarModuleIdx, setOpenSidebarModuleIdx] = useState<number | null>(0);
   const [isSyllabusCollapsed, setIsSyllabusCollapsed] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFocusMode) {
+        setIsFocusMode(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFocusMode]);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
+      setIsFullscreen(false);
+      return;
+    }
+
+    if (isFocusMode) {
+      setIsFocusMode(false);
+      return;
+    }
+
+    const el = videoContainerRef.current;
+    if (el && el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {
+        setIsFocusMode(true);
+      });
+    } else if (el && (el as any).webkitRequestFullscreen) {
+      (el as any).webkitRequestFullscreen();
+    } else {
+      setIsFocusMode(true);
+    }
+  };
   
   // 🗑️ Tsehay AI 15-Day Recycle Bin State
   const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
@@ -2071,23 +2120,38 @@ function StudentDashboardContent() {
               title={isNavDrawerExpanded ? "ዋና ሜኑን እጠፍ (Collapse Menu)" : "ዋና ሜኑን ዘርጋ (Open Main Menu)"}
               aria-expanded={isNavDrawerExpanded}
             >
+              {/* Dual-Color Radial Glow Accents (Golden Orange Left, Cobalt Blue Right) */}
+              <div 
+                className="absolute left-6 top-1/2 -translate-y-1/2 w-20 h-10 bg-[#f9b03c]/20 blur-xl rounded-full pointer-events-none transition-opacity duration-500"
+                style={{ opacity: isNavDrawerExpanded ? 0.3 : 0.8 }}
+              />
+              <div 
+                className="absolute right-6 top-1/2 -translate-y-1/2 w-20 h-10 bg-[#3268ba]/25 blur-xl rounded-full pointer-events-none transition-opacity duration-500"
+                style={{ opacity: isNavDrawerExpanded ? 0.3 : 0.8 }}
+              />
+
               {/* Ambient Glow Aura */}
               <div 
-                className={`absolute inset-0 bg-gradient-to-r from-transparent via-[#f9b03c]/15 to-transparent transition-opacity duration-500 pointer-events-none ${
+                className={`absolute inset-0 bg-gradient-to-r from-[#f9b03c]/10 via-transparent to-[#3268ba]/10 transition-opacity duration-500 pointer-events-none ${
                   isNavDrawerExpanded ? 'opacity-30' : 'opacity-80 animate-pulse'
                 }`}
               />
 
-              {/* Centered Main Title: "ዋና ሜኑ" */}
-              <div className="relative z-10 flex items-center justify-center gap-2">
+              {/* Centered Main Title: "ዋና ሜኑ" with Dual-Color Glow Accents */}
+              <div className="relative z-10 flex items-center justify-center gap-2.5">
+                {/* Left Brand Glow Accent: Golden Orange */}
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] shadow-[0_0_8px_#f9b03c] opacity-90 inline-block" aria-hidden="true"></span>
+                
                 <span className="font-heading font-black text-sm sm:text-base text-white tracking-wide drop-shadow-md text-center">
                   {t('main_menu') || 'ዋና ሜኑ'}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping inline-block"></span>
+
+                {/* Right Brand Glow Accent: Cobalt Blue */}
+                <span className="w-1.5 h-1.5 rounded-full bg-[#3268ba] shadow-[0_0_8px_#3268ba] opacity-90 inline-block" aria-hidden="true"></span>
               </div>
 
               {/* Dynamic Active-State Subtitle / Contextual Indicator */}
-              <div className="relative z-10 mt-1 flex items-center justify-center gap-1.5 text-center">
+              <div className="relative z-10 mt-1 flex items-center justify-center text-center">
                 <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] bg-[#f9b03c]/15 px-3 py-0.5 rounded-full border border-[#f9b03c]/30 shadow-inner">
                   {getActiveViewSubtitle()}
                 </span>
@@ -2655,7 +2719,7 @@ function StudentDashboardContent() {
                       <button
                           type="button"
                           onClick={() => {
-                            setIsFocusMode(true);
+                            setIsFocusMode(prev => !prev);
                             setIsSyllabusCollapsed(true);
                           }}
                           className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#3268ba]/20 hover:bg-[#3268ba]/35 text-[#5a93e8] hover:text-white border border-[#3268ba]/50 hover:border-[#f9b03c] shadow-[0_0_20px_rgba(50,104,186,0.35)] hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 group"
@@ -2677,7 +2741,31 @@ function StudentDashboardContent() {
                 <div className="flex flex-col gap-6 w-full">
                     
                     {/* Cinematic Video Player */}
-                    <div className={`bg-dark ${isFocusMode ? 'rounded-2xl sm:rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] border-slate-700/80 ring-1 ring-white/10' : 'rounded-2xl shadow-2xl border-gray-800'} overflow-hidden relative border aspect-video flex items-center justify-center group/player transition-all duration-500`}>
+                    <div 
+                      ref={videoContainerRef}
+                      className={`bg-dark ${isFocusMode ? 'rounded-2xl sm:rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] border-slate-700/80 ring-1 ring-white/10' : 'rounded-2xl shadow-2xl border-gray-800'} overflow-hidden relative border aspect-video flex items-center justify-center group/player transition-all duration-500`}
+                    >
+                        {/* High-Visibility Floating Fullscreen / Theater Mode Button */}
+                        <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-40 pointer-events-auto">
+                          <button 
+                            type="button"
+                            onClick={toggleFullscreen}
+                            className="relative p-2.5 rounded-xl bg-black/60 border border-[#f9b03c]/40 hover:border-[#f9b03c] transition-all duration-300 shadow-lg group cursor-pointer active:scale-95"
+                            title={isFullscreen || isFocusMode ? "ስክሪን አሳንስ" : "ስክሪን አስፋ"}
+                          >
+                            {!(isFullscreen || isFocusMode) && (
+                              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#3268ba]"></span>
+                              </span>
+                            )}
+                            {(isFullscreen || isFocusMode) ? (
+                              <Minimize2 className="w-5 h-5 text-white group-hover:scale-110 transition-transform"/>
+                            ) : (
+                              <Maximize className="w-5 h-5 text-white group-hover:scale-110 transition-transform"/>
+                            )}
+                          </button>
+                        </div>
                         
                         {/* Auto-Resume Floating Toast */}
                         {resumeToast && (
@@ -2711,7 +2799,7 @@ function StudentDashboardContent() {
 
                         {/* Video End Course Rating Overlay */}
                         {isCourseCompleted && activeCourse?.id && !ratedCourses[activeCourse.id] && !(typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse.id}`)) && !dismissedRatingOverlay[activeCourse.id] && (
-                          <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+                          <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
                              <button 
                                onClick={() => setDismissedRatingOverlay(prev => ({ ...prev, [activeCourse.id]: true }))}
                                className="absolute top-4 right-4 text-gray-400 hover:text-white text-sm font-bold w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer"
