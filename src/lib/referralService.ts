@@ -12,6 +12,20 @@ export interface PromoCode {
 
 export type ReferralCodeData = PromoCode;
 
+export const DEFAULT_PROMO_CODES: PromoCode[] = [
+  {
+    id: 'SHEIN15',
+    code: 'SHEIN15',
+    discountPercent: 15,
+    targetCourseId: 'shein-import-business',
+    description: 'የአዲሱ ዓመት 15% ቅናሽ (ለ10 ተማሪዎች ብቻ)',
+    isActive: true,
+    usageCount: 0,
+    maxUsageLimit: 10,
+    createdAt: '2026-09-11T00:00:00.000Z'
+  }
+];
+
 /**
  * Validate a Promo / Referral code against Server API / Cache and return discount details
  */
@@ -70,6 +84,18 @@ export async function validateReferralCode(
       } catch (cacheErr) {}
     }
 
+    // 3. Built-in default promo codes (e.g. SHEIN15)
+    if (!data) {
+      const defaultMatch = DEFAULT_PROMO_CODES.find((c) => 
+        c.code.trim().toUpperCase() === cleanCode || 
+        c.id?.trim().toUpperCase() === cleanCode
+      );
+      if (defaultMatch) {
+        data = defaultMatch;
+        foundId = defaultMatch.id || cleanCode;
+      }
+    }
+
     // If still not found
     if (!data) {
       return { 
@@ -107,7 +133,18 @@ export async function validateReferralCode(
       const normalizedTarget = data.targetCourseId.toLowerCase().trim();
       const normalizedCurrent = courseId.toLowerCase().trim();
       
-      const isMatch = normalizedTarget === normalizedCurrent ||
+      const isSheinId = (cId: string) => 
+        cId.includes('shein') || 
+        cId === 'course_1784885060875' || 
+        cId === 'course_1788767606811' ||
+        cId.includes('1784885060875') || 
+        cId.includes('1788767606811');
+
+      const isSheinMatch = (isSheinId(normalizedTarget) && isSheinId(normalizedCurrent)) ||
+        (cleanCode === 'SHEIN15' && isSheinId(normalizedCurrent));
+
+      const isMatch = isSheinMatch ||
+        normalizedTarget === normalizedCurrent ||
         normalizedCurrent.includes(normalizedTarget) ||
         normalizedTarget.includes(normalizedCurrent);
 

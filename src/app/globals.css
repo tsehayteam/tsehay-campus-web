@@ -2528,4 +2528,19 @@ img, video, canvas {
   perspective: 1000px;
 }
 
+/* 🌼 Promo Banner Top Offset Coordination with Floating Menu Capsule */
+#tsehay-navbar-capsule {
+  transition: top 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.has-promo-banner #tsehay-navbar-capsule {
+  top: 4.8rem !important;
+}
+
+@media (min-width: 768px) {
+  html.has-promo-banner #tsehay-navbar-capsule {
+    top: 3.4rem !important;
+  }
+}
+
 

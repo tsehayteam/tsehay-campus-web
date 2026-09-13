@@ -253,10 +253,14 @@ export function getCourseBySlugOrId(slugOrId: string, courses: any[]): any {
 
   // 3. Known Aliases
   // Shein aliases
-  if (raw === 'shein' || raw === 'shein-import' || raw === 'shein-import-business' || raw === 'ecommerce' || raw === 'shein_import_business' || raw.includes('shein') || raw.includes('ኢምፖርት')) {
+  if (raw === 'shein' || raw === 'shein-import' || raw === 'shein-importing' || raw === 'shein-import-business' || raw === 'ecommerce' || raw === 'shein_import_business' || raw === 'course_1784885060875' || raw === 'course_1788767606811' || raw.includes('shein') || raw.includes('ኢምፖርት')) {
     const shein = list.find((c: any) => 
+      c.id === 'course_1784885060875' ||
+      c.id === 'course_1788767606811' ||
       c.id === 'shein-import-business' ||
       c.id === 'shein_import_business' ||
+      c.slug === 'shein-import-business' ||
+      c.slug === 'shein-importing' ||
       (c.title && (c.title.includes('ሼን') || /shein/i.test(c.title))) ||
       (c.category && /shein/i.test(c.category))
     );

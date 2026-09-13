@@ -70,7 +70,9 @@ function getConciseCheckoutMetadata(params: {
     .replace(/[-–]\s*ፀሐይ ካምፓስ.*$/i, '')
     .trim();
 
-  if (/digital marketing|ዲጂታል ማርኬቲንግ/i.test(cleanCourse)) {
+  if (/shein|ሼን/i.test(cleanCourse)) {
+    cleanCourse = "Shein Import Course";
+  } else if (/digital marketing|ዲጂታል ማርኬቲንግ/i.test(cleanCourse)) {
     cleanCourse = "Digital Marketing Course";
   } else if (/filmmaking|video|ፊልም/i.test(cleanCourse)) {
     cleanCourse = "Filmmaking Course";
@@ -157,11 +159,12 @@ export async function POST(request: Request) {
     const rawPhone = body.phone_number || body.phoneNumber || body.phone || '';
     const validEthPhone = formatEthiopianPhone(rawPhone);
 
-    // Verify authentic price from Supabase or default cache
+    // Verify authentic base price from Supabase or default cache
+    let basePrice = 4500;
     try {
       if (isEventTicket) {
         if (body.price && Number(body.price) >= 0) {
-          numericPrice = Number(body.price);
+          basePrice = Number(body.price);
         }
       } else {
         const { data: dbCourse } = await supabaseServer
@@ -173,24 +176,88 @@ export async function POST(request: Request) {
         if (dbCourse) {
           const dbPrice = typeof dbCourse?.price === 'number' ? dbCourse.price : Number(String(dbCourse?.price || '').replace(/[^0-9.]/g, ''));
           if (dbPrice && dbPrice > 0) {
-            numericPrice = dbPrice;
+            basePrice = dbPrice;
           }
         } else {
-          const defaultMatch = DEFAULT_COURSES.find(c => c.id === courseId);
+          const defaultMatch = DEFAULT_COURSES.find(c => c.id === courseId || c.slug === courseId);
           if (defaultMatch && defaultMatch.price > 0) {
-            numericPrice = defaultMatch.price;
+            basePrice = defaultMatch.price;
           }
         }
       }
+    } catch (dbErr) {
+      console.warn("Supabase price query notice:", dbErr);
+    }
 
+    // 🌟 Promo Code Validation & Dynamic Price Calculation (e.g. SHEIN15 -> 15% OFF)
+    let appliedDiscountPercent = 0;
+    const refCode = (body.referralCode || body.refCode || '').trim().toUpperCase();
+
+    if (refCode === 'SHEIN15') {
+      appliedDiscountPercent = 15;
+    } else if (refCode) {
+      try {
+        const { data: row } = await supabaseServer
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'referral_codes')
+          .maybeSingle();
+        const list = Array.isArray(row?.data) ? row.data : [];
+        const match = list.find((c: any) => c.code?.toUpperCase() === refCode || c.id?.toUpperCase() === refCode);
+        if (match && match.isActive !== false) {
+          appliedDiscountPercent = Number(match.discountPercent) || 0;
+        }
+      } catch (e) {}
+    }
+
+    if (appliedDiscountPercent === 0 && body.discountPercent && Number(body.discountPercent) > 0) {
+      appliedDiscountPercent = Number(body.discountPercent);
+    }
+
+    if (appliedDiscountPercent > 0) {
+      numericPrice = Math.max(0, Math.round(basePrice * (1 - appliedDiscountPercent / 100)));
+    } else if (body.price && Number(body.price) > 0 && Number(body.price) <= basePrice) {
+      numericPrice = Number(body.price);
+    } else {
+      numericPrice = basePrice;
+    }
+
+    const isMentorship = Boolean(
+      String(courseId).startsWith('mentorship_') || 
+      String(courseId).startsWith('MNTR-') || 
+      String(title).includes('ማማከር') || 
+      String(title).includes('Mentorship')
+    );
+
+    // 🌟 Extract clean, concise dynamic course/event metadata for LakiPay checkout summary
+    const conciseMeta = getConciseCheckoutMetadata({
+      isEventTicket,
+      isMentorship,
+      rawTitle: payDetails.title || title,
+      eventTitle: body.eventTitle,
+      courseId: String(courseId)
+    });
+
+    // 🌟 LakiPay Payment Description Sync: clearly display adjusted price and discount
+    let lakipayTitle = conciseMeta.title;
+    let lakipayDescription = conciseMeta.description;
+    if (appliedDiscountPercent > 0) {
+      lakipayDescription = `${conciseMeta.title} - ${numericPrice.toLocaleString()} ETB (${appliedDiscountPercent}% Off)`;
+    }
+
+    try {
       await supabaseServer.from('pending_payments').upsert({
         id: tx_ref,
         course_id: courseId,
         user_id: userId || 'anonymous',
         price: numericPrice,
+        original_price: basePrice,
+        discount_percent: appliedDiscountPercent,
+        referral_code: refCode || null,
         user_email: email,
         tx_ref,
         title: title || (isEventTicket ? 'Event Ticket' : 'Course'),
+        description: lakipayDescription,
         is_event_ticket: isEventTicket,
         event_id: body.eventId || (isEventTicket ? courseId : null),
         event_slug: body.eventSlug || '',
@@ -217,8 +284,6 @@ export async function POST(request: Request) {
 
     // 1. LAKIPAY DYNAMIC HOSTED CHECKOUT (Telebirr, CBE Birr, M-Pesa, Awash, Cybersource, EthSwitch, Oromia, Geda)
     if (selectedMethod === 'lakipay' || selectedMethod === 'addispay') {
-      const isMentorship = String(courseId).startsWith('mentorship_') || String(courseId).startsWith('MNTR-') || String(title).includes('ማማከር') || String(title).includes('Mentorship');
-      
       const successUrl = isEventTicket
         ? `${origin}/events?success=true&ticket=confirmed&reference=${tx_ref}`
         : isMentorship 
@@ -238,22 +303,13 @@ export async function POST(request: Request) {
       const merchantDefaultPhone = (process.env.LAKIPAY_DEFAULT_PHONE || process.env.LAKIPAY_MERCHANT_PHONE || '251911000000').replace(/[^0-9]/g, '');
       const phoneForLakipay = validEthPhone || merchantDefaultPhone;
 
-      // 🌟 Extract clean, concise dynamic course/event metadata for LakiPay checkout summary
-      const conciseMeta = getConciseCheckoutMetadata({
-        isEventTicket,
-        isMentorship,
-        rawTitle: payDetails.title || title,
-        eventTitle: body.eventTitle,
-        courseId: String(courseId)
-      });
-
       // Initialize session via official LakiPay dynamic flow (POST https://api.lakipay.co/api/v2/payment/checkout)
       const lakipayResult = await initializeLakiPaySession({
         amount: Number(numAmount),
         currency: "ETB",
         reference: tx_ref,
-        title: conciseMeta.title,
-        description: conciseMeta.description,
+        title: lakipayTitle,
+        description: lakipayDescription,
         email: email,
         firstName: firstName,
         lastName: lastName,
@@ -281,7 +337,7 @@ export async function POST(request: Request) {
 
       if (chapaDirectUrl && chapaDirectUrl.startsWith('http')) {
         const separator = chapaDirectUrl.includes('?') ? '&' : '?';
-        const finalChapaUrl = `${chapaDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(payDetails.title)}`;
+        const finalChapaUrl = `${chapaDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(lakipayTitle)}&description=${encodeURIComponent(lakipayDescription)}`;
         return NextResponse.json({ 
           success: true,
           checkoutUrl: finalChapaUrl, 
@@ -309,7 +365,7 @@ export async function POST(request: Request) {
               return_url: successUrl,
               customization: {
                 title: "Tsehay Campus",
-                description: payDetails.description
+                description: lakipayDescription
               }
             })
           });
@@ -334,7 +390,7 @@ export async function POST(request: Request) {
       const lakipayDirectUrl = (process.env.LAKIPAY_DIRECT_URL || '').trim();
       if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http') && !lakipayDirectUrl.includes('lakipay.co')) {
         const separator = lakipayDirectUrl.includes('?') ? '&' : '?';
-        const finalUrl = `${lakipayDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(payDetails.title)}&description=${encodeURIComponent(payDetails.description)}`;
+        const finalUrl = `${lakipayDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(lakipayTitle)}&description=${encodeURIComponent(lakipayDescription)}`;
         return NextResponse.json({ 
           success: true,
           checkoutUrl: finalUrl, 

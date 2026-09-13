@@ -103,12 +103,19 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
     };
     window.addEventListener('keydown', handleKeyDown);
 
-    // Auto-check for stored referral code
+    // Auto-check for stored referral code or URL promo parameter
     try {
-      const savedCode = localStorage.getItem('tsehay_applied_referral_code');
-      if (savedCode && course?.id) {
-        setReferralInput(savedCode);
-        validateAndApplyCode(savedCode);
+      let codeToApply = '';
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        codeToApply = urlParams.get('promo') || urlParams.get('coupon') || urlParams.get('code') || '';
+      }
+      if (!codeToApply) {
+        codeToApply = localStorage.getItem('tsehay_applied_referral_code') || '';
+      }
+      if (codeToApply && course?.id) {
+        setReferralInput(codeToApply.trim().toUpperCase());
+        validateAndApplyCode(codeToApply.trim().toUpperCase());
       }
     } catch (e) {}
 

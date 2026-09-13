@@ -5,6 +5,7 @@ import { Noto_Sans_Ethiopic, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
+import PromoBanner from "@/components/PromoBanner";
 import ContentProtection from "@/components/ContentProtection";
 import ReferralTracker from "@/components/ReferralTracker";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -280,6 +281,7 @@ export default function RootLayout({
               
               <div id="tsehay-page-wrapper" className="w-full min-h-screen">
                 <ContentProtection />
+                <PromoBanner />
                 <Navbar />
                 
                 <PageTransitionWrapper>

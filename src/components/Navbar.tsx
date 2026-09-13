@@ -308,6 +308,7 @@ export default function Navbar() {
       {/* ===================== 1. FLOATING CAPSULE (ONLY WHEN CLOSED) ===================== */}
       {!isCurtainOpen && (
         <div 
+          id="tsehay-navbar-capsule"
           className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-50 animate-in fade-in"
           title="ዋና ማውጫ / Menu"
         >

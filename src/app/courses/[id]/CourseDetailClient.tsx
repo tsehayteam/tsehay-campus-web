@@ -216,6 +216,36 @@ function CoursePreviewContent() {
     };
   }, [user, course]);
 
+  // 🌟 Auto-Apply Promo Code and Auto-Open Checkout Modal from URL params or event
+  useEffect(() => {
+    if (!course || typeof window === 'undefined') return;
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const promo = params.get('promo') || params.get('coupon') || params.get('code');
+      const shouldBuy = params.get('buy') === '1' || params.get('buy') === 'true' || 
+                        params.get('checkout') === '1' || params.get('checkout') === 'true';
+
+      if (promo) {
+        localStorage.setItem('tsehay_applied_referral_code', promo.trim().toUpperCase());
+      }
+
+      if (shouldBuy) {
+        setShowPaymentModal(true);
+      }
+    } catch (e) {
+      console.warn('Error processing course promo query parameters:', e);
+    }
+  }, [course]);
+
+  useEffect(() => {
+    const handleOpenPayment = () => {
+      setShowPaymentModal(true);
+    };
+    window.addEventListener('open-payment-modal', handleOpenPayment);
+    return () => window.removeEventListener('open-payment-modal', handleOpenPayment);
+  }, []);
+
   const handleBuyClick = () => {
     if (!user) {
       try {
