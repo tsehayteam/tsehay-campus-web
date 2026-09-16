@@ -4010,7 +4010,7 @@ export default function AdminDashboard() {
                    </div>
                    <div>
                      <p className="text-gray-500 dark:text-gray-400 text-sm font-bold">ተማሪዎች</p>
-                     <h3 className="text-3xl font-black text-dark dark:text-white">{students.length || 4}</h3>
+                     <h3 className="text-3xl font-black text-dark dark:text-white">{students.length}</h3>
                    </div>
                  </div>
                  <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
