@@ -44,27 +44,41 @@ function mapDbRowToEvent(row: any): TsehayEvent {
         ? row.remainingSeats 
         : Math.max(0, cap - reg));
   
-  const rawImg = row.image || row.image_url || '';
+  const rawImg = row.image || row.image_url || row.banner || '';
   const img = formatDriveImageUrl(rawImg) || rawImg || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+
+  const isOnline = row.is_online !== undefined 
+    ? Boolean(row.is_online) 
+    : (row.isOnline !== undefined 
+        ? Boolean(row.isOnline) 
+        : (row.category === 'Online' || (row.location || '').toLowerCase().includes('online') || (row.location || '').toLowerCase().includes('meet')));
+
+  const isFree = row.is_free !== undefined 
+    ? Boolean(row.is_free) 
+    : (row.isFree !== undefined 
+        ? Boolean(row.isFree) 
+        : (Number(row.price) === 0));
+
+  const speaker = row.speaker || (Array.isArray(row.speakers) && row.speakers[0] ? row.speakers[0] : '') || '';
 
   return {
     id: row.id,
-    slug: row.slug || `evt-${row.id}`,
+    slug: row.slug || (row.id ? (String(row.id).startsWith('evt-') ? String(row.id) : `evt-${row.id}`) : ''),
     title: row.title || '',
     titleEn: row.title_en || row.titleEn || '',
     description: row.description || '',
     date: row.date || '',
     time: row.time || '',
-    location: row.location || '',
-    isOnline: row.is_online !== undefined ? Boolean(row.is_online) : (row.isOnline !== undefined ? Boolean(row.isOnline) : false),
+    location: row.location || (isOnline ? 'Online Google Meet' : 'Bole, Addis Ababa'),
+    isOnline,
     meetingLink: row.meeting_link || row.meetingLink || '',
     mapsUrl: row.maps_url || row.mapsUrl || '',
     capacity: cap,
     registeredCount: reg,
     remainingSeats: rem,
     price: Number(row.price) || 0,
-    isFree: row.is_free !== undefined ? Boolean(row.is_free) : (row.isFree !== undefined ? Boolean(row.isFree) : (Number(row.price) === 0)),
-    speaker: row.speaker || '',
+    isFree,
+    speaker,
     speakerRole: row.speaker_role || row.speakerRole || '',
     image: img,
     videoUrl: row.video_url || row.videoUrl || '',
@@ -107,24 +121,9 @@ async function getSupabaseEvents(): Promise<any[]> {
     return (cId && deletedIds.includes(cId)) || (cSlug && deletedIds.includes(cSlug));
   };
 
-  // 1. Primary: Read directly from Supabase `events` table
-  try {
-    const { data: dbEvents, error: dbErr } = await supabaseServer
-      .from('events')
-      .select('*')
-      .order('created_at', { ascending: false });
+  const eventMap = new Map<string, any>();
 
-    if (!dbErr && dbEvents && Array.isArray(dbEvents) && dbEvents.length > 0) {
-      const mapped = dbEvents.map(mapDbRowToEvent).filter(e => !isDeleted(e));
-      savePersistedEvents(mapped);
-      cachedEventsList = { data: mapped, timestamp: Date.now() };
-      return mapped;
-    }
-  } catch (e) {
-    console.warn('Supabase events table fetch warning:', e);
-  }
-
-  // 2. Secondary: Read from site_settings (key: 'events')
+  // 1. Read from site_settings (key: 'events') - preserves all rich metadata like custom slug, meetingLink, etc.
   try {
     const { data: row, error } = await supabaseServer
       .from('site_settings')
@@ -133,23 +132,52 @@ async function getSupabaseEvents(): Promise<any[]> {
       .maybeSingle();
 
     if (!error && row?.data && Array.isArray(row.data) && row.data.length > 0) {
-      const mapped = row.data.map(mapDbRowToEvent).filter((e: any) => !isDeleted(e));
-      savePersistedEvents(mapped);
-      cachedEventsList = { data: mapped, timestamp: Date.now() };
-      return mapped;
+      row.data.forEach((e: any) => {
+        if (e && (e.id || e.slug) && !isDeleted(e)) {
+          const mapped = mapDbRowToEvent(e);
+          eventMap.set(mapped.id, mapped);
+        }
+      });
     }
   } catch (e) {
     console.warn('Supabase site_settings events fetch warning:', e);
   }
 
-  // 3. Tertiary: In-memory/filesystem store
-  const inMem = loadPersistedEvents();
-  if (inMem && inMem.length > 0) {
-    return inMem.map(mapDbRowToEvent).filter(e => !isDeleted(e));
+  // 2. Read directly from Supabase `events` table and overlay
+  try {
+    const { data: dbEvents, error: dbErr } = await supabaseServer
+      .from('events')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!dbErr && dbEvents && Array.isArray(dbEvents) && dbEvents.length > 0) {
+      dbEvents.forEach((dbEv: any) => {
+        if (dbEv && dbEv.id && !isDeleted(dbEv)) {
+          const existing = eventMap.get(dbEv.id) || {};
+          const mapped = mapDbRowToEvent({ ...existing, ...dbEv });
+          eventMap.set(mapped.id, mapped);
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Supabase events table fetch warning:', e);
   }
 
-  // 4. Fallback defaults (only non-deleted)
-  return DEFAULT_EVENTS.filter(e => !isDeleted(e));
+  let mergedList = Array.from(eventMap.values());
+
+  // 3. If neither table nor site_settings had events, fallback to in-memory store or defaults
+  if (mergedList.length === 0) {
+    const inMem = loadPersistedEvents();
+    if (inMem && inMem.length > 0) {
+      mergedList = inMem.map(mapDbRowToEvent).filter(e => !isDeleted(e));
+    } else {
+      mergedList = DEFAULT_EVENTS.filter(e => !isDeleted(e));
+    }
+  }
+
+  savePersistedEvents(mergedList);
+  cachedEventsList = { data: mergedList, timestamp: Date.now() };
+  return mergedList;
 }
 
 async function saveSupabaseEvents(events: any[], singlePayload?: any) {
@@ -159,7 +187,7 @@ async function saveSupabaseEvents(events: any[], singlePayload?: any) {
   // 1. Primary: Upsert single event to Supabase `events` table if provided
   if (singlePayload && singlePayload.id) {
     try {
-      const dbRow: Record<string, any> = {
+      const fullRow: Record<string, any> = {
         id: singlePayload.id,
         slug: singlePayload.slug,
         title: singlePayload.title,
@@ -185,17 +213,41 @@ async function saveSupabaseEvents(events: any[], singlePayload?: any) {
 
       const { error: upsertErr } = await supabaseServer
         .from('events')
-        .upsert(dbRow);
+        .upsert(fullRow);
 
       if (upsertErr) {
-        console.warn('Supabase events table upsert warning:', upsertErr);
+        console.warn('Supabase events table full upsert warning, attempting base schema fallback:', upsertErr.message);
+        // Fallback to base columns that exist in the PostgreSQL events table
+        const baseRow: Record<string, any> = {
+          id: singlePayload.id,
+          title: singlePayload.title,
+          title_en: singlePayload.titleEn || null,
+          description: singlePayload.description || '',
+          category: singlePayload.isOnline ? 'Online' : 'In-Person',
+          date: singlePayload.date || '',
+          time: singlePayload.time || '',
+          location: singlePayload.location || '',
+          image: singlePayload.image || null,
+          banner: singlePayload.image || null,
+          capacity: Number(singlePayload.capacity) || 100,
+          registered_count: Number(singlePayload.registeredCount) || 0,
+          price: Number(singlePayload.price) || 0,
+          status: singlePayload.status || 'upcoming',
+          tags: Array.isArray(singlePayload.tags) ? singlePayload.tags : [],
+          speakers: singlePayload.speaker ? [singlePayload.speaker] : [],
+          updated_at: new Date().toISOString()
+        };
+        const { error: baseErr } = await supabaseServer.from('events').upsert(baseRow);
+        if (baseErr) {
+          console.warn('Supabase base events table upsert warning:', baseErr.message);
+        }
       }
     } catch (e) {
       console.warn('Supabase events table upsert error:', e);
     }
   }
 
-  // 2. Secondary: Mirror to site_settings (key: 'events')
+  // 2. Secondary: Mirror complete rich objects to site_settings (key: 'events')
   try {
     await supabaseServer
       .from('site_settings')
@@ -392,8 +444,9 @@ export async function DELETE(req: NextRequest) {
       }
     } catch (e) {}
 
-    // 4. Update memory store
+    // 4. Update memory store & invalidate cache
     deletePersistedEvent(cleanId, cleanSlug);
+    invalidateEventsCache();
 
     return NextResponse.json({ success: true, deletedId: cleanId, deletedSlug: cleanSlug }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {

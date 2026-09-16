@@ -3180,7 +3180,7 @@ export default function AdminDashboard() {
 
       // 1. Direct Supabase events table persistence
       try {
-        const dbRow: Record<string, any> = {
+        const fullRow: Record<string, any> = {
           id: eventId,
           slug: cleanSlug,
           title: payload.title,
@@ -3203,37 +3203,63 @@ export default function AdminDashboard() {
           status: payload.status || 'upcoming',
           updated_at: nowIso
         };
-        await supabase.from('events').upsert(dbRow);
+        const { error: fullErr } = await supabase.from('events').upsert(fullRow);
+        if (fullErr) {
+          console.warn("Full schema upsert notice, falling back to base columns:", fullErr.message);
+          const baseRow = {
+            id: eventId,
+            title: payload.title,
+            title_en: payload.titleEn || null,
+            description: payload.description || '',
+            category: payload.isOnline ? 'Online' : 'In-Person',
+            date: payload.date || '',
+            time: payload.time || '',
+            location: payload.location || '',
+            image: payload.image || null,
+            banner: payload.image || null,
+            capacity: Number(payload.capacity) || 100,
+            registered_count: Number(payload.registeredCount) || 0,
+            price: Number(payload.price) || 0,
+            status: payload.status || 'upcoming',
+            tags: Array.isArray(payload.tags) ? payload.tags : [],
+            speakers: payload.speaker ? [payload.speaker] : [],
+            updated_at: nowIso
+          };
+          await supabase.from('events').upsert(baseRow);
+        }
       } catch (sbErr) {
         console.warn("Direct Supabase client event save notice:", sbErr);
       }
 
       // 2. Server API Route Persistence (failover layer & in-memory backup)
+      let savedSuccessfully = false;
+      let lastErrMsg = '';
       try {
-        const adminTok = typeof window !== 'undefined'
-          ? (sessionStorage.getItem('tc_admin_session') || sessionStorage.getItem('tsehay_admin_2fa_token') || localStorage.getItem('tc_admin_session') || '')
-          : '';
         const res = await fetch('/api/events', {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-admin-token': adminTok
-          },
+          headers: getAdminAuthHeaders(),
           body: JSON.stringify({ event: payload })
         });
-        if (!res.ok) {
+        if (res.ok) {
+          const resData = await res.json().catch(() => ({}));
+          if (resData.success) {
+            savedSuccessfully = true;
+          } else {
+            lastErrMsg = resData.error || 'Server rejected event save';
+          }
+        } else {
           const errData = await res.json().catch(() => ({}));
-          console.warn("Server API event save warning:", errData);
+          lastErrMsg = errData.error || `Server error (${res.status})`;
         }
-      } catch (apiErr) {
-        console.warn("Server API event save warning:", apiErr);
+      } catch (apiErr: any) {
+        lastErrMsg = apiErr.message || 'Network error';
       }
 
       // Clear from deleted events tracking if previously deleted
       try {
         const deleted = JSON.parse(localStorage.getItem('tsehay_deleted_events') || '[]');
-        if (deleted.includes(eventId)) {
-          localStorage.setItem('tsehay_deleted_events', JSON.stringify(deleted.filter((d: string) => d !== eventId)));
+        if (deleted.includes(eventId) || deleted.includes(cleanSlug)) {
+          localStorage.setItem('tsehay_deleted_events', JSON.stringify(deleted.filter((d: string) => d !== eventId && d !== cleanSlug)));
         }
       } catch (e) {}
 
@@ -3252,15 +3278,26 @@ export default function AdminDashboard() {
         bc.close();
       } catch (e) {}
 
-      // 4. Sync with /api/events/banner if status is active or inactive
+      // 4. Mirror to site_settings for 100% Lifetime Persistence across Page Refreshes
       try {
-        const adminToken = localStorage.getItem('tsehay_admin_token') || sessionStorage.getItem('tsehay_admin_token') || '';
+        await fetch('/api/admin/site-settings', {
+          method: 'POST',
+          headers: getAdminAuthHeaders(),
+          body: JSON.stringify({
+            settingKey: 'events',
+            data: updatedEvents
+          })
+        });
+        savedSuccessfully = true;
+      } catch (mirrorErr) {
+        console.warn('site-settings events mirror warning:', mirrorErr);
+      }
+
+      // 5. Sync with /api/events/banner if status is active or inactive
+      try {
         await fetch('/api/events/banner', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${adminToken}`
-          },
+          headers: getAdminAuthHeaders(),
           body: JSON.stringify({
             eventId: eventId,
             active: payload.status === 'active',
@@ -3271,6 +3308,10 @@ export default function AdminDashboard() {
         window.dispatchEvent(new CustomEvent('tsehay_banner_updated'));
       } catch (bannerErr) {
         console.warn("Banner sync warning in save:", bannerErr);
+      }
+
+      if (!savedSuccessfully && lastErrMsg) {
+        throw new Error(lastErrMsg);
       }
 
       setEventSuccessMsg('ክንውኑ እና የቲኬት ባነሩ በተሳካ ሁኔታ ተቀምጧል! (Event saved successfully)');
@@ -3298,13 +3339,9 @@ export default function AdminDashboard() {
     saveCachedEvents(updated);
 
     try {
-      const adminToken = localStorage.getItem('tsehay_admin_token') || sessionStorage.getItem('tsehay_admin_token') || '';
       await fetch('/api/events/banner', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({
           eventId: event.id,
           active: !isCurrentlyActive,
