@@ -234,25 +234,43 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           if (course.lessons && course.lessons.length > 0) {
             localStorage.setItem('tsehay_user_active_lesson', JSON.stringify({ ...course.lessons[0], moduleIndex: 0, lessonIndex: 0 }));
           }
+          if (user?.uid) {
+            const enrCache = JSON.parse(localStorage.getItem(`tsehay_enrolled_courses_${user.uid}`) || '[]');
+            if (!enrCache.includes(targetCourseId)) enrCache.push(targetCourseId);
+            localStorage.setItem(`tsehay_enrolled_courses_${user.uid}`, JSON.stringify(enrCache));
+
+            const coursesCache = JSON.parse(localStorage.getItem(`tsehay_user_courses_${user.uid}`) || '[]');
+            if (!coursesCache.some((c: any) => c.id === targetCourseId || c.slug === targetCourseId)) {
+              coursesCache.push(course);
+              localStorage.setItem(`tsehay_user_courses_${user.uid}`, JSON.stringify(coursesCache));
+              localStorage.setItem('tsehay_user_courses_cache', JSON.stringify(coursesCache));
+            }
+          }
         } catch (e) {}
 
         try {
           const { data: sessionData } = await supabase.auth.getSession();
           const idToken = sessionData?.session?.access_token || '';
-          fetch('/api/enroll-free', {
+          await fetch('/api/enroll-free', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${idToken}`
+              ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
             },
             body: JSON.stringify({ 
               courseId: targetCourseId, 
+              slug: course?.slug,
+              userId: user?.uid,
+              userEmail: user?.email,
+              userName: user?.displayName,
               referralCode: appliedCode || null 
             })
-          }).catch(e => console.warn("Background enrollment sync:", e));
-        } catch (authErr) {}
+          });
+        } catch (authErr) {
+          console.warn("Enrollment API sync notice:", authErr);
+        }
 
-        router.push(`/dashboard?courseId=${targetCourseId}&lesson=0`);
+        router.push(`/dashboard?view=classroom&courseId=${encodeURIComponent(targetCourseId)}&lesson=0`);
         setIsOpen(false);
         if (propOnClose) propOnClose();
         return;

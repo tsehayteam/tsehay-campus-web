@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
-import { generateCourseSlug, DEFAULT_COURSES, isValidCourse, formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
+import { generateCourseSlug, DEFAULT_COURSES, isValidCourse, formatDriveImageUrl, getCleanCourseImage, getCleanInstructorImage } from '@/lib/courseCache';
 
 export const dynamic = 'force-dynamic';
 
 const CACHE_HEADERS = {
   'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-  'CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+  'CDN-Control': 'public, s-maxage=60, stale-while-revalidate=300',
   'Vercel-CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
 };
 
@@ -71,7 +71,7 @@ function sanitizeCourseImages(course: any) {
   if (!course || typeof course !== 'object') return course;
   const image = getCleanCourseImage(course) || formatDriveImageUrl(course.image) || course.image;
   const banner = formatDriveImageUrl(course.banner) || course.banner || image;
-  const instructorImg = formatDriveImageUrl(course.instructorImage || course.instructorPhoto || course.instructor_image || course.instructor_photo) || course.instructorImage || course.instructorPhoto || course.instructor_image || course.instructor_photo;
+  const instructorImg = getCleanInstructorImage(course);
 
   return {
     ...course,
