@@ -17,7 +17,9 @@ import {
   getRemainingSeats, 
   formatDriveImageUrl,
   getCachedUserTickets,
-  saveCachedUserTicket 
+  saveCachedUserTicket,
+  getDeletedEventIds,
+  recordDeletedEventId
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
@@ -29,7 +31,7 @@ export default function EventsClient() {
   const [filter, setFilter] = useState<'all' | 'free' | 'paid' | 'online' | 'in-person'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => getCachedUserTickets());
+  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => user?.id ? getCachedUserTickets(user.id) : {});
   const [selectedEvent, setSelectedEvent] = useState<TsehayEvent | null>(null);
   const [previewVideoEvent, setPreviewVideoEvent] = useState<TsehayEvent | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -37,6 +39,44 @@ export default function EventsClient() {
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // 🔒 Strict User-Session Ticket Isolation
+  useEffect(() => {
+    if (!user || !user.id) {
+      setUserBookedTickets({});
+      return;
+    }
+
+    const cached = getCachedUserTickets(user.id);
+    setUserBookedTickets(cached);
+
+    let isMounted = true;
+    const fetchUserTickets = async () => {
+      try {
+        const query = user.email 
+          ? `userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`
+          : `userId=${encodeURIComponent(user.id)}`;
+        const res = await fetch(`/api/events/tickets?${query}`, { cache: 'no-store' });
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data.tickets && Array.isArray(data.tickets)) {
+            const map: Record<string, EventTicket> = {};
+            data.tickets.forEach((t: EventTicket) => {
+              if (t.eventId) map[t.eventId] = t;
+              if (t.eventSlug) map[t.eventSlug] = t;
+              saveCachedUserTicket(t, user.id);
+            });
+            setUserBookedTickets(map);
+          }
+        }
+      } catch (e) {}
+    };
+    fetchUserTickets();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
 
   // Auto-duck background music when trailer video is opened
   useEffect(() => {
@@ -51,21 +91,66 @@ export default function EventsClient() {
   // Real-time Firestore sync on both collections
   useEffect(() => {
     const handleCustomEventsUpdate = (e: any) => {
+      if (e.detail?.deletedId || e.detail?.deletedSlug) {
+        const dId = (e.detail.deletedId || '').toLowerCase();
+        const dSlug = (e.detail.deletedSlug || '').toLowerCase();
+        if (dId) recordDeletedEventId(dId);
+        if (dSlug) recordDeletedEventId(dSlug);
+        setEvents(prev => prev.filter(ev => {
+          const cId = (ev.id || '').toLowerCase();
+          const cSlug = (ev.slug || '').toLowerCase();
+          return cId !== dId && (!dSlug || cSlug !== dSlug);
+        }));
+      }
       if (e.detail?.events && Array.isArray(e.detail.events)) {
-        setEvents(e.detail.events);
+        const deletedIds = getDeletedEventIds();
+        setEvents(e.detail.events.filter((ev: TsehayEvent) => 
+          !deletedIds.includes((ev.id || '').toLowerCase()) && 
+          !(ev.slug && deletedIds.includes(ev.slug.toLowerCase()))
+        ));
       }
     };
     window.addEventListener('tsehay_events_updated', handleCustomEventsUpdate);
+
+    const handleTicketSaved = (e: any) => {
+      if (e.detail?.ticket && user?.id && (!e.detail.userId || e.detail.userId === user.id)) {
+        const t = e.detail.ticket as EventTicket;
+        setUserBookedTickets(prev => ({
+          ...prev,
+          [t.eventId]: t,
+          ...(t.eventSlug ? { [t.eventSlug]: t } : {})
+        }));
+      }
+    };
+    window.addEventListener('tsehay_user_ticket_saved', handleTicketSaved);
 
     let bc: BroadcastChannel | null = null;
     try {
       bc = new BroadcastChannel('tsehay_events_sync');
       bc.onmessage = (msg) => {
+        if (msg.data?.type === 'EVENT_DELETED' || msg.data?.deletedId || msg.data?.deletedSlug) {
+          const dId = (msg.data.deletedId || '').toLowerCase();
+          const dSlug = (msg.data.deletedSlug || '').toLowerCase();
+          if (dId) recordDeletedEventId(dId);
+          if (dSlug) recordDeletedEventId(dSlug);
+          setEvents(prev => prev.filter(ev => {
+            const cId = (ev.id || '').toLowerCase();
+            const cSlug = (ev.slug || '').toLowerCase();
+            return cId !== dId && (!dSlug || cSlug !== dSlug);
+          }));
+        }
         if (msg.data?.events && Array.isArray(msg.data.events)) {
-          setEvents(msg.data.events);
+          const deletedIds = getDeletedEventIds();
+          setEvents(msg.data.events.filter((ev: TsehayEvent) => 
+            !deletedIds.includes((ev.id || '').toLowerCase()) && 
+            !(ev.slug && deletedIds.includes(ev.slug.toLowerCase()))
+          ));
         } else if (msg.data?.event) {
           const single = msg.data.event;
-          setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
+          const deletedIds = getDeletedEventIds();
+          if (!deletedIds.includes((single.id || '').toLowerCase()) && !(single.slug && deletedIds.includes(single.slug.toLowerCase()))) {
+            setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
+          }
         }
       };
     } catch (e) {}
@@ -74,17 +159,40 @@ export default function EventsClient() {
     let rootList: TsehayEvent[] = [];
 
     const syncAndSet = () => {
+      const deletedIds = getDeletedEventIds();
+      const isDeleted = (idOrSlug?: string) => {
+        if (!idOrSlug || deletedIds.length === 0) return false;
+        return deletedIds.includes(idOrSlug.trim().toLowerCase());
+      };
+
+      // 🌟 Authoritative sync: If server returned active events, use them directly (purging any deleted events)
+      if (artifactList && artifactList.length > 0) {
+        const cleanServerList = artifactList
+          .filter(ev => ev && (ev.id || ev.slug) && !isDeleted(ev.id) && !isDeleted(ev.slug))
+          .map(ev => ({
+            ...ev,
+            image: formatDriveImageUrl(ev.image) || ev.image || ''
+          }));
+        setEvents(cleanServerList);
+        try {
+          localStorage.setItem('tsehay_events_cache', JSON.stringify(cleanServerList));
+        } catch (e) {}
+        return;
+      }
+
       const eventMap = new Map<string, TsehayEvent>();
       
-      // 1. Preload with DEFAULT_EVENTS
+      // 1. Preload with DEFAULT_EVENTS ONLY if not deleted
       DEFAULT_EVENTS.forEach(ev => {
-        eventMap.set(ev.id, { ...ev });
-        if (ev.slug) eventMap.set(ev.slug, { ...ev });
+        if (!isDeleted(ev.id) && !isDeleted(ev.slug)) {
+          eventMap.set(ev.id, { ...ev });
+          if (ev.slug) eventMap.set(ev.slug, { ...ev });
+        }
       });
 
       // 2. Overlay LocalStorage Cached Events
       getCachedEvents().forEach(ev => {
-        if (ev && (ev.id || ev.slug)) {
+        if (ev && (ev.id || ev.slug) && !isDeleted(ev.id) && !isDeleted(ev.slug)) {
           const key = ev.id || ev.slug!;
           eventMap.set(key, { ...(eventMap.get(key) || {}), ...ev });
         }
@@ -92,7 +200,7 @@ export default function EventsClient() {
 
       // 3. Overlay live Firestore data
       [...artifactList, ...rootList].forEach(ev => {
-        if (ev && (ev.id || ev.slug)) {
+        if (ev && (ev.id || ev.slug) && !isDeleted(ev.id) && !isDeleted(ev.slug)) {
           const key = ev.id || ev.slug;
           const existing: any = eventMap.get(key) || (ev.slug ? eventMap.get(ev.slug) : null) || {};
           const cap = Number(ev.capacity || existing.capacity) || 100;
@@ -124,16 +232,16 @@ export default function EventsClient() {
       // De-duplicate by ID
       const uniqueEventsMap = new Map<string, TsehayEvent>();
       eventMap.forEach(v => {
-        if (v && v.id) uniqueEventsMap.set(v.id, v);
+        if (v && v.id && !isDeleted(v.id) && !isDeleted(v.slug)) {
+          uniqueEventsMap.set(v.id, v);
+        }
       });
 
       const combined = Array.from(uniqueEventsMap.values());
-      if (combined.length > 0) {
-        setEvents(combined);
-        try {
-          localStorage.setItem('tsehay_events_cache', JSON.stringify(combined));
-        } catch (e) {}
-      }
+      setEvents(combined);
+      try {
+        localStorage.setItem('tsehay_events_cache', JSON.stringify(combined));
+      } catch (e) {}
     };
 
     // Fetch events from API
@@ -143,7 +251,10 @@ export default function EventsClient() {
     })
       .then(res => res.json())
       .then(data => {
-        if (data && Array.isArray(data.events) && data.events.length > 0) {
+        if (data && data.deletedIds && Array.isArray(data.deletedIds)) {
+          data.deletedIds.forEach((d: string) => recordDeletedEventId(d));
+        }
+        if (data && Array.isArray(data.events)) {
           artifactList = data.events;
           syncAndSet();
         }
@@ -159,7 +270,10 @@ export default function EventsClient() {
           fetch(`/api/events?t=${Date.now()}`, { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
-              if (data && Array.isArray(data.events) && data.events.length > 0) {
+              if (data && data.deletedIds && Array.isArray(data.deletedIds)) {
+                data.deletedIds.forEach((d: string) => recordDeletedEventId(d));
+              }
+              if (data && Array.isArray(data.events)) {
                 artifactList = data.events;
                 syncAndSet();
               }
@@ -201,6 +315,32 @@ export default function EventsClient() {
   });
 
   const handleBookTicket = (event: TsehayEvent) => {
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+          action: 'book_ticket',
+          eventId: event.id,
+          eventSlug: event.slug,
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('open-auth-modal', {
+        detail: {
+          isSignupMode: false,
+          returnUrl: `/events/${event.slug || event.id}`,
+          message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+        }
+      }));
+      return;
+    }
+
+    const userTicket = userBookedTickets[event.id] || (event.slug ? userBookedTickets[event.slug] : null);
+    if (userTicket) {
+      setGeneratedTicket(userTicket);
+      setIsTicketModalOpen(true);
+      return;
+    }
+
     setSelectedEvent(event);
     const seats = getRemainingSeats(event);
     if (seats <= 0) {
@@ -280,7 +420,6 @@ export default function EventsClient() {
 
   return (
     <main className="min-h-screen bg-[#030509] text-white selection:bg-[#f9b03c]/30 selection:text-[#f9b03c]">
-      <Navbar />
 
       {/* Hero Header Section */}
       <section className="relative pt-32 pb-16 overflow-hidden border-b border-white/10">
@@ -291,7 +430,7 @@ export default function EventsClient() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c]/20 to-amber-500/10 border border-[#f9b03c]/40 text-[#f9b03c] text-xs font-black uppercase tracking-widest backdrop-blur-xl shadow-[0_0_20px_rgba(249,176,60,0.2)]">
             <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping" />
-            <span>🎟️ የቀጥታ ስልጠናዎች እና ዝግጅቶች (Live Events)</span>
+            <span>የቀጥታ ስልጠናዎች እና ዝግጅቶች (Live Events)</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-heading tracking-tight">
@@ -321,10 +460,10 @@ export default function EventsClient() {
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto justify-center">
               {[
                 { id: 'all', label: 'ሁሉም' },
-                { id: 'free', label: '🎁 ነፃ' },
-                { id: 'paid', label: '💎 ፕሪሚየም' },
-                { id: 'online', label: '🌐 Online' },
-                { id: 'in-person', label: '📍 In-Person' },
+                { id: 'free', label: 'ነፃ (Free)' },
+                { id: 'paid', label: 'ፕሪሚየም (Paid)' },
+                { id: 'online', label: 'Online' },
+                { id: 'in-person', label: 'In-Person' },
               ].map((item) => (
                 <button
                   key={item.id}
@@ -356,8 +495,9 @@ export default function EventsClient() {
             {filteredEvents.map((evt) => {
               const remaining = getRemainingSeats(evt);
               const isSoldOut = remaining <= 0;
-              const hasVideo = Boolean(evt.videoUrl || (evt.image && isMediaVideo(evt.image)));
-              const effectiveVideoUrl = evt.videoUrl || (evt.image && isMediaVideo(evt.image) ? evt.image : '');
+              const cleanVid = (evt.videoUrl || '').trim();
+              const hasVideo = Boolean(cleanVid && cleanVid !== 'none' && cleanVid !== 'yelewim');
+              const effectiveVideoUrl = hasVideo ? cleanVid : '';
               const imageUrl = formatEventBannerUrl(evt.image || '') || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
 
               return (
@@ -439,7 +579,7 @@ export default function EventsClient() {
                       <div className="text-[11px]">
                         <span className="text-slate-400 block text-[9px] uppercase tracking-wider">የቀሩ ወንበሮች</span>
                         <span className={`font-mono font-bold ${isSoldOut ? 'text-red-400' : 'text-emerald-400'}`}>
-                          {isSoldOut ? 'ሙሉ በሙሉ ተይዟል' : `🔥 ${remaining} ወንበር ቀርቷል`}
+                          {isSoldOut ? 'ሙሉ በሙሉ ተይዟል' : `${remaining} ወንበር ቀርቷል`}
                         </span>
                       </div>
 
@@ -458,17 +598,23 @@ export default function EventsClient() {
 
                       if (isAlreadyRegistered) {
                         return (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setGeneratedTicket(userTicket);
-                              setIsTicketModalOpen(true);
-                            }}
-                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.4)] border border-emerald-400/40 active:scale-98"
-                          >
-                            <i className="fa-solid fa-circle-check" />
-                            <span>ቲኬት ቆርጠዋል (Already Registered)</span>
-                          </button>
+                          <div className="w-full flex flex-col gap-1.5">
+                            <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[11px] font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                              <span>Already Purchased / ትኬት ተቆርጧል</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGeneratedTicket(userTicket);
+                                setIsTicketModalOpen(true);
+                              }}
+                              className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.4)] border border-emerald-400/40 active:scale-98"
+                            >
+                              <i className="fa-solid fa-ticket" />
+                              <span>ትኬትህን እይ (View Ticket)</span>
+                            </button>
+                          </div>
                         );
                       }
 
@@ -578,7 +724,8 @@ export default function EventsClient() {
             {/* Video Player Stage */}
             <div className="relative aspect-video w-full bg-black">
               {(() => {
-                const vidUrl = previewVideoEvent.videoUrl || (previewVideoEvent.image && isMediaVideo(previewVideoEvent.image) ? previewVideoEvent.image : '');
+                const cleanVid = (previewVideoEvent.videoUrl || '').trim();
+                const vidUrl = (cleanVid && cleanVid !== 'none' && cleanVid !== 'yelewim') ? cleanVid : '';
                 const parsed = parseVideoEmbedUrl(vidUrl, true);
                 if (parsed.type === 'video') {
                   return (

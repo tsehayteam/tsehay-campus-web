@@ -7,6 +7,7 @@ interface TsehayGlobalStore {
   __tsehay_site_settings_cache?: Map<string, any>;
   __tsehay_courses_cache?: Map<string, any>;
   __tsehay_events_cache?: Map<string, any>;
+  __tsehay_events_deleted_cache?: Set<string>;
 }
 
 const globalStore = global as unknown as TsehayGlobalStore;
@@ -33,6 +34,10 @@ if (!globalStore.__tsehay_courses_cache) {
       });
     }
   } catch (e) {}
+}
+
+if (!globalStore.__tsehay_events_deleted_cache) {
+  globalStore.__tsehay_events_deleted_cache = new Set<string>();
 }
 
 if (!globalStore.__tsehay_events_cache) {
@@ -126,17 +131,31 @@ export function savePersistedSetting(settingKey: string, data: any): void {
 }
 
 export const sharedEventsCache: Map<string, any> = globalStore.__tsehay_events_cache!;
+export const sharedEventsDeletedCache: Set<string> = globalStore.__tsehay_events_deleted_cache!;
 
 // 📅 Load persisted events
 export function loadPersistedEvents(): any[] {
   try {
-    const list = Array.from(sharedEventsCache.values());
+    const list = Array.from(sharedEventsCache.values()).filter(ev => {
+      if (!ev) return false;
+      const cId = (ev.id || '').trim().toLowerCase();
+      const cSlug = (ev.slug || '').trim().toLowerCase();
+      return !sharedEventsDeletedCache.has(cId) && !sharedEventsDeletedCache.has(cSlug);
+    });
+
     if (list.length > 0) return list;
+
     if (Array.isArray(DEFAULT_EVENTS)) {
-      DEFAULT_EVENTS.forEach(ev => {
+      const filteredDefaults = DEFAULT_EVENTS.filter(ev => {
+        if (!ev) return false;
+        const cId = (ev.id || '').trim().toLowerCase();
+        const cSlug = (ev.slug || '').trim().toLowerCase();
+        return !sharedEventsDeletedCache.has(cId) && !sharedEventsDeletedCache.has(cSlug);
+      });
+      filteredDefaults.forEach(ev => {
         if (ev && ev.id) sharedEventsCache.set(ev.id, ev);
       });
-      return DEFAULT_EVENTS;
+      return filteredDefaults;
     }
   } catch (e) {
     console.warn('loadPersistedEvents warning:', e);
@@ -148,8 +167,15 @@ export function loadPersistedEvents(): any[] {
 export function savePersistedEvents(events: any[]): void {
   try {
     if (Array.isArray(events)) {
+      sharedEventsCache.clear();
       events.forEach(ev => {
-        if (ev && ev.id) sharedEventsCache.set(ev.id, ev);
+        if (ev && ev.id) {
+          const cId = (ev.id || '').trim().toLowerCase();
+          const cSlug = (ev.slug || '').trim().toLowerCase();
+          if (!sharedEventsDeletedCache.has(cId) && !sharedEventsDeletedCache.has(cSlug)) {
+            sharedEventsCache.set(ev.id, ev);
+          }
+        }
       });
     }
   } catch (e) {
@@ -161,6 +187,10 @@ export function savePersistedEvents(events: any[]): void {
 export function saveSinglePersistedEvent(event: any): void {
   try {
     if (event && event.id) {
+      const cId = (event.id || '').trim().toLowerCase();
+      const cSlug = (event.slug || '').trim().toLowerCase();
+      sharedEventsDeletedCache.delete(cId);
+      if (cSlug) sharedEventsDeletedCache.delete(cSlug);
       sharedEventsCache.set(event.id, event);
     }
   } catch (e) {
@@ -169,10 +199,27 @@ export function saveSinglePersistedEvent(event: any): void {
 }
 
 // 🗑️ Delete an event
-export function deletePersistedEvent(eventId: string): void {
+export function deletePersistedEvent(eventId: string, eventSlug?: string): void {
   try {
     if (eventId) {
+      const cId = eventId.trim().toLowerCase();
+      sharedEventsDeletedCache.add(cId);
       sharedEventsCache.delete(eventId);
+      // Also check if any key in map has this id in lowercase
+      for (const [key, val] of Array.from(sharedEventsCache.entries())) {
+        if (key.toLowerCase() === cId || (val?.slug && val.slug.toLowerCase() === cId)) {
+          sharedEventsCache.delete(key);
+        }
+      }
+    }
+    if (eventSlug) {
+      const cSlug = eventSlug.trim().toLowerCase();
+      sharedEventsDeletedCache.add(cSlug);
+      for (const [key, val] of Array.from(sharedEventsCache.entries())) {
+        if (key.toLowerCase() === cSlug || (val?.slug && val.slug.toLowerCase() === cSlug)) {
+          sharedEventsCache.delete(key);
+        }
+      }
     }
   } catch (e) {
     console.warn('deletePersistedEvent warning:', e);

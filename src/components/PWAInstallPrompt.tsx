@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { Check, Zap } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -122,7 +123,7 @@ export default function PWAInstallPrompt() {
 
   return (
     <div className="fixed bottom-3 inset-x-3 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[9999] flex justify-center sm:justify-end pointer-events-none animate-in fade-in slide-in-from-bottom-5 duration-400">
-      {/* 🌟 ULTRA-COMPACT FLOATING PILL CONTAINER WITH GENTLE BREATHING PULSE */}
+      {/*  ULTRA-COMPACT FLOATING PILL CONTAINER WITH GENTLE BREATHING PULSE */}
       <div 
         className="relative w-full max-w-sm p-[1.5px] rounded-2xl overflow-hidden pointer-events-auto select-none pwa-compact-pulse transition-all duration-300 hover:scale-[1.01]"
         style={{
@@ -146,7 +147,7 @@ export default function PWAInstallPrompt() {
             <div className="flex items-center gap-2.5 py-1 px-1 text-emerald-400">
               <i className="fa-solid fa-circle-check text-base text-emerald-400 animate-bounce" />
               <div className="text-left flex-1 min-w-0">
-                <p className="text-xs font-black text-white font-heading">በተሳካ ሁኔታ ተጭኗል! 🎉</p>
+                <p className="text-xs font-black text-white font-heading">በተሳካ ሁኔታ ተጭኗል!</p>
                 <p className="text-[10px] text-gray-300 truncate">አፑ ወደ ስልክዎ ተጨምሯል</p>
               </div>
             </div>
@@ -165,7 +166,7 @@ export default function PWAInstallPrompt() {
                     }}
                   />
                   <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[7px] flex items-center justify-center border border-[#040814] font-black">
-                    ✓
+                    <Check className="w-2.5 h-2.5 text-white stroke-[3]" aria-hidden="true" />
                   </span>
                 </div>
 
@@ -178,7 +179,8 @@ export default function PWAInstallPrompt() {
                     </span>
                   </h4>
                   <p className="text-[10px] text-amber-300/90 font-bold truncate mt-0.5 flex items-center gap-1">
-                    <span>⚡ ፈጣን ትምህርት • ከመስመር ውጭ</span>
+                    <Zap className="w-3 h-3 text-[#f9b03c]" aria-hidden="true" />
+                    <span>ፈጣን ትምህርት • ከመስመር ውጭ</span>
                   </p>
                 </div>
 

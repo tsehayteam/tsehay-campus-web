@@ -39,7 +39,7 @@ export default function FloatingAIButton() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'ai',
-      text: 'ሰላም! እንኳን ወደ ፀሐይ ካምፓስ በደህና መጡ! ዛሬ ስለ ስልጠናዎቻችን፣ ስለ ዩቲዩብ ስኬት፣ ስለ ምዝገባ ወይም ስለ ኮርሶች በምን ልርዳዎት? ማንኛውንም ጥያቄ በጽሑፍ፣ በድምፅ (Voice) ወይም በስክሪንሾት መጠየቅ ይችላሉ! ✨',
+      text: 'ሰላም! እንኳን ወደ ፀሐይ ካምፓስ በደህና መጡ! ዛሬ ስለ ስልጠናዎቻችን፣ ስለ ዩቲዩብ ስኬት፣ ስለ ምዝገባ ወይም ስለ ኮርሶች በምን ልርዳዎት? ማንኛውንም ጥያቄ በጽሑፍ፣ በድምፅ (Voice) ወይም በስክሪንሾት መጠየቅ ይችላሉ!',
       timestamp: 'አሁን'
     }
   ]);
@@ -269,8 +269,8 @@ export default function FloatingAIButton() {
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     let userDisplayMessage = rawText;
     if (!userDisplayMessage) {
-      if (audioToSend) userDisplayMessage = "🎙️ የድምፅ መልዕክት (Voice Note)";
-      else if (imageToSend) userDisplayMessage = "📸 ፎቶ ተያይዟል";
+      if (audioToSend) userDisplayMessage = "የድምፅ መልዕክት (Voice Note)";
+      else if (imageToSend) userDisplayMessage = "ፎቶ ተያይዟል";
     }
 
     const newMsgs: Message[] = [
@@ -551,7 +551,7 @@ export default function FloatingAIButton() {
     const initialMsg: Message[] = [
       {
         role: 'ai',
-        text: 'ሰላም! የውይይት ታሪክ ጸድቷል። ማንኛውንም ጥያቄ በድምፅ ወይም በጽሑፍ መጠየቅ ይችላሉ! ✨',
+        text: 'ሰላም! የውይይት ታሪክ ጸድቷል። ማንኛውንም ጥያቄ በድምፅ ወይም በጽሑፍ መጠየቅ ይችላሉ!',
         timestamp: 'አሁን'
       }
     ];
@@ -601,7 +601,7 @@ export default function FloatingAIButton() {
         className="hidden"
       />
 
-      {/* 🌟 1. EXPANDABLE CHAT MODAL */}
+      {/*  1. EXPANDABLE CHAT MODAL */}
       {isOpen && (
         <div className="mb-4 w-[94vw] sm:w-[460px] md:w-[500px] bg-[#070b14]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden transition-all duration-300 relative h-[640px] sm:h-[700px] max-h-[90vh] animate-in fade-in slide-in-from-bottom-4 duration-200">
           
@@ -669,7 +669,7 @@ export default function FloatingAIButton() {
                   </span>
                 </div>
                 <p className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5 truncate max-w-[170px] sm:max-w-[200px]">
-                  <span>{selectedCourse ? `📚 ${selectedCourse.title}` : (aiLang === 'am' ? 'የፀሐይ ካምፓስ AI ረዳት' : 'Tsehay Campus AI Assistant')}</span>
+                  <span>{selectedCourse ? `selectedCourse.title${selectedCourse.title}` : (aiLang === 'am' ? 'የፀሐይ ካምፓስ AI ረዳት' : 'Tsehay Campus AI Assistant')}</span>
                 </p>
               </div>
             </div>
@@ -705,7 +705,7 @@ export default function FloatingAIButton() {
             </div>
           </div>
 
-          {/* 🌟 3D Highlighted Focus Area (የትኩረት አቅጣጫ) & Language Switcher Bar */}
+          {/*  3D Highlighted Focus Area (የትኩረት አቅጣጫ) & Language Switcher Bar */}
           <div className="relative px-3.5 py-2.5 bg-gradient-to-r from-[#0b1328] via-[#122042] to-[#0b1328] border-b border-[#f9b03c]/35 flex items-center justify-between gap-2 shadow-inner z-10">
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
               <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-[#f9b03c]/25 via-amber-400/15 to-transparent text-[#f9b03c] border border-[#f9b03c]/50 text-[10px] sm:text-[11px] font-black tracking-wide shadow-[0_0_12px_rgba(249,176,60,0.25)] shrink-0">
@@ -723,16 +723,16 @@ export default function FloatingAIButton() {
                 }}
                 className="bg-[#050811] text-[11px] sm:text-xs font-black text-[#f9b03c] border border-[#f9b03c]/45 hover:border-[#f9b03c] rounded-xl px-2 sm:px-2.5 py-1 outline-none focus:ring-2 focus:ring-[#f9b03c]/40 transition shrink-0 cursor-pointer max-w-[130px] sm:max-w-[170px] truncate shadow-sm"
               >
-                <option value="" className="bg-[#0b1222] text-white">🌐 አጠቃላይ (General Campus)</option>
+                <option value="" className="bg-[#0b1222] text-white">አጠቃላይ (General Campus)</option>
                 {courses.map(c => (
                   <option key={c.id} value={c.id} className="bg-[#0b1222] text-white">
-                    📚 {c.title}
+                    {c.title}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Language Switcher Pill (🇪🇹 አማ / 🇬🇧 EN) */}
+            {/* Language Switcher Pill (አማ / EN) */}
             <button
               type="button"
               onClick={() => setAiLang(prev => prev === 'am' ? 'en' : 'am')}
@@ -740,7 +740,7 @@ export default function FloatingAIButton() {
               title={aiLang === 'am' ? "Switch to English" : "ወደ አማርኛ ቀይር"}
             >
               <i className="fa-solid fa-language text-xs text-[#f9b03c]"></i>
-              <span>{aiLang === 'am' ? '🇪🇹 አማ' : '🇬🇧 EN'}</span>
+              <span>{aiLang === 'am' ? 'አማ' : 'EN'}</span>
             </button>
           </div>
 
@@ -798,7 +798,7 @@ export default function FloatingAIButton() {
                   {/* Action buttons under AI response */}
                   {!isUser && (
                     <div className="flex items-center gap-2 mt-1.5 ml-9">
-                      {/* 🔊 Voice Audio Player Button */}
+                      {/*  Voice Audio Player Button */}
                       <button 
                         onClick={() => playAiVoiceResponse(m.text, idx)}
                         className={`text-[10px] px-2.5 py-1 rounded-lg border flex items-center gap-1 transition cursor-pointer active:scale-95 ${
@@ -817,7 +817,7 @@ export default function FloatingAIButton() {
                         className="text-[10px] bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1 transition cursor-pointer"
                       >
                         <i className={`fa-solid ${copiedIdx === idx ? 'fa-check text-emerald-400' : 'fa-copy'}`}></i>
-                        <span>{copiedIdx === idx ? '✓ ተገልብጧል' : 'ኮፒ'}</span>
+                        <span>{copiedIdx === idx ? 'ተገልብጧል' : 'ኮፒ'}</span>
                       </button>
 
                       <button 
@@ -830,7 +830,7 @@ export default function FloatingAIButton() {
                         title={noteSavedIdx === idx ? 'ወደ ማስታወሻ ተመዝግቧል (Saved to Notes)' : 'ወደ ማስታወሻ አድ አድርግ (Save to Notes)'}
                       >
                         <i className={`fa-solid ${noteSavedIdx === idx ? 'fa-circle-check text-emerald-400 animate-bounce text-xs' : 'fa-bookmark text-xs'}`}></i>
-                        <span>{noteSavedIdx === idx ? '✓ ተመዝግቧል' : 'ወደ ማስታወሻ አድ'}</span>
+                        <span>{noteSavedIdx === idx ? 'ተመዝግቧል' : 'ወደ ማስታወሻ አድ'}</span>
                       </button>
                     </div>
                   )}
@@ -863,7 +863,7 @@ export default function FloatingAIButton() {
                 <img src={attachedImage} alt="Attachment Preview" className="w-12 h-12 object-cover rounded-xl border border-[#f9b03c]/50 shadow-sm" />
                 <div className="text-xs">
                   <span className="font-bold text-white block">ፎቶ ተያይዟል (Attached Photo)</span>
-                  <span className="text-[10px] text-emerald-400">✓ ለ AIው ትንታኔ ተዘጋጅቷል</span>
+                  <span className="text-[10px] text-emerald-400">ለ AIው ትንታኔ ተዘጋጅቷል</span>
                 </div>
               </div>
               <button 
@@ -876,7 +876,7 @@ export default function FloatingAIButton() {
             </div>
           )}
 
-          {/* 🌟 HORIZONTAL FAQ CAROUSEL WITH CLEAN ARROW CONTROLS */}
+          {/*  HORIZONTAL FAQ CAROUSEL WITH CLEAN ARROW CONTROLS */}
           <div className="relative px-3 py-2 bg-gradient-to-r from-[#070c18] via-[#0d162a] to-[#070c18] border-t border-white/10 z-10">
             <div className="flex items-center justify-between gap-2 mb-1.5 px-0.5">
               <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-300">
@@ -925,7 +925,7 @@ export default function FloatingAIButton() {
             </div>
           </div>
 
-          {/* ✍️ Clean Single Persistent Input Bar (Camera, Photo, Text Input, Live Mic / Send) */}
+          {/* ️ Clean Single Persistent Input Bar (Camera, Photo, Text Input, Live Mic / Send) */}
           <form 
             onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
             className="relative p-3 bg-gradient-to-t from-[#060a14] to-[#0c1222] border-t border-white/10 flex items-center gap-2 z-10"
@@ -959,7 +959,7 @@ export default function FloatingAIButton() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
                   isRecordingVoice 
-                    ? "🔴 እያዳመጥኩ ነው... ይናገሩ (Listening... speak now)" 
+                    ? "እያዳመጥኩ ነው... ይናገሩ (Listening... speak now)" 
                     : selectedCourse 
                       ? `ስለ ${selectedCourse.title} ይጠይቁ...` 
                       : "ጥያቄዎን በጽሑፍ ወይም በድምፅ ይላኩ..."
@@ -1008,7 +1008,7 @@ export default function FloatingAIButton() {
         </div>
       )}
 
-      {/* 🌟 2. FLOATING LAUNCHER BUTTON WITH GLOWING RADIAL PULSE (DRAGGABLE) */}
+      {/*  2. FLOATING LAUNCHER BUTTON WITH GLOWING RADIAL PULSE (DRAGGABLE) */}
       {!isOpen && (
         <button
           type="button"

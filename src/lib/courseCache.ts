@@ -253,10 +253,14 @@ export function getCourseBySlugOrId(slugOrId: string, courses: any[]): any {
 
   // 3. Known Aliases
   // Shein aliases
-  if (raw === 'shein' || raw === 'shein-import' || raw === 'shein-import-business' || raw === 'ecommerce' || raw === 'shein_import_business' || raw.includes('shein') || raw.includes('ኢምፖርት')) {
+  if (raw === 'shein' || raw === 'shein-import' || raw === 'shein-importing' || raw === 'shein-import-business' || raw === 'ecommerce' || raw === 'shein_import_business' || raw === 'course_1784885060875' || raw === 'course_1788767606811' || raw.includes('shein') || raw.includes('ኢምፖርት')) {
     const shein = list.find((c: any) => 
+      c.id === 'course_1784885060875' ||
+      c.id === 'course_1788767606811' ||
       c.id === 'shein-import-business' ||
       c.id === 'shein_import_business' ||
+      c.slug === 'shein-import-business' ||
+      c.slug === 'shein-importing' ||
       (c.title && (c.title.includes('ሼን') || /shein/i.test(c.title))) ||
       (c.category && /shein/i.test(c.category))
     );
@@ -469,6 +473,10 @@ export function saveCachedCourses(courses: any[]) {
       localStorage.setItem('tsehay_courses_cache', JSON.stringify(sanitized));
       localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(sanitized));
       localStorage.setItem('tsehay_courses_cache_version', COURSE_CACHE_VERSION);
+      const csOnly = sanitized.filter((c: any) => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
+      if (csOnly.length > 0) {
+        localStorage.setItem('tsehay_coming_soon_cache', JSON.stringify(csOnly));
+      }
     }
   } catch (err) {
     console.warn("Course cache save error:", err);
@@ -784,6 +792,9 @@ export interface ComingSoonCourse {
   instructor?: string;
   image: string;
   banner?: string;
+  video?: string;
+  videoUrl?: string;
+  previewVideoUrl?: string;
   highlightBadge?: string;
   benefits?: string[];
   expectedDate?: string;
@@ -811,22 +822,32 @@ export function formatCleanCategory(rawCat: string = ''): string {
     return 'Content Creation';
   }
   
-  // 3. Brokerage
-  if (lower.includes('brokerage') || lower.includes('real estate') || lower.includes('ደላላ') || lower.includes('ብሮከሬጅ') || lower.includes('ቤት')) {
+  // 3. Real Estate
+  if (lower.includes('real estate') || lower.includes('ሪል እስቴት') || lower.includes('ሪልእስቴት') || lower.includes('ቤት')) {
+    return 'Real Estate';
+  }
+  
+  // 4. Filmmaking / Film Making
+  if (lower.includes('filmmaking') || lower.includes('film making') || lower.includes('ፊልም')) {
+    return 'Filmmaking';
+  }
+
+  // 5. Brokerage
+  if (lower.includes('brokerage') || lower.includes('ደላላ') || lower.includes('ብሮከሬጅ')) {
     return 'Brokerage';
   }
   
-  // 4. E-Commerce
+  // 6. E-Commerce
   if (lower.includes('ecommerce') || lower.includes('e-commerce') || lower.includes('shein') || lower.includes('ሼን') || lower.includes('ኢምፖርት')) {
     return 'E-Commerce';
   }
   
-  // 5. Video Editing
+  // 7. Video Editing
   if (lower.includes('video editing') || lower.includes('ኤዲቲንግ') || lower.includes('editing')) {
     return 'Video Editing';
   }
   
-  // 6. Career
+  // 8. Career
   if (lower.includes('career') || lower.includes('leadership') || lower.includes('ስራ') || lower.includes('ካሪየር')) {
     return 'Career';
   }
@@ -923,32 +944,134 @@ export const COMING_SOON_COURSES: ComingSoonCourse[] = [
   }
 ];
 
-export function getComingSoonCourses(): ComingSoonCourse[] {
+export function getComingSoonCourses(liveCourses?: any[]): ComingSoonCourse[] {
+  const map = new Map<string, ComingSoonCourse>();
+  COMING_SOON_COURSES.forEach(c => map.set(c.id, { ...c }));
+
+  let deletedList: string[] = [];
+
   if (typeof window !== 'undefined') {
     try {
-      const cached = getCachedCourses();
-      if (Array.isArray(cached) && cached.length > 0) {
-        const dynamicCS = cached.filter(c => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
-        if (dynamicCS.length > 0) {
-          const map = new Map<string, ComingSoonCourse>();
-          COMING_SOON_COURSES.forEach(c => map.set(c.id, c));
-          dynamicCS.forEach(c => {
-            const id = c.id || c.slug;
-            const existing = map.get(id) || {};
-            const cleanImg = formatDriveImageUrl(c.image || existing.image) || c.image || existing.image;
-            const cleanBanner = formatDriveImageUrl(c.banner || c.image || existing.banner) || c.banner || c.image || existing.banner;
-            map.set(id, { 
-              ...existing, 
-              ...c,
-              image: cleanImg,
-              banner: cleanBanner
-            } as ComingSoonCourse);
-          });
-          return Array.from(map.values());
+      const delStr = localStorage.getItem('tsehay_deleted_courses');
+      if (delStr) {
+        const parsed = JSON.parse(delStr);
+        if (Array.isArray(parsed)) deletedList = parsed;
+      }
+    } catch (e) {}
+
+    try {
+      let dynamicCS: any[] = [];
+      const specificCSCache = localStorage.getItem('tsehay_coming_soon_cache');
+      if (specificCSCache) {
+        try {
+          const parsed = JSON.parse(specificCSCache);
+          if (Array.isArray(parsed) && parsed.length > 0) dynamicCS = parsed;
+        } catch (e) {}
+      }
+
+      if (dynamicCS.length === 0) {
+        const cached = getCachedCourses();
+        if (Array.isArray(cached) && cached.length > 0) {
+          dynamicCS = cached.filter(c => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
         }
+      }
+
+      if (dynamicCS.length > 0) {
+        dynamicCS.forEach(c => {
+          if (!c) return;
+          const id = c.id || c.slug;
+          if (c.status === 'Deleted' || c.isDeleted || deletedList.includes(c.id) || deletedList.includes(c.slug)) {
+            map.delete(id);
+            if (c.id) map.delete(c.id);
+            if (c.slug) map.delete(c.slug);
+            return;
+          }
+          let targetKey = id;
+          if (!map.has(targetKey)) {
+            for (const [k, v] of map.entries()) {
+              if (v.id === c.id || (c.slug && v.slug === c.slug)) {
+                targetKey = k;
+                break;
+              }
+            }
+          }
+          const existing = map.get(targetKey) || {} as any;
+          const cleanImg = formatDriveImageUrl(c.image || existing.image) || c.image || existing.image;
+          const cleanBanner = formatDriveImageUrl(c.banner || c.image || existing.banner) || c.banner || c.image || existing.banner;
+          const videoUrl = c.video || c.videoUrl || c.previewVideoUrl || existing.video || '';
+          map.set(targetKey, { 
+            ...existing, 
+            ...c,
+            id: c.id || existing.id || targetKey,
+            image: cleanImg,
+            banner: cleanBanner,
+            video: videoUrl,
+            videoUrl: videoUrl,
+            previewVideoUrl: videoUrl,
+            status: 'coming_soon',
+            isComingSoon: true
+          } as ComingSoonCourse);
+        });
       }
     } catch (e) {}
   }
-  return COMING_SOON_COURSES;
+
+  // If liveCourses passed from state/API, merge them with highest priority
+  if (Array.isArray(liveCourses) && liveCourses.length > 0) {
+    const liveCS = liveCourses.filter(c => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
+    liveCS.forEach(c => {
+      if (!c) return;
+      const id = c.id || c.slug;
+      if (c.status === 'Deleted' || c.isDeleted || deletedList.includes(c.id) || deletedList.includes(c.slug)) {
+        map.delete(id);
+        if (c.id) map.delete(c.id);
+        if (c.slug) map.delete(c.slug);
+        return;
+      }
+      let targetKey = id;
+      if (!map.has(targetKey)) {
+        for (const [k, v] of map.entries()) {
+          if (v.id === c.id || (c.slug && v.slug === c.slug)) {
+            targetKey = k;
+            break;
+          }
+        }
+      }
+      const existing = map.get(targetKey) || {} as any;
+      const cleanImg = formatDriveImageUrl(c.image || existing.image) || c.image || existing.image;
+      const cleanBanner = formatDriveImageUrl(c.banner || c.image || existing.banner) || c.banner || c.image || existing.banner;
+      const videoUrl = c.video || c.videoUrl || c.previewVideoUrl || existing.video || '';
+      map.set(targetKey, {
+        ...existing,
+        ...c,
+        id: c.id || existing.id || targetKey,
+        image: cleanImg,
+        banner: cleanBanner,
+        video: videoUrl,
+        videoUrl: videoUrl,
+        previewVideoUrl: videoUrl,
+        status: 'coming_soon',
+        isComingSoon: true
+      } as ComingSoonCourse);
+    });
+  }
+
+  // Final purge of any deleted courses
+  if (deletedList.length > 0) {
+    deletedList.forEach(delId => {
+      map.delete(delId);
+      for (const [k, v] of map.entries()) {
+        if (v.id === delId || v.slug === delId) {
+          map.delete(k);
+        }
+      }
+    });
+  }
+
+  const allCourses = Array.from(map.values()).filter(c => c && c.status !== 'Deleted' && !c.isDeleted);
+  const defaultIds = new Set(COMING_SOON_COURSES.map(c => c.id));
+  const customCourses = allCourses.filter(c => !defaultIds.has(c.id));
+  const defaultList = allCourses.filter(c => defaultIds.has(c.id));
+  return [...customCourses, ...defaultList];
 }
 

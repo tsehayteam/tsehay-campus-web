@@ -4,6 +4,7 @@ export const fetchCache = 'force-no-store';
 
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
+import { DEFAULT_PROMO_CODES } from '@/lib/referralService';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -15,6 +16,7 @@ const NO_CACHE_HEADERS = {
 
 export async function GET() {
   try {
+    let list: any[] = [];
     const { data: row, error: sbErr } = await supabaseServer
       .from('site_settings')
       .select('data')
@@ -22,13 +24,22 @@ export async function GET() {
       .maybeSingle();
 
     if (!sbErr && row?.data) {
-      const list = Array.isArray(row.data) ? row.data : Object.values(row.data);
-      return NextResponse.json({ success: true, codes: list }, { headers: NO_CACHE_HEADERS });
+      list = Array.isArray(row.data) ? row.data : Object.values(row.data);
     }
 
-    return NextResponse.json({ success: true, codes: [] }, { headers: NO_CACHE_HEADERS });
+    // Merge DEFAULT_PROMO_CODES if not already present
+    const merged = [...list];
+    for (const def of DEFAULT_PROMO_CODES) {
+      const defCode = def.code.toUpperCase();
+      const defId = (def.id || def.code).toUpperCase();
+      if (!merged.some((item: any) => item.code?.toUpperCase() === defCode || item.id?.toUpperCase() === defId)) {
+        merged.unshift(def);
+      }
+    }
+
+    return NextResponse.json({ success: true, codes: merged }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error fetching referral codes in API route:', error);
-    return NextResponse.json({ success: true, codes: [] }, { headers: NO_CACHE_HEADERS });
+    return NextResponse.json({ success: true, codes: DEFAULT_PROMO_CODES }, { headers: NO_CACHE_HEADERS });
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
+import { supabaseServer } from '@/lib/supabase/server';
 import { generateCourseSlug, DEFAULT_COURSES, formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
 import { saveSinglePersistedCourse, deletePersistedCourse } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
@@ -23,11 +23,15 @@ function sanitizeCourseImages(course: any) {
   const image = getCleanCourseImage(course) || formatDriveImageUrl(course.image) || course.image;
   const banner = formatDriveImageUrl(course.banner) || course.banner || image;
   const instructorImg = formatDriveImageUrl(course.instructorImage || course.instructorPhoto || course.instructor_image || course.instructor_photo) || course.instructorImage || course.instructorPhoto || course.instructor_image || course.instructor_photo;
+  const video = course.video || course.videoUrl || course.previewVideoUrl || '';
 
   return {
     ...course,
     image,
     banner,
+    video,
+    videoUrl: video,
+    previewVideoUrl: video,
     instructor_image: instructorImg,
     instructor_photo: instructorImg,
     instructorImage: instructorImg,
@@ -43,7 +47,7 @@ export async function GET(req: NextRequest) {
     // 1. Fetch deleted courses blacklist from site_settings
     let deletedCourses: string[] = [];
     try {
-      const { data: delData } = await supabase
+      const { data: delData } = await supabaseServer
         .from('site_settings')
         .select('data')
         .eq('key', 'deleted_courses')
@@ -53,7 +57,7 @@ export async function GET(req: NextRequest) {
       }
     } catch (e) {}
 
-    // 1. Single Course Lookup
+    // Single Course Lookup
     if (courseId) {
       const cleanId = courseId.trim();
       const cleanLower = cleanId.toLowerCase();
@@ -63,7 +67,7 @@ export async function GET(req: NextRequest) {
       }
 
       try {
-        const { data: sbCourse, error: sbErr } = await supabase
+        const { data: sbCourse, error: sbErr } = await supabaseServer
           .from('courses')
           .select('*')
           .or(`id.eq.${cleanId},slug.eq.${cleanId},slug.eq.${cleanLower}`)
@@ -85,15 +89,15 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. Fetch All Courses directly from Supabase (Source of Truth)
-    const { data: sbCourses, error: sbErr } = await supabase
+    const { data: sbCourses, error: sbErr } = await supabaseServer
       .from('courses')
       .select('*')
       .order('created_at', { ascending: false });
 
-    let activeCourses: any[] = [];
+    const courseMap = new Map<string, any>();
 
     if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
-      activeCourses = sbCourses
+      sbCourses
         .filter(item => 
           item && 
           item.id && 
@@ -102,11 +106,57 @@ export async function GET(req: NextRequest) {
           !deletedCourses.includes(item.id) && 
           !deletedCourses.includes(item.slug)
         )
-        .map(item => sanitizeCourseImages({
-          ...item,
-          ...(item.raw_data || {})
-        }));
+        .forEach(item => {
+          const sanitized = sanitizeCourseImages({
+            ...item,
+            ...(item.raw_data || {})
+          });
+          const key = item.id || item.slug;
+          if (key) {
+            courseMap.set(key, sanitized);
+          }
+        });
     }
+
+    // 🌟 3. Merge Persistent Coming Soon Courses from site_settings (Guaranteed Lifetime Persistence)
+    try {
+      const { data: csSettings } = await supabaseServer
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'coming_soon_courses')
+        .maybeSingle();
+
+      if (Array.isArray(csSettings?.data) && csSettings.data.length > 0) {
+        csSettings.data.forEach((cs: any) => {
+          if (cs && (cs.id || cs.slug) && !deletedCourses.includes(cs.id) && !deletedCourses.includes(cs.slug)) {
+            const primaryId = cs.id || cs.slug;
+            // Find existing course key if mapped by either id or slug
+            let targetKey = primaryId;
+            if (!courseMap.has(primaryId)) {
+              for (const [k, v] of courseMap.entries()) {
+                if (v.id === cs.id || (cs.slug && v.slug === cs.slug)) {
+                  targetKey = k;
+                  break;
+                }
+              }
+            }
+            const existing = courseMap.get(targetKey) || {};
+            const sanitized = sanitizeCourseImages({
+              ...existing,
+              ...cs,
+              id: cs.id || existing.id || primaryId,
+              isComingSoon: true,
+              status: 'coming_soon'
+            });
+            courseMap.set(targetKey, sanitized);
+          }
+        });
+      }
+    } catch (csErr) {
+      console.warn('site_settings coming_soon_courses fetch warning:', csErr);
+    }
+
+    let activeCourses = Array.from(courseMap.values());
 
     // If Supabase table is completely empty and no courses were deleted by user, seed default courses
     if (activeCourses.length === 0 && (!sbCourses || sbCourses.length === 0) && deletedCourses.length === 0) {
@@ -141,17 +191,38 @@ export async function POST(req: NextRequest) {
     const cleanImage = formatDriveImageUrl(body.image || body.thumbnailUrl || body.thumbnail);
     const cleanBanner = formatDriveImageUrl(body.banner) || cleanImage;
     const cleanInstructor = formatDriveImageUrl(body.instructorImage || body.instructorPhoto || body.instructor_image || body.instructor_photo);
+    const cleanVideo = body.video || body.previewVideo || body.previewVideoUrl || body.videoUrl || '';
+
+    const isComingSoon = Boolean(body.isComingSoon || body.status === 'coming_soon' || body.status === 'Coming Soon');
 
     const payload = {
       ...body,
       id: courseId,
       slug,
-      image: cleanImage || body.image || null,
-      banner: cleanBanner || body.banner || cleanImage || null,
-      instructorImage: cleanInstructor || body.instructorImage || body.instructorPhoto || null,
-      instructorPhoto: cleanInstructor || body.instructorPhoto || body.instructorImage || null,
-      video: body.video || body.previewVideo || body.previewVideoUrl || body.videoUrl || '',
-      status: body.status || 'Active',
+      title: body.title,
+      titleEn: body.titleEn || body.title,
+      description: body.description || body.desc || '',
+      desc: body.description || body.desc || '',
+      category: body.category || 'E-Commerce',
+      tag: body.tag || body.category || 'E-Commerce',
+      instructor: body.instructor || 'Eyoub Sahle',
+      price: isComingSoon ? 0 : Number(body.price || 0),
+      isFree: isComingSoon ? false : Boolean(body.isFree || Number(body.price || 0) === 0),
+      image: cleanImage,
+      banner: cleanBanner,
+      instructorImage: cleanInstructor,
+      instructorPhoto: cleanInstructor,
+      video: cleanVideo,
+      videoUrl: cleanVideo,
+      previewVideoUrl: cleanVideo,
+      lessons: Array.isArray(body.lessons) ? body.lessons : [],
+      status: isComingSoon ? 'coming_soon' : (body.status || 'Active'),
+      isComingSoon,
+      enableWaitlist: isComingSoon ? (body.enableWaitlist !== undefined ? Boolean(body.enableWaitlist) : true) : false,
+      highlightBadge: body.highlightBadge || '',
+      expectedDate: body.expectedDate || '',
+      benefits: Array.isArray(body.benefits) ? body.benefits : [],
+      timestamp: body.timestamp || Date.now(),
       isDeleted: false,
       updatedAt: new Date().toISOString()
     };
@@ -160,7 +231,7 @@ export async function POST(req: NextRequest) {
 
     // If previously in deleted_courses blacklist, remove it
     try {
-      const { data: currentSettings } = await supabase
+      const { data: currentSettings } = await supabaseServer
         .from('site_settings')
         .select('data')
         .eq('key', 'deleted_courses')
@@ -168,7 +239,7 @@ export async function POST(req: NextRequest) {
 
       if (Array.isArray(currentSettings?.data) && (currentSettings.data.includes(courseId) || currentSettings.data.includes(slug))) {
         const updatedList = currentSettings.data.filter((id: string) => id !== courseId && id !== slug);
-        await supabase.from('site_settings').upsert({
+        await supabaseServer.from('site_settings').upsert({
           key: 'deleted_courses',
           data: updatedList,
           updated_at: new Date().toISOString()
@@ -176,8 +247,8 @@ export async function POST(req: NextRequest) {
       }
     } catch (e) {}
 
-    // Save/Upsert directly to Supabase courses table
-    const { error: sbErr } = await supabase.from('courses').upsert({
+    // 🌟 Save/Upsert directly to Supabase courses table with supabaseServer
+    const { error: sbErr } = await supabaseServer.from('courses').upsert({
       id: courseId,
       slug,
       title: payload.title || 'Masterclass',
@@ -193,7 +264,7 @@ export async function POST(req: NextRequest) {
       image: payload.image || null,
       banner: payload.banner || payload.image || null,
       video: payload.video || null,
-      status: payload.status || (payload.isComingSoon ? 'coming_soon' : 'Active'),
+      status: payload.status,
       is_published: payload.isPublished ?? payload.is_published ?? true,
       category: payload.category || 'Digital Marketing',
       lessons: Array.isArray(payload.lessons) ? payload.lessons : [],
@@ -206,8 +277,56 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString()
     });
 
-    if (sbErr) {
-      console.warn('Supabase save course warning:', sbErr);
+    // 🌟 If Coming Soon: Mirror to site_settings (key: 'coming_soon_courses') for 100% Lifetime Persistence
+    let siteSettingsSaved = false;
+    if (isComingSoon) {
+      try {
+        const { data: currentCS } = await supabaseServer
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'coming_soon_courses')
+          .maybeSingle();
+
+        const csList: any[] = Array.isArray(currentCS?.data) ? currentCS.data : [];
+        const filtered = csList.filter(c => c && c.id !== courseId && c.slug !== slug);
+        const updatedCS = [payload, ...filtered];
+
+        const { error: csSaveErr } = await supabaseServer.from('site_settings').upsert({
+          key: 'coming_soon_courses',
+          data: updatedCS,
+          updated_at: new Date().toISOString()
+        });
+        if (!csSaveErr) {
+          siteSettingsSaved = true;
+        } else {
+          console.warn('Mirror coming soon courses to site_settings warning:', csSaveErr);
+        }
+      } catch (csSaveErr) {
+        console.warn('Mirror coming soon courses to site_settings warning:', csSaveErr);
+      }
+    } else {
+      // If course is active, ensure it is pruned from coming_soon_courses mirror
+      try {
+        const { data: currentCS } = await supabaseServer
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'coming_soon_courses')
+          .maybeSingle();
+
+        if (Array.isArray(currentCS?.data)) {
+          const updatedCS = currentCS.data.filter(c => c && c.id !== courseId && c.slug !== slug);
+          await supabaseServer.from('site_settings').upsert({
+            key: 'coming_soon_courses',
+            data: updatedCS,
+            updated_at: new Date().toISOString()
+          });
+        }
+      } catch (e) {}
+    }
+
+    if (sbErr && !siteSettingsSaved) {
+      console.error('Supabase save course error:', sbErr);
+      return NextResponse.json({ success: false, error: 'Database save failed: ' + sbErr.message }, { status: 500, headers: NO_CACHE_HEADERS });
     }
 
     try {
@@ -248,12 +367,30 @@ export async function DELETE(req: NextRequest) {
     deletePersistedCourse(courseId);
 
     // 1. Delete rows directly from Supabase
-    await supabase.from('courses').delete().eq('id', courseId);
-    await supabase.from('courses').delete().eq('slug', courseId);
+    await supabaseServer.from('courses').delete().eq('id', courseId);
+    await supabaseServer.from('courses').delete().eq('slug', courseId);
 
-    // 2. Add to deleted_courses blacklist in site_settings so default courses NEVER resurrect it
+    // 2. Remove from coming_soon_courses mirror in site_settings if exists
     try {
-      const { data: currentSettings } = await supabase
+      const { data: currentCS } = await supabaseServer
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'coming_soon_courses')
+        .maybeSingle();
+
+      if (Array.isArray(currentCS?.data)) {
+        const updatedCS = currentCS.data.filter((c: any) => c.id !== courseId && c.slug !== courseId);
+        await supabaseServer.from('site_settings').upsert({
+          key: 'coming_soon_courses',
+          data: updatedCS,
+          updated_at: new Date().toISOString()
+        });
+      }
+    } catch (e) {}
+
+    // 3. Add to deleted_courses blacklist in site_settings so default courses NEVER resurrect it
+    try {
+      const { data: currentSettings } = await supabaseServer
         .from('site_settings')
         .select('data')
         .eq('key', 'deleted_courses')
@@ -263,7 +400,7 @@ export async function DELETE(req: NextRequest) {
       if (!list.includes(courseId)) {
         list.push(courseId);
       }
-      await supabase.from('site_settings').upsert({
+      await supabaseServer.from('site_settings').upsert({
         key: 'deleted_courses',
         data: list,
         updated_at: new Date().toISOString()

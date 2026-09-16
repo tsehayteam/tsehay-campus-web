@@ -640,9 +640,57 @@
         padding: 20px;
       }
     }
+
+    /* ==========================================================================
+       SMOOTH LUXURY PRELOADER
+       ========================================================================== */
+    #prototype-preloader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #03060d;
+      z-index: 9999999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s ease;
+      will-change: opacity;
+    }
+    #prototype-main-wrapper {
+      opacity: 0;
+      transition: opacity 0.8s ease-out;
+      will-change: opacity;
+    }
   </style>
 </head>
 <body>
+
+  <!-- ========================================================================
+       SMOOTH LUXURY PRELOADER OVERLAY
+       ======================================================================== -->
+  <div id="prototype-preloader">
+    <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+      <div style="position: absolute; inset: -24px; border-radius: 9999px; border: 1px dashed rgba(249, 176, 60, 0.4); animation: spin 12s linear infinite;"></div>
+      <div style="position: absolute; inset: -20px; border-radius: 28px; background: radial-gradient(circle, rgba(249,176,60,0.4), transparent 70%); filter: blur(25px);"></div>
+      <div style="width: 110px; height: 110px; border-radius: 26px; padding: 3px; background: linear-gradient(135deg, #f9b03c, #3268ba); box-shadow: 0 0 50px rgba(249,176,60,0.5); overflow: hidden; position: relative; z-index: 10;">
+        <img src="/tc-logo.jpg" alt="Tsehay Campus" style="width: 100%; height: 100%; object-fit: cover; border-radius: 23px;" onerror="this.src='/favicon.png'" />
+      </div>
+    </div>
+    <div style="margin-top: 32px; font-size: 22px; font-weight: 900; letter-spacing: 1px; color: #ffffff; font-family: 'Outfit', sans-serif;">
+      TSEHAY <span style="color: #f9b03c;">CAMPUS</span>
+    </div>
+    <p style="margin-top: 8px; font-size: 13px; color: #94a3b8; letter-spacing: 0.5px;">
+      የወደፊት የቢዝነስ እና የክህሎት ጉዞዎን ዛሬ ይጀምሩ
+    </p>
+    <div style="margin-top: 24px; width: 180px; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.1); overflow: hidden;">
+      <div id="proto-progress" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3268ba, #f9b03c); border-radius: 999px; transition: width 0.15s ease-out;"></div>
+    </div>
+  </div>
+
+  <div id="prototype-main-wrapper">
 
   <!-- WebGL 3D Canvas Background -->
   <div id="webgl-container"></div>
@@ -1071,6 +1119,32 @@
     .fromTo("#card-2", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" })
     .to("#card-2", { opacity: 0, y: -50, duration: 0.4, ease: "power2.in" });
 
+    // --------------------------------------------------------------------------
+    // 8. SMOOTH LUXURY PRELOADER FADE-OUT
+    // --------------------------------------------------------------------------
+    (function() {
+      const pl = document.getElementById('prototype-preloader');
+      const bar = document.getElementById('proto-progress');
+      const mw = document.getElementById('prototype-main-wrapper');
+      if (!pl) return;
+
+      let p = 0;
+      const iv = setInterval(() => {
+        p += 5;
+        if (bar) bar.style.width = Math.min(p, 100) + '%';
+        if (p >= 100) {
+          clearInterval(iv);
+          setTimeout(() => {
+            pl.style.opacity = '0';
+            pl.style.pointerEvents = 'none';
+            if (mw) { mw.style.opacity = '1'; }
+            setTimeout(() => { pl.remove(); }, 800);
+          }, 200);
+        }
+      }, 45);
+    })();
+
   </script>
+  </div> <!-- /#prototype-main-wrapper -->
 </body>
 </html>

@@ -153,10 +153,10 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
   };
 
   const categories = [
-    { id: 'idea', label: '💡 አዲስ ሃሳብ (Idea)', desc: 'አዲስ የኮርስ ወይም የገፅ ሃሳብ' },
-    { id: 'bug', label: '🐛 ችግር (Bug)', desc: 'የቴክኒክ ወይም የሲስተም ክፍተት' },
-    { id: 'course', label: '📚 የኮርስ አስተያየት (Course)', desc: 'ስለ ትምህርቶቹ ይዘት' },
-    { id: 'general', label: '💬 አጠቃላይ (General)', desc: 'አጠቃላይ አስተያየት' },
+    { id: 'idea', label: 'አዲስ ሃሳብ (Idea)', desc: 'አዲስ የኮርስ ወይም የገፅ ሃሳብ' },
+    { id: 'bug', label: 'ችግር (Bug)', desc: 'የቴክኒክ ወይም የሲስተም ክፍተት' },
+    { id: 'course', label: 'የኮርስ አስተያየት (Course)', desc: 'ስለ ትምህርቶቹ ይዘት' },
+    { id: 'general', label: 'አጠቃላይ (General)', desc: 'አጠቃላይ አስተያየት' },
   ];
 
   // 📷 Image selection handler
@@ -306,22 +306,27 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
       const trimmedEmail = contactEmail.trim();
       const trimmedName = contactName.trim();
 
-      const feedbackPayload = {
-        id: feedbackId,
-        category,
-        type: category,
-        rating: Number(rating) || 5,
-        message: message.trim() || (uploadedAudioUrl ? '[የድምፅ መልዕክት ተልኳል]' : ''),
-        audioUrl: uploadedAudioUrl || null,
-        imageUrl: uploadedImageUrl || null,
-        userEmail: trimmedEmail || user?.email || 'visitor@tsehaycampus.com',
-        userName: trimmedName || user?.displayName || (user?.email ? user.email.split('@')[0] : (trimmedEmail ? trimmedEmail.split('@')[0] : 'እንግዳ ተጠቃሚ (Guest Visitor)')),
-        userId: user?.uid || `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/',
-        status: 'pending',
-        createdAt: Date.now(),
-        createdAtISO: new Date().toISOString()
-      };
+        const isStudentUser = Boolean(user && user.uid && !user.uid.startsWith('guest_'));
+        const userRole = isStudentUser ? 'student' : 'visitor';
+
+        const feedbackPayload = {
+          id: feedbackId,
+          category,
+          type: category,
+          rating: Number(rating) || 5,
+          message: message.trim() || (uploadedAudioUrl ? '[የድምፅ መልዕክት ተልኳል]' : ''),
+          audioUrl: uploadedAudioUrl || null,
+          imageUrl: uploadedImageUrl || null,
+          userEmail: trimmedEmail || user?.email || 'visitor@tsehaycampus.com',
+          userName: trimmedName || user?.displayName || (user?.email ? user.email.split('@')[0] : (trimmedEmail ? trimmedEmail.split('@')[0] : (isStudentUser ? 'ተማሪ' : 'እንግዳ ጎብኚ'))),
+          userId: user?.uid || `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          userRole,
+          role: userRole,
+          pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/',
+          status: 'pending',
+          createdAt: Date.now(),
+          createdAtISO: new Date().toISOString()
+        };
 
       // 4. Server API Dispatch with guaranteed persistence
       try {
@@ -367,7 +372,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
 
   return (
     <>
-      {/* 🌟 1. FLOATING FEEDBACK TRIGGER BUTTON (Draggable, Pulsing, Positioned below AI at fixed bottom-6 right-6 z-[9999]) */}
+      {/*  1. FLOATING FEEDBACK TRIGGER BUTTON (Draggable, Pulsing, Positioned below AI at fixed bottom-6 right-6 z-[9999]) */}
       {!isClassroomOrAdmin && (
         <div
           className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-[9999] font-body select-none"
@@ -400,14 +405,14 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
             <div className="relative flex items-center justify-center gap-2">
               <i className="fa-solid fa-comment-dots text-[#f9b03c] text-xl sm:text-sm group-hover:rotate-12 transition-transform drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"></i>
               <span className="hidden sm:inline-block text-xs font-heading font-black text-slate-100 group-hover:text-white tracking-wide">
-                💬 አስተያየት (Feedback)
+                አስተያየት (Feedback)
               </span>
             </div>
           </button>
         </div>
       )}
 
-      {/* 🌟 2. GLOBAL FEEDBACK MODAL */}
+      {/*  2. GLOBAL FEEDBACK MODAL */}
       {isOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           {/* Backdrop */}
@@ -443,7 +448,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                 </div>
                 <div className="space-y-1.5">
                   <h3 className="text-xl font-black font-heading text-white">
-                    🎉 አስተያየትዎ ደርሶናል! እናመሰግናለን!
+                    አስተያየትዎ ደርሶናል! እናመሰግናለን!
                   </h3>
                   <p className="text-xs text-slate-300 max-w-xs mx-auto">
                     የእርስዎ አስተያየት የፀሐይ ካምፓስን የላቀ እና የተሻለ የትምህርት ተሞክሮ እንድንገነባ ያግዘናል።
@@ -549,7 +554,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                     />
                   </div>
 
-                  {/* 4. 🎙️ Live Voice Recording & 📷 Screenshot Attachment Controls */}
+                  {/* 4. ️ Live Voice Recording &  Screenshot Attachment Controls */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     
                     {/* Voice Recording Control */}
@@ -601,7 +606,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                         <div className="space-y-1.5">
                           <audio controls src={audioPreviewUrl} className="w-full h-7 rounded-lg" />
                           <div className="flex items-center justify-between text-[10px]">
-                            <span className="text-emerald-400 font-bold">✓ ድምፅ ተቀርጿል</span>
+                            <span className="text-emerald-400 font-bold">ድምፅ ተቀርጿል</span>
                             <button
                               type="button"
                               onClick={handleRemoveAudio}
@@ -654,7 +659,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                               className="w-8 h-8 rounded-lg object-cover border border-white/20 shrink-0"
                             />
                             <span className="text-[10px] text-emerald-400 font-bold truncate">
-                              ✓ ምስል ተያይዟል
+                              ምስል ተያይዟል
                             </span>
                           </div>
                           <button

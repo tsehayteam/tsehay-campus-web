@@ -54,11 +54,11 @@ export async function POST(req: NextRequest) {
 
     // 4. Send Premium HTML Email via Resend
     try {
-      const { sendEmail, getPasswordResetOtpEmailHtml } = await import('@/lib/email');
-      const emailHtml = getPasswordResetOtpEmailHtml(otpCode, cleanEmail);
+      const { sendEmail, getSignupOtpEmailHtml } = await import('@/lib/email');
+      const emailHtml = getSignupOtpEmailHtml(otpCode, cleanEmail);
       await sendEmail({
         to: cleanEmail,
-        subject: `🔑 የይለፍ ቃል መቀየሪያ ማረጋገጫ ኮድ፡ ${otpCode} - Tsehay Campus`,
+        subject: 'የምዝገባ ማረጋገጫ ኮድ | Tsehay Campus',
         html: emailHtml
       });
     } catch (mailErr) {

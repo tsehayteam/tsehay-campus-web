@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { Lock, Rocket, Target, Check, X } from 'lucide-react';
 
 export interface QuizQuestion {
   id: number;
@@ -1146,7 +1147,10 @@ export default function CourseQuiz({ course, user, onPass, onViewCertificate }: 
               <i className="fa-solid fa-robot"></i>
             </span>
             <div className="space-y-0.5">
-              <p className="font-black text-white text-xs">🔒 የፈተና ደንብ ማሳሰቢያ፦</p>
+              <p className="font-black text-white text-xs flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-[#f9b03c]" aria-hidden="true" />
+                <span>የፈተና ደንብ ማሳሰቢያ፦</span>
+              </p>
               <p className="text-[11px] text-amber-200/90 leading-relaxed">
                 ፈተናውን ከመጀመርዎ በፊት በ <strong>Tsehay AI</strong> ማጥናት ይችላሉ። በፈተና ወቅት ግን የራስዎን እውነተኛ ክህሎት ለመፈተሽ Tsehay AI ይዘጋል።
               </p>
@@ -1159,7 +1163,10 @@ export default function CourseQuiz({ course, user, onPass, onViewCertificate }: 
               onClick={handleStartExam}
               className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-amber-400 via-primary to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-dark font-black text-base rounded-2xl shadow-xl shadow-amber-400/25 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer active:scale-95"
             >
-              <span>🚀 ፈተናውን ጀምር (Start 20-Question Exam)</span>
+              <span className="flex items-center gap-2">
+                <Rocket className="w-5 h-5 text-dark" aria-hidden="true" />
+                <span>ፈተናውን ጀምር (Start 20-Question Exam)</span>
+              </span>
               <i className="fa-solid fa-arrow-right"></i>
             </button>
             {isPassed && (
@@ -1202,8 +1209,9 @@ export default function CourseQuiz({ course, user, onPass, onViewCertificate }: 
               <span className="text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
                 <i className="fa-solid fa-lock text-[10px]"></i> Tsehay AI ተዘግቷል
               </span>
-              <span className="text-xs font-black bg-slate-800 text-emerald-400 px-3 py-1 rounded-full border border-slate-700">
-                🎯 ማለፊያ: 10/20
+              <span className="text-xs font-black bg-slate-800 text-emerald-400 px-3 py-1 rounded-full border border-slate-700 flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" />
+                <span>ማለፊያ: 10/20</span>
               </span>
             </div>
           </div>
@@ -1303,7 +1311,7 @@ export default function CourseQuiz({ course, user, onPass, onViewCertificate }: 
               disabled={answeredCount < questions.length}
               className="px-7 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-xs sm:text-sm font-black rounded-xl shadow-lg shadow-emerald-500/25 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer active:scale-95"
             >
-              <span>🏁 ፈተናውን አስረክብ ({answeredCount}/{questions.length})</span>
+              <span>ፈተናውን አስረክብ ({answeredCount}/{questions.length})</span>
               <i className="fa-solid fa-check"></i>
             </button>
           ) : (
@@ -1344,7 +1352,7 @@ export default function CourseQuiz({ course, user, onPass, onViewCertificate }: 
                 : 'bg-red-500/15 border-red-500/30 text-red-400'
             }`}
           >
-            {isPassed ? '🎉 ፈተናውን በስኬት አልፈዋል!' : '⚠️ ፈተናውን አላለፉም'}
+            {isPassed ? 'ፈተናውን በስኬት አልፈዋል!' : 'ፈተናውን አላለፉም'}
           </span>
           <h2 className="text-3xl sm:text-4xl font-black font-heading text-white">
             ውጤትዎ፡ {correctCount} / 20 ({score}%)
@@ -1365,7 +1373,7 @@ export default function CourseQuiz({ course, user, onPass, onViewCertificate }: 
                 className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-500/30 hover:scale-105 transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <i className="fa-solid fa-award text-base"></i>
-                <span>🎓 ሰርተፍኬትዎን ይመልከቱ / ያውርዱ</span>
+                <span>ሰርተፍኬትዎን ይመልከቱ / ያውርዱ</span>
               </button>
               <button
                 onClick={() => setShowReview(!showReview)}
@@ -1382,7 +1390,7 @@ export default function CourseQuiz({ course, user, onPass, onViewCertificate }: 
                 className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-amber-400 via-primary to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-dark font-black text-sm rounded-2xl shadow-xl shadow-amber-400/25 hover:scale-105 transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <i className="fa-solid fa-rotate-right"></i>
-                <span>🔄 ፈተናውን እንደገና ይውሰዱ (Retake)</span>
+                <span>ፈተናውን እንደገና ይውሰዱ (Retake)</span>
               </button>
               <button
                 onClick={() => setShowReview(!showReview)}
@@ -1424,7 +1432,7 @@ export default function CourseQuiz({ course, user, onPass, onViewCertificate }: 
                         isCorrect ? 'bg-emerald-500 text-slate-950' : 'bg-red-500 text-white'
                       }`}
                     >
-                      {isCorrect ? '✓' : '✕'}
+                      {isCorrect ? <Check className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" /> : <X className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" />}
                     </span>
                     <div className="space-y-1.5 flex-1">
                       <p className="text-xs sm:text-sm font-bold text-white leading-snug">
@@ -1445,7 +1453,7 @@ export default function CourseQuiz({ course, user, onPass, onViewCertificate }: 
                           </p>
                         )}
                         <p className="text-[11px] text-slate-400 bg-slate-800/80 p-2 rounded-xl mt-1.5 border border-slate-700">
-                          💡 <span className="text-amber-300 font-bold">ማብራሪያ፡</span> {q.explanation}
+                          <span className="text-amber-300 font-bold">ማብራሪያ፡</span> {q.explanation}
                         </p>
                       </div>
                     </div>

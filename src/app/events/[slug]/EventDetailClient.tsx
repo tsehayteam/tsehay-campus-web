@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import TwoStageEventBookingModal from '@/components/TwoStageEventBookingModal';
 import ShareEventModal from '@/components/ShareEventModal';
+import { Globe, MapPin, Ban } from 'lucide-react';
 import { 
   TsehayEvent, 
   EventTicket, 
@@ -35,11 +36,28 @@ export default function EventDetailClient() {
   const [event, setEvent] = useState<TsehayEvent | null>(() => getEventBySlugOrId(slug, getCachedEvents()));
   const [liveRegistrationsCount, setLiveRegistrationsCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [isPlayingVideo, setIsPlayingVideo] = useState(false);
+
+  // Auto-open video preview immediately if event has a video (just like Course Preview)
+  const [isPlayingVideo, setIsPlayingVideo] = useState(() => {
+    const initialEv = getEventBySlugOrId(slug, getCachedEvents());
+    const vid = (initialEv?.videoUrl || '').trim();
+    return Boolean(vid && vid !== 'none' && vid !== 'yelewim');
+  });
+
+  useEffect(() => {
+    if (event) {
+      const vid = (event.videoUrl || '').trim();
+      if (vid && vid !== 'none' && vid !== 'yelewim') {
+        setIsPlayingVideo(true);
+      } else {
+        setIsPlayingVideo(false);
+      }
+    }
+  }, [event?.id, event?.videoUrl]);
 
   // Booking & Payment Modal State
   const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => getCachedUserTickets());
+  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => user?.id ? getCachedUserTickets(user.id) : {});
   const [attendeeName, setAttendeeName] = useState(user?.displayName || '');
   const [attendeeEmail, setAttendeeEmail] = useState(user?.email || '');
   const [attendeePhone, setAttendeePhone] = useState('');
@@ -53,6 +71,44 @@ export default function EventDetailClient() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
+  // 🔒 Strict User-Session Ticket Isolation
+  useEffect(() => {
+    if (!user || !user.id) {
+      setUserBookedTickets({});
+      return;
+    }
+
+    const cached = getCachedUserTickets(user.id);
+    setUserBookedTickets(cached);
+
+    let isMounted = true;
+    const fetchUserTickets = async () => {
+      try {
+        const query = user.email 
+          ? `userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`
+          : `userId=${encodeURIComponent(user.id)}`;
+        const res = await fetch(`/api/events/tickets?${query}`, { cache: 'no-store' });
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data.tickets && Array.isArray(data.tickets)) {
+            const map: Record<string, EventTicket> = {};
+            data.tickets.forEach((t: EventTicket) => {
+              if (t.eventId) map[t.eventId] = t;
+              if (t.eventSlug) map[t.eventSlug] = t;
+              saveCachedUserTicket(t, user.id);
+            });
+            setUserBookedTickets(map);
+          }
+        }
+      } catch (e) {}
+    };
+    fetchUserTickets();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
+
   // Fetch from server API & listen for real-time admin edits and registrations
   useEffect(() => {
     const handleEventsUpdate = (e: any) => {
@@ -62,6 +118,18 @@ export default function EventDetailClient() {
       }
     };
     window.addEventListener('tsehay_events_updated', handleEventsUpdate);
+
+    const handleTicketSaved = (e: any) => {
+      if (e.detail?.ticket && user?.id && (!e.detail.userId || e.detail.userId === user.id)) {
+        const t = e.detail.ticket as EventTicket;
+        setUserBookedTickets(prev => ({
+          ...prev,
+          [t.eventId]: t,
+          ...(t.eventSlug ? { [t.eventSlug]: t } : {})
+        }));
+      }
+    };
+    window.addEventListener('tsehay_user_ticket_saved', handleTicketSaved);
 
     // Cross-Tab BroadcastChannel synchronization
     let bc: BroadcastChannel | null = null;
@@ -221,7 +289,7 @@ export default function EventDetailClient() {
     }
 
     if (ticketObj) {
-      saveCachedUserTicket(ticketObj);
+      saveCachedUserTicket(ticketObj, user?.id);
     }
 
     // 🌟 Instantly update local React state and persistent cache (e.g. 105 -> 104)
@@ -482,13 +550,24 @@ export default function EventDetailClient() {
                 <span>ይፋዊ የቀጥታ ዝግጅት • Official Event</span>
               </span>
 
-              <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-bold">
-                {event.isOnline ? '🌐 Virtual Live Stream (Online)' : `📍 በአካል (${event.location})`}
+              <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-bold inline-flex items-center gap-1.5">
+                {event.isOnline ? (
+                  <>
+                    <Globe className="w-3.5 h-3.5 text-sky-400" aria-hidden="true" />
+                    <span>Virtual Live Stream (Online)</span>
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+                    <span>በአካል ({event.location})</span>
+                  </>
+                )}
               </span>
 
               {isSoldOut && (
-                <span className="px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-black uppercase tracking-wider animate-pulse shadow-lg">
-                  ❌ ትኬቱ አልቋል (Sold Out)
+                <span className="px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-black uppercase tracking-wider animate-pulse shadow-lg inline-flex items-center gap-1.5">
+                  <Ban className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+                  <span>ትኬቱ አልቋል (Sold Out)</span>
                 </span>
               )}
             </div>
@@ -596,17 +675,23 @@ export default function EventDetailClient() {
 
                       if (isAlreadyRegistered) {
                         return (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveTicket(userTicket);
-                              setIsTicketModalOpen(true);
-                            }}
-                            className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_35px_rgba(16,185,129,0.4)] border border-emerald-400/40 active:scale-98"
-                          >
-                            <i className="fa-solid fa-circle-check text-white text-lg"></i>
-                            <span>ቲኬት ቆርጠዋል (Already Registered) • ትኬትህን እይ</span>
-                          </button>
+                          <div className="w-full sm:flex-1 flex flex-col gap-2">
+                            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-xs font-black w-fit shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                              <span>Already Purchased / ትኬት ተቆርጧል</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveTicket(userTicket);
+                                setIsTicketModalOpen(true);
+                              }}
+                              className="w-full py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_35px_rgba(16,185,129,0.4)] border border-emerald-400/40 active:scale-98"
+                            >
+                              <i className="fa-solid fa-ticket text-white text-lg"></i>
+                              <span>ትኬትዎን ይመልከቱ (View Your Ticket)</span>
+                            </button>
+                          </div>
                         );
                       }
 
@@ -623,10 +708,32 @@ export default function EventDetailClient() {
                         );
                       }
 
+                      const handleTicketClick = () => {
+                        if (!user) {
+                          try {
+                            sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+                              action: 'book_ticket',
+                              eventId: event.id,
+                              eventSlug: event.slug,
+                              returnUrl: `/events/${event.slug || event.id}`
+                            }));
+                          } catch (e) {}
+                          window.dispatchEvent(new CustomEvent('open-auth-modal', {
+                            detail: {
+                              isSignupMode: false,
+                              returnUrl: `/events/${event.slug || event.id}`,
+                              message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+                            }
+                          }));
+                          return;
+                        }
+                        setIsBookingOpen(true);
+                      };
+
                       return (
                         <button
                           type="button"
-                          onClick={() => setIsBookingOpen(true)}
+                          onClick={handleTicketClick}
                           className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all btn-buy-now-vibe cursor-pointer active:scale-98 shadow-[0_0_35px_rgba(249,176,60,0.4)]"
                         >
                           <i className="fa-solid fa-ticket text-lg"></i>
@@ -656,10 +763,10 @@ export default function EventDetailClient() {
               {/* Right Column (5 cols): Cinematic Banner & Universal Video Stage */}
               <div className="lg:col-span-5">
                 {(() => {
-                  const hasVideo = Boolean(event.videoUrl || (event.image && isMediaVideo(event.image)));
-                  const effectiveVideoUrl = event.videoUrl || (event.image && isMediaVideo(event.image) ? event.image : '');
-                  const parsedVideo = effectiveVideoUrl ? parseVideoEmbedUrl(effectiveVideoUrl, true) : null;
-                  const posterUrl = formatEventBannerUrl(event.image) || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
+                  const effectiveVideoUrl = (event.videoUrl || '').trim();
+                  const hasVideo = Boolean(effectiveVideoUrl && effectiveVideoUrl !== 'none' && effectiveVideoUrl !== 'yelewim');
+                  const parsedVideo = hasVideo ? parseVideoEmbedUrl(effectiveVideoUrl, true) : null;
+                  const posterUrl = formatEventBannerUrl(event.image) || (hasVideo ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
 
                   if (hasVideo && isPlayingVideo && parsedVideo && parsedVideo.src) {
                     return (
@@ -785,11 +892,37 @@ export default function EventDetailClient() {
         initialAttendeeEmail={attendeeEmail}
         initialAttendeePhone={attendeePhone}
         onSuccess={(ticket) => {
-          saveCachedUserTicket(ticket);
-          setUserBookedTickets(prev => ({
-            ...prev,
-            [event.id]: ticket,
-            ...(event.slug ? { [event.slug]: ticket } : {})
+          if (user?.id) {
+            saveCachedUserTicket(ticket, user.id);
+            setUserBookedTickets(prev => ({
+              ...prev,
+              [event.id]: ticket,
+              ...(event.slug ? { [event.slug]: ticket } : {})
+            }));
+          }
+          // Instant Live Count Decrement
+          setEvent(prev => {
+            if (!prev) return prev;
+            const curRemaining = prev.remainingSeats !== undefined 
+              ? prev.remainingSeats 
+              : Math.max(0, (Number(prev.capacity) || 100) - (Number(prev.registeredCount) || 0));
+            const nextRemaining = Math.max(0, curRemaining - 1);
+            const nextRegCount = (Number(prev.registeredCount) || 0) + 1;
+            return {
+              ...prev,
+              remainingSeats: nextRemaining,
+              seatsLeft: nextRemaining,
+              availableTickets: nextRemaining,
+              registeredCount: nextRegCount
+            };
+          });
+          try {
+            const bc = new BroadcastChannel('tsehay_events_sync');
+            bc.postMessage({ type: 'ticket_registered', eventId: event.id, eventSlug: event.slug, ticket });
+            bc.close();
+          } catch (e) {}
+          window.dispatchEvent(new CustomEvent('tsehay_ticket_registered', {
+            detail: { eventId: event.id, eventSlug: event.slug, ticket }
           }));
           setActiveTicket(ticket);
           setIsBookingOpen(false);

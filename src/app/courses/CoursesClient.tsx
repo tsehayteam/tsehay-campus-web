@@ -217,11 +217,14 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
 
   const COURSE_CATEGORY_TABS = [
     { id: 'All', label: 'All Courses', icon: 'fa-layer-group' },
+    { id: 'Coding', label: 'Coding & Tech', icon: 'fa-code' },
     { id: 'Ecommerce', label: 'E-Commerce', icon: 'fa-cart-shopping' },
     { id: 'YouTube', label: 'YouTube', icon: 'fa-youtube' },
     { id: 'ContentCreation', label: 'Content Creation', icon: 'fa-clapperboard' },
     { id: 'VideoEditing', label: 'Video Editing', icon: 'fa-film' },
+    { id: 'Filmmaking', label: 'Filmmaking', icon: 'fa-video' },
     { id: 'Marketing', label: 'Digital Marketing', icon: 'fa-bullhorn' },
+    { id: 'RealEstate', label: 'Real Estate', icon: 'fa-house-chimney' },
     { id: 'Brokerage', label: 'Brokerage', icon: 'fa-building' },
     { id: 'Career', label: 'Career', icon: 'fa-briefcase' },
   ];
@@ -230,19 +233,22 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
   const isCategoryMatch = (courseCat: string = '', tabId: string) => {
     if (!courseCat) return false;
     const catLower = courseCat.toLowerCase();
+    if (tabId === 'Coding' && (catLower.includes('code') || catLower.includes('coding') || catLower.includes('tech') || catLower.includes('web') || catLower.includes('programming') || catLower.includes('full-stack') || catLower.includes('software') || catLower.includes('ኮዲንግ') || catLower.includes('ፉል ስታክ') || catLower.includes('ቴክኖሎጂ'))) return true;
     if (tabId === 'Ecommerce' && (catLower.includes('e-commerce') || catLower.includes('ecommerce') || catLower.includes('shein') || catLower.includes('ሼን') || catLower.includes('ኢምፖርት'))) return true;
     if (tabId === 'YouTube' && (catLower.includes('youtube') || catLower.includes('ዩቲዩብ'))) return true;
     if (tabId === 'ContentCreation' && (catLower.includes('content') || catLower.includes('ይዘት'))) return true;
     if (tabId === 'VideoEditing' && (catLower.includes('video editing') || catLower.includes('ኤዲቲንግ') || catLower.includes('editing') || catLower.includes('capcut'))) return true;
+    if (tabId === 'Filmmaking' && (catLower.includes('filmmaking') || catLower.includes('film making') || catLower.includes('ፊልም'))) return true;
     if (tabId === 'Marketing' && (catLower.includes('marketing') || catLower.includes('ማርኬቲንግ') || catLower.includes('ads'))) return true;
-    if (tabId === 'Brokerage' && (catLower.includes('brokerage') || catLower.includes('real estate') || catLower.includes('ደላላ') || catLower.includes('ብሮከሬጅ'))) return true;
+    if (tabId === 'RealEstate' && (catLower.includes('real estate') || catLower.includes('ሪል እስቴት') || catLower.includes('ሪልእስቴት'))) return true;
+    if (tabId === 'Brokerage' && (catLower.includes('brokerage') || catLower.includes('ደላላ') || catLower.includes('ብሮከሬጅ'))) return true;
     if (tabId === 'Career' && (catLower.includes('career') || catLower.includes('ስራ') || catLower.includes('leadership') || catLower.includes('ካሪየር'))) return true;
     return catLower.includes(tabId.toLowerCase());
   };
 
   const getFilteredCourses = () => {
     const liveCoursesList = courses.filter(c => c.status !== 'coming_soon' && c.status !== 'Coming Soon' && !c.isComingSoon);
-    const comingSoonList = getComingSoonCourses().map(c => ({ ...c, isComingSoon: true, status: 'coming_soon' }));
+    const comingSoonList = getComingSoonCourses(courses).map(c => ({ ...c, isComingSoon: true, status: 'coming_soon' }));
     const seen = new Set<string>();
     const combined: any[] = [];
     liveCoursesList.forEach(c => {
@@ -293,13 +299,13 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
           <div className="relative z-30 bg-gradient-to-r from-amber-500 via-[#f9b03c] to-amber-500 text-slate-950 font-black text-xs sm:text-sm py-2.5 px-4 text-center shadow-lg animate-in slide-in-from-top-4 duration-500">
             <div className="max-w-4xl mx-auto flex items-center justify-center gap-2">
               <i className="fa-solid fa-gift text-sm sm:text-base animate-bounce"></i>
-              <span>እንኳን ደህና መጡ! ከጓደኛዎ በተላከ ጥቆማ ስለገቡ በሁሉም ኮርሶች ላይ ልዩ ቅናሽ ያገኛሉ! 🎉</span>
+              <span>እንኳን ደህና መጡ! ከጓደኛዎ በተላከ ጥቆማ ስለገቡ በሁሉም ኮርሶች ላይ ልዩ ቅናሽ ያገኛሉ!</span>
             </div>
           </div>
         )}
 
         {/* =========================================================================
-            🌟 HERO SECTION: BOLD SYNTHESIA-GRADE HEADLINE & SEARCH BAR
+             HERO SECTION: BOLD SYNTHESIA-GRADE HEADLINE & SEARCH BAR
            ========================================================================= */}
         <section className="pt-28 pb-12 sm:pt-36 sm:pb-16 relative z-10">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -368,7 +374,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
         </section>
         
         {/* =========================================================================
-            🌟 COURSE GRID WITH PREMIUM GLASSMORPHISM CARDS
+             COURSE GRID WITH PREMIUM GLASSMORPHISM CARDS
            ========================================================================= */}
         <section className="py-12 sm:py-20 relative z-10 flex-1">
           <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -516,7 +522,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
                                 ) : (
                                   <>
                                     <i className="fa-solid fa-star text-xs text-[#f9b03c] drop-shadow-[0_0_6px_#f9b03c]"></i>
-                                    <span className="font-black text-[#f9b03c] tracking-wide">★ {course.ratingAvg || '4.9'}</span>
+                                    <span className="font-black text-[#f9b03c] tracking-wide">{course.ratingAvg || '4.9'}</span>
                                   </>
                                 )}
                               </div>

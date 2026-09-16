@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { GraduationCap } from 'lucide-react';
 
 interface FormattedAiTextProps {
   text: string;
@@ -47,8 +48,9 @@ export default function FormattedAiText({ text, isUser = false }: FormattedAiTex
               <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 text-[10px] font-black uppercase tracking-wider">
-                      🎓 RECOMMENDED MASTERCLASS
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5 text-[#f9b03c]" aria-hidden="true" />
+                      <span>RECOMMENDED MASTERCLASS</span>
                     </span>
                     {price && (
                       <span className="text-xs font-black text-amber-300">

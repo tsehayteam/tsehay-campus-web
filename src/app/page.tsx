@@ -2,13 +2,15 @@ export const revalidate = 120;
 
 import HomeClient from './HomeClient';
 import { 
+  getLiveCoursesServer,
   getLiveLandingVideoDataServer, 
   getLivePortfolioVideosServer, 
   getLiveYouTubeVideosServer 
 } from '@/lib/serverCourses';
 
 export default async function HomePage() {
-  const [landingData, portfolioData, youtubeVideosData] = await Promise.all([
+  const [coursesData, landingData, portfolioData, youtubeVideosData] = await Promise.all([
+    getLiveCoursesServer(),
     getLiveLandingVideoDataServer(),
     getLivePortfolioVideosServer(),
     getLiveYouTubeVideosServer()
@@ -16,6 +18,7 @@ export default async function HomePage() {
 
   return (
     <HomeClient 
+      initialCourses={coursesData}
       initialLandingVideo={landingData.videoUrl} 
       initialLandingVideoThumbnail={landingData.thumbnail} 
       initialPortfolio={portfolioData}

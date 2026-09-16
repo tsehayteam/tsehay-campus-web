@@ -3,6 +3,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 import {
   getWelcomeEmailHtml,
+  getCourseEnrollmentEmailHtml,
   getCourseReminderEmailHtml,
   getAiReminderEmailHtml,
   getNewCourseAlertEmailHtml
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     if (!type) {
       return NextResponse.json(
-        { success: false, error: 'Campaign type is required (welcome | course_reminder | ai_reminder | new_course)' },
+        { success: false, error: 'Campaign type is required (welcome | course_enrollment | course_reminder | ai_reminder | new_course)' },
         { status: 400 }
       );
     }
@@ -34,8 +35,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // For non-welcome campaigns or multi-recipient broadcasts, require admin authorization
-    if (type !== 'welcome' || targetEmails.length > 1) {
+    // For non-transactional campaigns or multi-recipient broadcasts, require admin authorization
+    const isTransactionalSingle = (type === 'welcome' || type === 'course_enrollment') && targetEmails.length === 1;
+    if (!isTransactionalSingle) {
       const auth = await verifyAdminRequest(req);
       if (!auth.authorized) {
         return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401 });
@@ -43,12 +45,6 @@ export async function POST(req: NextRequest) {
     }
 
     const resendApiKey = process.env.RESEND_API_KEY;
-    /**
-     * 💡 ADMIN NOTICE REGARDING EMAIL SENDER PROFILE AVATAR / BRANDING:
-     * Inbox avatars (Gmail, Apple Mail) are controlled via the Google Workspace account or Gravatar profile
-     * associated with support@tsehaycampus.com. To display the official brand logo, configure the profile picture
-     * in Google Admin Console (admin.google.com) and on Gravatar (gravatar.com).
-     */
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>';
 
     let subject = '';
@@ -57,8 +53,22 @@ export async function POST(req: NextRequest) {
 
     switch (type) {
       case 'welcome':
-        subject = 'እንኳን ወደ ፀሐይ ካምፓስ በደህና መጡ! (Welcome to Tsehay Campus)';
+        subject = 'እንኳን ወደ Tsehay Campus በደህና መጡ! 🚀';
         htmlContent = getWelcomeEmailHtml({ name, email: targetEmails[0] });
+        break;
+
+      case 'course_enrollment':
+        const enrCourseTitle = payload?.courseTitle || 'የተመረጠው ኮርስ';
+        subject = `ምዝገባዎ ተረጋግጧል፡ ${enrCourseTitle} | Tsehay Campus`;
+        htmlContent = getCourseEnrollmentEmailHtml({
+          name,
+          email: targetEmails[0],
+          courseTitle: enrCourseTitle,
+          courseDescription: payload?.courseDescription,
+          price: payload?.price,
+          referenceId: payload?.referenceId,
+          accessUrl: payload?.accessUrl
+        });
         break;
 
       case 'course_reminder':

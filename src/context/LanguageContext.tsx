@@ -31,7 +31,7 @@ const translations: Record<string, Record<Language, string>> = {
   },
   'explore_courses': { am: 'ኮርሶችን ያስሱ', en: 'Explore Courses' },
   'learn_about_us': { am: 'ስለ እኛ ይመልከቱ', en: 'Learn about us' },
-  'practical_learning_badge': { am: '🎓 ከተግባራዊ ትምህርት ጋር', en: '🎓 WITH PRACTICAL LEARNING' },
+  'practical_learning_badge': { am: 'ከተግባራዊ ትምህርት ጋር', en: 'WITH PRACTICAL LEARNING' },
   'recognized_cert': { am: 'እውቅና ያለው ሰርተፍኬት', en: 'ACCREDITED CERTIFICATE' },
   'recognized': { am: 'Recognized', en: 'Recognized' },
   'students': { am: 'ተማሪዎች', en: 'STUDENTS' },
@@ -148,7 +148,8 @@ const translations: Record<string, Record<Language, string>> = {
   'cat_content_creation': { am: 'ኮንተንት ክሬሽን', en: 'Content Creation' },
   'cat_marketing': { am: 'ማርኬቲንግ', en: 'Marketing' },
   'cat_brokerage': { am: 'ደላላነት (Brokerage)', en: 'Brokerage' },
-  'cat_filmmaking': { am: 'ፊልም ሜኪንግ', en: 'Film Making' },
+  'cat_real_estate': { am: 'ሪል እስቴት (Real Estate)', en: 'Real Estate' },
+  'cat_filmmaking': { am: 'ፊልም ሜኪንግ (Filmmaking)', en: 'Filmmaking' },
   'cat_career': { am: 'የስራ ዕድገት', en: 'Career Development' },
   'cat_crypto': { am: 'ክሪፕቶ', en: 'Crypto' },
   'cat_tech': { am: 'ቴክኖሎጂ', en: 'Technology' },
@@ -166,6 +167,7 @@ const translations: Record<string, Record<Language, string>> = {
   'certificates': { am: 'ሰርተፍኬቶች', en: 'Certificates' },
   'settings': { am: 'ማስተካከያዎች', en: 'Settings' },
   'pro_member': { am: 'ፕሮ አባል', en: 'Pro Member' },
+  'free_member': { am: 'ነፃ አባል', en: 'Free Member' },
   'normal_student': { am: 'መደበኛ ተማሪ', en: 'Normal Student' },
 
   // Dashboard Header

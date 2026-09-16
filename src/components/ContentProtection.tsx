@@ -123,7 +123,7 @@ export default function ContentProtection() {
 
   return (
     <>
-      {/* 🛡️ Pitch Black Anti-Screen Recording & Anti-Screenshot Shield (Telegram & Banking Style) */}
+      {/* ️ Pitch Black Anti-Screen Recording & Anti-Screenshot Shield (Telegram & Banking Style) */}
       <div 
         id="tsehay-privacy-screen-shield"
         aria-hidden="true"

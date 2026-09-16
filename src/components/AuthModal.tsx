@@ -35,6 +35,31 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   const resetOtpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [showPassword, setShowPassword] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  const openTimestampRef = useRef<number>(0);
+  const backdropPointerDownRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      openTimestampRef.current = Date.now();
+      backdropPointerDownRef.current = false;
+    }
+  }, [isOpen]);
+
+  // Close modal smoothly on browser back navigation
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePopHistory = () => {
+      onClose();
+    };
+    window.addEventListener('popstate', handlePopHistory, { passive: true });
+    return () => window.removeEventListener('popstate', handlePopHistory);
+  }, [isOpen, onClose]);
   
   // 🌟 Smart User Existence Detection States
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -159,7 +184,11 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
               window.dispatchEvent(new CustomEvent('open-payment-modal', { detail: { course: courseObj } }));
             }, 250);
           } else if (pending.type === 'enroll_free') {
-            window.dispatchEvent(new CustomEvent('tsehay_enroll_free_course', { detail: pending }));
+            sessionStorage.removeItem('tsehay_pending_course_action');
+            sessionStorage.removeItem('tsehay_pending_action');
+            const targetCourseId = pending.courseId || pending.course?.id || 'digital_marketing_free';
+            window.location.href = `/dashboard?view=classroom&courseId=${encodeURIComponent(targetCourseId)}&lesson=0`;
+            return;
           } else if (pending.type === 'book_mentorship') {
             window.dispatchEvent(new CustomEvent('open-mentorship-payment', { detail: pending }));
           } else if (pending.type === 'buy_event_ticket' || pending.type === 'event_reg') {
@@ -173,6 +202,20 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
     onClose();
   }, [onClose]);
+
+  // Rollback incomplete sessions on modal close to prevent ghost logins
+  const handleSafeClose = useCallback(async () => {
+    if (pendingGoogleAuth || (isSignupMode && signupStep > 1)) {
+      try {
+        const cachedPhone = typeof window !== 'undefined' ? localStorage.getItem('tsehay_user_phone') : null;
+        if (!cachedPhone) {
+          await supabase.auth.signOut();
+        }
+      } catch (e) {}
+      setPendingGoogleAuth(null);
+    }
+    onClose();
+  }, [pendingGoogleAuth, isSignupMode, signupStep, onClose]);
 
   // 🌟 Smart User Existence Detection (API Call with debounce)
   const performSmartEmailCheck = async (targetEmail: string) => {
@@ -197,11 +240,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           displayName: data.displayName,
           photoURL: data.photoURL
         });
-
-        if (data.exists && isSignupMode && signupStep === 1) {
-          setIsSignupMode(false);
-          setError("");
-        }
       }
     } catch (e) {
       console.warn("Smart email check warning:", e);
@@ -242,28 +280,46 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   };
 
   const getFriendlyErrorMessage = (err: any) => {
-    const msg = err?.message || '';
+    const rawMsg = (err?.message || (typeof err === 'string' ? err : '')).toLowerCase();
     if (
-      msg.includes('Invalid login credentials') ||
-      msg.includes('invalid-credential') ||
-      msg.includes('user not found') ||
-      msg.includes('wrong-password')
+      rawMsg.includes('invalid login credentials') ||
+      rawMsg.includes('invalid-credential') ||
+      rawMsg.includes('user not found') ||
+      rawMsg.includes('wrong-password')
     ) {
       return 'የተሳሳተ የ Gmail አድራሻ ወይም የይለፍ ቃል አስገብተዋል። እባክዎ በትክክል ያረጋግጡ።';
     }
-    if (msg.includes('already registered') || msg.includes('User already registered') || msg.includes('email-already-in-use')) {
+    if (rawMsg.includes('already registered') || rawMsg.includes('user already registered') || rawMsg.includes('email-already-in-use')) {
       return 'ይህ የ Gmail አድራሻ አስቀድሞ ተመዝግቧል። እባክዎ የይለፍ ቃልዎን አስገብተው ይግቡ።';
     }
-    if (msg.includes('Password should be at least')) {
-      return 'የይለፍ ቃሉ በጣም አጭር ወይም ደካማ ነው። እባክዎ ቢያንስ 6 ፊደላት ወይም ቁጥሮች ይጠቀሙ።';
+    if (rawMsg.includes('password should be at least')) {
+      return 'የይለፍ ቃሉ በጣም አጭር ነው። እባክዎ ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)።';
     }
-    if (msg.includes('rate limit') || msg.includes('too many requests')) {
+    if (rawMsg.includes('rate limit') || rawMsg.includes('too many requests')) {
       return 'ብዙ ያልተሳኩ ሙከራዎች ተደርገዋል። እባክዎ ጥቂት ደቂቃዎችን ቆይተው በድጋሚ ይሞክሩ።';
     }
-    return msg || 'የሆነ ችግር አጋጥሟል። እባክዎ በድጋሚ ይሞክሩ።';
+    if (rawMsg.includes('network') || rawMsg.includes('failed to fetch') || rawMsg.includes('abort')) {
+      return 'የኔትወርክ ግንኙነት ችግር አጋጥሟል። እባክዎ ኢንተርኔትዎን አረጋግጠው እንደገና ይሞክሩ።';
+    }
+    // Strict privacy & brand clean: sanitize away any internal/database technical leaks
+    if (
+      rawMsg.includes('supabase') ||
+      rawMsg.includes('postgres') ||
+      rawMsg.includes('database') ||
+      rawMsg.includes('jwt') ||
+      rawMsg.includes('.co') ||
+      rawMsg.includes('auth/') ||
+      rawMsg.includes('schema') ||
+      rawMsg.includes('relation') ||
+      /supabase|postgres|vwkjmag/i.test(err?.message || '')
+    ) {
+      return 'የመግቢያ ሂደቱ አልተሳካም። እባክዎ በድጋሚ ይሞክሩ ወይም በ Google ይግቡ።';
+    }
+    const cleanMsg = err?.message || '';
+    return cleanMsg || 'የሆነ ችግር አጋጥሟል። እባክዎ በድጋሚ ይሞክሩ።';
   };
 
-  if (!isOpen) return null;
+  if (!hasMounted) return null;
 
   // Handle Forgot Password
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -313,10 +369,23 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setError("");
     setLoading(true);
     try {
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('tsehay_preloader_shown', 'true');
+          sessionStorage.setItem('tsehay_preloader_seen', 'true');
+          document.documentElement.classList.remove('tsehay-loading');
+
+          const currentOrigin = window.location.pathname + window.location.search + window.location.hash;
+          if (currentOrigin && !currentOrigin.startsWith('/auth')) {
+            sessionStorage.setItem('tsehay_auth_return_url', currentOrigin);
+          }
+        } catch (e) {}
+      }
+
       const { error: oAuthErr } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined
         }
       });
       if (oAuthErr) throw oAuthErr;
@@ -356,8 +425,12 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         setError(emailValidation.errorMessage || 'ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።');
         return;
       }
-      if (!password || password.length < 6) {
-        setError('የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።');
+      if (smartUserStatus?.exists && smartUserStatus.checkedEmail === cleanEmail.toLowerCase()) {
+        setError("ይህ ኢሜይል አስቀድሞ ተመዝግቧል! እባክዎ በቀጥታ ይግቡ ወይም የይለፍ ቃልዎን ከረሱ 'Forgot Password' የሚለውን ይጫኑ");
+        return;
+      }
+      if (!password || password.length < 8) {
+        setError('የይለፍ ቃል ቢያንስ 8 ፊደላትና ቁጥሮች መሆን አለበት (Min. 8 characters)።');
         return;
       }
       setSlideDirection('next');
@@ -477,7 +550,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         }
       }
 
-      setResendSuccessMessage("🎉 ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል! እንኳን ደህና መጡ!");
+      setResendSuccessMessage("ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል! እንኳን ደህና መጡ!");
       setTimeout(() => {
         setIsOtpMode(false);
         if (authedUser) {
@@ -659,8 +732,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     const cleanConfirm = confirmPassword.trim();
     const targetEmail = (registeredEmail || email).trim().toLowerCase();
 
-    if (!cleanPass || cleanPass.length < 6) {
-      setError('አዲሱ የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።');
+    if (!cleanPass || cleanPass.length < 8) {
+      setError('አዲሱ የይለፍ ቃል ቢያንስ 8 ፊደላትና ቁጥሮች መሆን አለበት (Min. 8 characters)።');
       return;
     }
     if (cleanPass !== cleanConfirm) {
@@ -700,6 +773,22 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           authedUser = formatSupabaseUser(signInData.user);
         }
       } catch (e) {}
+
+      // Fail-Safe Sync Login Fallback (handles any propagation lag)
+      if (!authedUser) {
+        try {
+          const syncRes = await fetch('/api/auth/sync-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: targetEmail, password: cleanPass })
+          });
+          const syncData = await syncRes.json().catch(() => ({}));
+          if (syncData?.success && syncData?.user) {
+            authedUser = formatSupabaseUser(syncData.user);
+            supabase.auth.signInWithPassword({ email: targetEmail, password: cleanPass }).catch(() => {});
+          }
+        } catch (syncErr) {}
+      }
 
       setResetStep('success');
       setResendSuccessMessage('የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!');
@@ -828,8 +917,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         setSignupStep(1);
         return;
       }
-      if (!password || password.length < 6) {
-        setError('የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።');
+      if (!password || password.length < 8) {
+        setError('የይለፍ ቃል ቢያንስ 8 ፊደላትና ቁጥሮች መሆን አለበት (Min. 8 characters)።');
         setSignupStep(2);
         return;
       }
@@ -923,23 +1012,42 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
     setLoading(true);
     try {
+      let authedUser: User | null = null;
       const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password
       });
 
-      if (signInErr) {
-        throw signInErr;
+      if (!signInErr && signInData?.user) {
+        authedUser = formatSupabaseUser(signInData.user);
+      } else {
+        // Fail-Safe: Verify against synced credentials in database before throwing error
+        try {
+          const syncRes = await fetch('/api/auth/sync-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: cleanEmail, password })
+          });
+          const syncData = await syncRes.json().catch(() => ({}));
+          if (syncData?.success && syncData?.user) {
+            authedUser = formatSupabaseUser(syncData.user);
+            supabase.auth.signInWithPassword({ email: cleanEmail, password }).catch(() => {});
+          } else if (signInErr) {
+            throw signInErr;
+          } else if (syncData?.error) {
+            throw new Error(syncData.error);
+          }
+        } catch (syncErr) {
+          if (signInErr) throw signInErr;
+          throw syncErr;
+        }
       }
 
-      if (signInData?.user) {
-        const formatted = formatSupabaseUser(signInData.user);
+      if (authedUser) {
         setError("");
-        if (formatted) {
-          handlePostAuthSuccess(formatted);
-        } else {
-          onClose();
-        }
+        handlePostAuthSuccess(authedUser);
+      } else {
+        onClose();
       }
     } catch (err: any) {
       console.error("Email login error:", err);
@@ -951,16 +1059,40 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
   return (
     <div 
-      className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md p-4 animate-in fade-in duration-200" 
-      onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
+      className={`fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md p-4 transition-all duration-200 ${
+        isOpen 
+          ? 'opacity-100 pointer-events-auto visible' 
+          : 'opacity-0 pointer-events-none invisible'
+      }`} 
+      onPointerDown={(e) => {
+        backdropPointerDownRef.current = (e.target === e.currentTarget);
+      }}
+      onMouseDown={(e) => {
+        backdropPointerDownRef.current = (e.target === e.currentTarget);
+      }}
+      onClick={(e) => { 
+        if (
+          e.target === e.currentTarget && 
+          backdropPointerDownRef.current && 
+          !loading && 
+          isOpen && 
+          (Date.now() - openTimestampRef.current > 350)
+        ) {
+          handleSafeClose(); 
+        }
+        backdropPointerDownRef.current = false;
+      }}
+      aria-hidden={!isOpen}
     >
-      <div className="bg-white dark:bg-[#050811] w-full max-w-lg rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col relative modal-animate border border-amber-400/30 dark:border-white/[0.1] max-h-[92vh] will-change-transform animate-[authModalPop_0.32s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+      <div className={`bg-white dark:bg-[#050811] w-full max-w-lg rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col relative modal-animate border border-amber-400/30 dark:border-white/[0.1] max-h-[92vh] will-change-transform transition-all duration-200 ${
+        isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-3 opacity-0'
+      }`}>
         
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-[#182a4d] to-[#0a1224] dark:bg-[#030509] p-5 sm:p-6 text-white text-center relative border-b border-amber-400/20 dark:border-white/[0.08] shrink-0">
           <button 
             type="button" 
-            onClick={onClose} 
+            onClick={handleSafeClose} 
             disabled={loading}
             className="absolute top-4 right-4 text-white/70 hover:text-white transition text-2xl z-50 p-2 cursor-pointer"
             title="ዝጋ (Close)"
@@ -976,7 +1108,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
             {isOtpMode
               ? 'የ 6-አሃዝ ማረጋገጫ ኮድ'
               : isResetMode
-              ? (resetStep === 'request' ? 'የይለፍ ቃል መቀየሪያ' : resetStep === 'otp' ? 'የ 6-አሃዝ ማረጋገጫ ኮድ' : resetStep === 'new_password' ? 'አዲስ የይለፍ ቃል ይፍጠሩ' : 'ተጠናቋል! 🎉')
+              ? (resetStep === 'request' ? 'የይለፍ ቃል መቀየሪያ' : resetStep === 'otp' ? 'የ 6-አሃዝ ማረጋገጫ ኮድ' : resetStep === 'new_password' ? 'አዲስ የይለፍ ቃል ይፍጠሩ' : 'ተጠናቋል!')
               : pendingGoogleAuth 
               ? 'ምዝገባዎን ያጠናቅቁ' 
               : isSignupMode 
@@ -992,7 +1124,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
               : pendingGoogleAuth 
               ? 'በ Google ተገናኝተዋል! የቀሩትን መረጃዎች ሞልተው ምዝገባዎን ያጠናቅቁ' 
               : isSignupMode 
-              ? (signupStep === 1 ? 'ደረጃ 1፡ ስለ እርስዎ ይንገሩን 👋' : signupStep === 2 ? 'ደረጃ 2፡ የ Gmail እና የይለፍ ቃል 🔐' : 'ደረጃ 3፡ የመጨረሻ ማጠቃለያ 🚀')
+              ? (signupStep === 1 ? 'ደረጃ 1፡ ስለ እርስዎ ይንገሩን' : signupStep === 2 ? 'ደረጃ 2፡ የ Gmail እና የይለፍ ቃል' : 'ደረጃ 3፡ የመጨረሻ ማጠቃለያ')
               : 'በ Google ወይም በ Gmail እና የይለፍ ቃል ይግቡ'}
           </p>
         </div>
@@ -1001,7 +1133,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         <div className="p-5 sm:p-7 overflow-y-auto custom-modal-scroll flex-1">
           
           {/* =========================================================================
-              🌟 0. DEDICATED PASSWORD RESET FLOW (Request -> OTP -> New Password -> Success)
+               0. DEDICATED PASSWORD RESET FLOW (Request -> OTP -> New Password -> Success)
               ========================================================================= */}
           {isResetMode ? (
             <div className="space-y-5 animate-in fade-in zoom-in-95 duration-300 py-1">
@@ -1206,7 +1338,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                         onChange={(e) => setNewPassword(e.target.value)} 
                         required 
                         autoFocus
-                        placeholder="ቢያንስ 6 ፊደላት ወይም ቁጥሮች" 
+                        minLength={8}
+                        placeholder="ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)" 
                         className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 pl-4 pr-11 text-sm outline-none focus:border-[#f9b03c] dark:text-white transition" 
                       />
                       <button 
@@ -1217,6 +1350,9 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                         <i className={`fa-solid ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                       </button>
                     </div>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                      ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)
+                    </p>
                   </div>
 
                   {/* Confirm Password */}
@@ -1389,7 +1525,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                 </div>
               )}
 
-              {/* 🌟 Smart Auto-Detection Status Toast */}
+              {/*  Smart Auto-Detection Status Toast */}
               {smartUserStatus && (
                 <div className={`p-3 rounded-2xl mb-4 text-xs font-bold flex items-center justify-between gap-2.5 animate-in fade-in duration-200 ${
                   smartUserStatus.exists
@@ -1400,8 +1536,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                     <i className={`fa-solid ${smartUserStatus.exists ? 'fa-user-check text-[#f9b03c]' : 'fa-sparkles text-blue-400'}`}></i>
                     <span className="truncate">
                       {smartUserStatus.exists
-                        ? `👋 እንኳን ደህና መጡ${smartUserStatus.displayName ? ` ${smartUserStatus.displayName}` : ''}! የይለፍ ቃልዎን ያስገቡ`
-                        : '✨ አዲስ ተጠቃሚ — በ 10 ሰከንዶች ውስጥ አካውንትዎን ይፍጠሩ'}
+                        ? `እንኳን ደህና መጡ${smartUserStatus.displayName ? ` ${smartUserStatus.displayName}` : ''}! የይለፍ ቃልዎን ያስገቡ`
+                        : 'አዲስ ተጠቃሚ — በ 10 ሰከንዶች ውስጥ አካውንትዎን ይፍጠሩ'}
                     </span>
                   </div>
                   {isCheckingEmail && (
@@ -1511,7 +1647,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
               {/* Form Container */}
               <form onSubmit={isResetMode ? handlePasswordReset : handleSubmit} className="space-y-4 px-1">
                 
-                {/* 🌟 1. SIGN-UP MULTI-STEP FLOW */}
+                {/*  1. SIGN-UP MULTI-STEP FLOW */}
                 {isSignupMode && !pendingGoogleAuth && !isResetMode ? (
                   <div key={`step-${signupStep}`} className={slideDirection === 'next' ? 'animate-in fade-in slide-in-from-right-4 duration-300 space-y-4' : 'animate-in fade-in slide-in-from-left-4 duration-300 space-y-4'}>
                     
@@ -1612,6 +1748,43 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                               {emailError}
                             </p>
                           )}
+
+                          {/* 🌟 Proactive Duplicate Email Alert */}
+                          {smartUserStatus?.exists && smartUserStatus.checkedEmail === email.trim().toLowerCase() && (
+                            <div className="mt-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 dark:bg-[#f9b03c]/15 dark:border-[#f9b03c]/40 text-left space-y-2.5 animate-in fade-in shadow-lg">
+                              <div className="flex items-start gap-2.5">
+                                <i className="fa-solid fa-circle-exclamation text-amber-500 dark:text-[#f9b03c] mt-0.5 shrink-0 text-base"></i>
+                                <span className="text-xs font-bold text-gray-900 dark:text-amber-100 leading-relaxed">
+                                  ይህ ኢሜይል አስቀድሞ ተመዝግቧል! እባክዎ በቀጥታ ይግቡ ወይም የይለፍ ቃልዎን ከረሱ &apos;Forgot Password&apos; የሚለውን ይጫኑ
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsSignupMode(false);
+                                    setError("");
+                                  }}
+                                  className="px-3.5 py-2 rounded-xl bg-[#f9b03c] hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                                >
+                                  <i className="fa-solid fa-right-to-bracket text-xs"></i>
+                                  <span>ቀጥታ ይግቡ (Login)</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsResetMode(true);
+                                    setResetStep('request');
+                                    setError("");
+                                  }}
+                                  className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition cursor-pointer flex items-center gap-1.5 border border-white/15 active:scale-95"
+                                >
+                                  <i className="fa-solid fa-key text-xs text-[#f9b03c]"></i>
+                                  <span>የይለፍ ቃል ረሱ? (Forgot Password)</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -1624,8 +1797,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                               value={password} 
                               onChange={(e) => setPassword(e.target.value)} 
                               required 
-                              placeholder="•••••••• (ቢያንስ 6 ፊደላት)" 
-                              minLength={6} 
+                              placeholder="ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)" 
+                              minLength={8} 
                               className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 pl-4 pr-11 text-sm outline-none focus:border-secondary dark:focus:border-[#f9b03c] dark:text-white transition" 
                             />
                             <button 
@@ -1636,6 +1809,9 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                               <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                             </button>
                           </div>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                            ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)
+                          </p>
                         </div>
 
                         <div className="flex items-center gap-3 pt-2">
@@ -1650,7 +1826,12 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                           <button 
                             type="button" 
                             onClick={handleNextStep}
-                            className="w-2/3 bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black py-3.5 rounded-2xl transition shadow-[0_0_20px_rgba(249,176,60,0.35)] flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer active:scale-[0.99]"
+                            disabled={Boolean(smartUserStatus?.exists && smartUserStatus.checkedEmail === email.trim().toLowerCase())}
+                            className={`w-2/3 py-3.5 rounded-2xl transition shadow-[0_0_20px_rgba(249,176,60,0.35)] flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-[0.99] ${
+                              smartUserStatus?.exists && smartUserStatus.checkedEmail === email.trim().toLowerCase()
+                                ? 'bg-gray-400 dark:bg-white/10 text-gray-200 dark:text-gray-500 cursor-not-allowed opacity-60'
+                                : 'bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black cursor-pointer'
+                            }`}
                           >
                             <span>ቀጣይ (Next: ማጠቃለያ)</span>
                             <i className="fa-solid fa-arrow-right text-xs"></i>
@@ -1731,7 +1912,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                             ) : (
                               <>
                                 <i className="fa-solid fa-user-plus"></i>
-                                <span>ምዝገባውን አጠናቅቅ 🎉</span>
+                                <span>ምዝገባውን አጠናቅቅ</span>
                               </>
                             )}
                           </button>

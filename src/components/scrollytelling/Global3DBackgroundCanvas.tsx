@@ -234,10 +234,25 @@ export default function Global3DBackgroundCanvas() {
 
     // 7. Render Loop with Fluid Lusion Physics & Reactive Morphing
     let animId: number;
+    let frameCount = 0;
+    let isTabVisible = !document.hidden;
     const clock = new THREE.Clock();
 
+    const onVisibilityChange = () => {
+      isTabVisible = !document.hidden;
+      if (isTabVisible) {
+        clock.start();
+        animate();
+      } else {
+        cancelAnimationFrame(animId);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     const animate = () => {
+      if (!isTabVisible) return;
       animId = requestAnimationFrame(animate);
+      frameCount++;
 
       const elapsedTime = clock.getElapsedTime();
 
@@ -269,17 +284,19 @@ export default function Global3DBackgroundCanvas() {
       ring2.rotation.z -= 0.0014;
       ring3.rotation.y += 0.0011;
 
-      // 🌊 Lusion Fluid Ribbon Wave Distortion
-      const posAttr = ribbonGeometry.attributes.position;
-      const timeOffset = elapsedTime * 0.8;
-      for (let i = 0; i < posAttr.count; i++) {
-        const u = (i % (ribbonSegmentsU + 1)) / ribbonSegmentsU;
-        const v = Math.floor(i / (ribbonSegmentsU + 1)) / ribbonSegmentsV;
-        const wave = Math.sin(u * 7 + timeOffset) * 45 + Math.cos(v * 6 + timeOffset * 1.2) * 35;
-        const mouseDistort = (mouseX * 0.15) * Math.sin(u * Math.PI) + (mouseY * 0.15) * Math.cos(v * Math.PI);
-        posAttr.setZ(i, wave + mouseDistort);
+      // 🌊 Lusion Fluid Ribbon Wave Distortion (Throttled to every 2nd frame for 60fps scroll smoothness)
+      if (frameCount % 2 === 0) {
+        const posAttr = ribbonGeometry.attributes.position;
+        const timeOffset = elapsedTime * 0.8;
+        for (let i = 0; i < posAttr.count; i++) {
+          const u = (i % (ribbonSegmentsU + 1)) / ribbonSegmentsU;
+          const v = Math.floor(i / (ribbonSegmentsU + 1)) / ribbonSegmentsV;
+          const wave = Math.sin(u * 7 + timeOffset) * 45 + Math.cos(v * 6 + timeOffset * 1.2) * 35;
+          const mouseDistort = (mouseX * 0.15) * Math.sin(u * Math.PI) + (mouseY * 0.15) * Math.cos(v * Math.PI);
+          posAttr.setZ(i, wave + mouseDistort);
+        }
+        posAttr.needsUpdate = true;
       }
-      posAttr.needsUpdate = true;
       ribbonMesh.rotation.z = Math.sin(elapsedTime * 0.2) * 0.08;
 
       // ✨ Infinite Particle Tunnel Wrapping with Mouse Magnetic Deflection
@@ -309,6 +326,7 @@ export default function Global3DBackgroundCanvas() {
 
     return () => {
       cancelAnimationFrame(animId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('resize', onResize);

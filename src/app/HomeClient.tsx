@@ -19,6 +19,7 @@ import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
+import EventBanner from '@/components/EventBanner';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
 import TypingCoursesHeadline from '@/components/TypingCoursesHeadline';
 
@@ -27,6 +28,7 @@ const YouTubeVideoSlider = dynamic(() => import('@/components/YouTubeVideoSlider
 const InstructorYouTubePortfolio = dynamic(() => import('@/components/InstructorYouTubePortfolio'), { ssr: false });
 const CoursePreviewModal = dynamic(() => import('@/components/CoursePreviewModal'), { ssr: false });
 const WaitlistModal = dynamic(() => import('@/components/WaitlistModal'), { ssr: false });
+const CinematicVideoModal = dynamic(() => import('@/components/CinematicVideoModal'), { ssr: false });
 import { 
   getCachedCourses, 
   saveCachedCourses, 
@@ -192,6 +194,7 @@ export default function HomeClient({
   const [previewModalCourse, setPreviewModalCourse] = useState<any>(null);
   const [selectedWaitlistCourse, setSelectedWaitlistCourse] = useState<ComingSoonCourse | null>(null);
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
+  const [activeTeaserVideo, setActiveTeaserVideo] = useState<{ url: string; title: string; poster?: string } | null>(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
   const [authCourseTarget, setAuthCourseTarget] = useState<any>(null);
@@ -365,19 +368,11 @@ export default function HomeClient({
         } catch (authErr) {}
 
         const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
-        if (typeof window !== 'undefined') {
-          window.location.href = targetUrl;
-        } else {
-          router.push(targetUrl);
-        }
+        router.push(targetUrl);
       } catch (err: any) {
          console.error("Free enrollment failed:", err);
          const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
-         if (typeof window !== 'undefined') {
-           window.location.href = targetUrl;
-         } else {
-           router.push(targetUrl);
-         }
+         router.push(targetUrl);
       } finally {
          setIsEnrolling(false);
       }
@@ -487,13 +482,16 @@ export default function HomeClient({
             </div>
           </div>
 
-          {/* 🌟 1. HERO VIDEO ENHANCEMENT: Perfectly integrated below headline, spanning wide, central */}
+          {/*  1. HERO VIDEO ENHANCEMENT: Perfectly integrated below headline, spanning wide, central */}
           <div className="w-full flex items-center justify-center my-4 sm:my-6">
             <Hero3DPopoutStage videoSrc={initialLandingVideo} initialThumbnail={initialLandingVideoThumbnail} />
           </div>
 
         </div>
       </section>
+
+      {/* 🌟 Dynamic Public Event Banner (Auto-synced with Admin & Database) */}
+      <EventBanner />
 
       {/* =========================================================================
           2. TRUST LOGO MARQUEE (Synthesia Style)
@@ -747,7 +745,7 @@ export default function HomeClient({
               >
                 {(() => {
                   const liveList = courses.filter(c => c.status !== 'coming_soon' && c.status !== 'Coming Soon' && !c.isComingSoon);
-                  const csList = getComingSoonCourses().map(c => ({ ...c, isComingSoon: true, status: 'coming_soon' }));
+                  const csList = getComingSoonCourses(courses).map(c => ({ ...c, isComingSoon: true, status: 'coming_soon' }));
                   const seen = new Set<string>();
                   const combined: any[] = [];
                   liveList.forEach(c => {
@@ -764,7 +762,7 @@ export default function HomeClient({
                       combined.push(c);
                     }
                   });
-                  return combined.slice(0, 8);
+                  return combined;
                 })().map((course, index) => {
                   const isComingSoon = Boolean(course.isComingSoon || course.status === 'Coming Soon' || course.status === 'coming_soon');
                   const isFree = !isComingSoon && (course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free');
@@ -887,7 +885,7 @@ export default function HomeClient({
                                   ) : (
                                     <>
                                       <i className="fa-solid fa-star text-xs text-[#f9b03c] drop-shadow-[0_0_6px_#f9b03c]"></i>
-                                      <span className="font-black text-[#f9b03c] tracking-wide">★ {course.ratingAvg || '4.9'}</span>
+                                      <span className="font-black text-[#f9b03c] tracking-wide">{course.ratingAvg || '4.9'}</span>
                                     </>
                                   )}
                                 </div>
@@ -954,18 +952,37 @@ export default function HomeClient({
                             </div>
                             <div className="flex items-center gap-2">
                               {isComingSoon ? (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedWaitlistCourse(course);
-                                    setIsWaitlistModalOpen(true);
-                                  }}
-                                  className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:shadow-[0_0_30px_rgba(249,176,60,0.6)] transition-all cursor-pointer active:scale-95 group"
-                                >
-                                  <i className="fa-solid fa-bell text-xs group-hover:rotate-12 transition-transform"></i>
-                                  <span>ተጠባባቂ ዝርዝር ውስጥ ግባ</span>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  {(course.video || course.videoUrl || course.previewVideoUrl) && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveTeaserVideo({
+                                          url: course.video || course.videoUrl || course.previewVideoUrl,
+                                          title: course.title,
+                                          poster: getCleanCourseImage(course)
+                                        });
+                                      }}
+                                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-400/30 flex items-center justify-center cursor-pointer shadow-sm active:scale-95 transition"
+                                      title="የቪዲዮ ቅድመ-ዕይታ ይመልከቱ (Watch Teaser Video)"
+                                    >
+                                      <i className="fa-solid fa-play text-red-500 text-xs"></i>
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedWaitlistCourse(course);
+                                      setIsWaitlistModalOpen(true);
+                                    }}
+                                    className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:shadow-[0_0_30px_rgba(249,176,60,0.6)] transition-all cursor-pointer active:scale-95 group"
+                                  >
+                                    <i className="fa-solid fa-bell text-xs group-hover:rotate-12 transition-transform"></i>
+                                    <span>ተጠባባቂ ዝርዝር ውስጥ ግባ</span>
+                                  </button>
+                                </div>
                               ) : (
                                 <>
                                   <button
@@ -1170,6 +1187,17 @@ export default function HomeClient({
         }}
         course={selectedWaitlistCourse}
       />
+
+      {/* Cinematic Teaser Video Modal */}
+      {activeTeaserVideo && (
+        <CinematicVideoModal
+          isOpen={Boolean(activeTeaserVideo)}
+          onClose={() => setActiveTeaserVideo(null)}
+          videoUrl={activeTeaserVideo.url}
+          title={activeTeaserVideo.title}
+          poster={activeTeaserVideo.poster}
+        />
+      )}
 
     </main>
   );

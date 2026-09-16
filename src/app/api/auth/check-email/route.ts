@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseServer, supabaseAdmin, supabaseServiceRoleKey } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +24,14 @@ export async function POST(req: NextRequest) {
     let photoURL = '';
     let uid = '';
 
+    const db = supabaseAdmin || supabaseServer;
+
+    // 1. Check profiles table (case-insensitive)
     try {
-      const { data: profile } = await supabaseServer
+      const { data: profile } = await db
         .from('profiles')
         .select('*')
-        .eq('email', cleanEmail)
+        .ilike('email', cleanEmail)
         .maybeSingle();
 
       if (profile) {
@@ -41,11 +44,50 @@ export async function POST(req: NextRequest) {
       console.warn('[check-email] Supabase profile check warning:', err?.message || err);
     }
 
+    // 2. Check users table if still not detected
+    if (!userExists) {
+      try {
+        const { data: userRow } = await db
+          .from('users')
+          .select('*')
+          .ilike('email', cleanEmail)
+          .maybeSingle();
+
+        if (userRow) {
+          userExists = true;
+          uid = userRow.id;
+          displayName = userRow.name || userRow.displayName || userRow.full_name || '';
+          photoURL = userRow.photoURL || userRow.avatar_url || '';
+        }
+      } catch (err: any) {
+        console.warn('[check-email] Supabase users table check warning:', err?.message || err);
+      }
+    }
+
+    // 3. Check Supabase Auth Users directly via Admin API if service role key exists
+    if (!userExists && supabaseServiceRoleKey) {
+      try {
+        const { data: { users }, error: listErr } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+        if (!listErr && users && users.length > 0) {
+          const matchedUser = users.find(u => u.email?.toLowerCase() === cleanEmail);
+          if (matchedUser) {
+            userExists = true;
+            uid = matchedUser.id;
+            displayName = matchedUser.user_metadata?.full_name || matchedUser.user_metadata?.name || '';
+            photoURL = matchedUser.user_metadata?.avatar_url || matchedUser.user_metadata?.picture || '';
+          }
+        }
+      } catch (adminAuthErr) {
+        console.warn('[check-email] Supabase Auth admin check warning:', adminAuthErr);
+      }
+    }
+
     return NextResponse.json({
       exists: userExists,
       email: cleanEmail,
       displayName,
-      photoURL
+      photoURL,
+      uid
     });
 
   } catch (error: any) {

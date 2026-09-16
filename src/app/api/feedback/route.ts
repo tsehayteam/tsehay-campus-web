@@ -54,9 +54,17 @@ export async function POST(req: NextRequest) {
       body = {};
     }
 
-    const { rating, type, category, message, userId, userName, userEmail, pageUrl, imageUrl, screenshotUrl, audioUrl, voiceNoteUrl } = body;
+    const { rating, type, category, message, userId, userName, userEmail, userRole, role, pageUrl, imageUrl, screenshotUrl, audioUrl, voiceNoteUrl } = body;
 
     const feedbackId = body.id || `fb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    
+    // 🌟 Identify whether feedback is from a registered Student vs casual Visitor
+    const finalUserRole = userRole || role || (
+      userId && !String(userId).startsWith('guest_') && userId !== 'anonymous' 
+        ? 'student' 
+        : 'visitor'
+    );
+
     const payload = {
       id: feedbackId,
       rating: Number(rating) || 5,
@@ -64,8 +72,10 @@ export async function POST(req: NextRequest) {
       category: category || type || 'general',
       message: (message || '').trim() || (audioUrl || voiceNoteUrl ? '🎙️ [የድምፅ መልዕክት]' : ''),
       userId: userId || 'guest_student',
-      userName: userName || (userEmail ? userEmail.split('@')[0] : 'ተማሪ'),
-      userEmail: userEmail || 'student@tsehaycampus.com',
+      userName: userName || (userEmail ? userEmail.split('@')[0] : (finalUserRole === 'student' ? 'ተማሪ' : 'ጎብኚ')),
+      userEmail: userEmail || (finalUserRole === 'student' ? 'student@tsehaycampus.com' : 'visitor@tsehaycampus.com'),
+      userRole: finalUserRole,
+      role: finalUserRole,
       pageUrl: pageUrl || '/',
       imageUrl: imageUrl || screenshotUrl || null,
       screenshotUrl: screenshotUrl || imageUrl || null,

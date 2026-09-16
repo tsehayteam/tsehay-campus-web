@@ -35,6 +35,9 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
 
     const feedbackId = `fb_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
+    const isStudentUser = Boolean(user && user.uid && !user.uid.startsWith('guest_'));
+    const userRole = isStudentUser ? 'student' : 'visitor';
+
     const feedbackPayload = {
       id: feedbackId,
       rating: Number(rating) || 5,
@@ -42,8 +45,10 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
       category: feedbackType,
       message: message.trim(),
       userId: user?.uid || 'guest_user',
-      userName: user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
-      userEmail: user?.email || 'student@tsehaycampus.com',
+      userName: user?.displayName || (user?.email ? user.email.split('@')[0] : (isStudentUser ? 'ተማሪ' : 'ጎብኚ')),
+      userEmail: user?.email || (isStudentUser ? 'student@tsehaycampus.com' : 'visitor@tsehaycampus.com'),
+      userRole,
+      role: userRole,
       status: 'pending',
       createdAt: new Date().toISOString(),
       createdAtClient: new Date().toISOString()
@@ -172,11 +177,11 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
                   })}
                 </div>
                 <span className="text-[11px] font-black text-[#f9b03c] mt-1.5 block">
-                  {rating === 5 ? '🌟 እጅግ በጣም ምርጥ (5/5 Excellent)' : 
-                   rating === 4 ? '👍 በጣም ጥሩ (4/5 Very Good)' : 
-                   rating === 3 ? '👌 ጥሩ (3/5 Good)' : 
-                   rating === 2 ? '😐 መሻሻል አለበት (2/5 Needs Improvement)' : 
-                   '👎 ደካማ (1/5 Poor)'}
+                  {rating === 5 ? 'እጅግ በጣም ምርጥ (5/5 Excellent)' : 
+                   rating === 4 ? 'በጣም ጥሩ (4/5 Very Good)' : 
+                   rating === 3 ? 'ጥሩ (3/5 Good)' : 
+                   rating === 2 ? 'መሻሻል አለበት (2/5 Needs Improvement)' : 
+                   'ደካማ (1/5 Poor)'}
                 </span>
               </div>
 
@@ -187,10 +192,10 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {[
-                    { id: 'course', label: '🎓 የኮርስ አስተያየት', desc: 'Course' },
-                    { id: 'bug', label: '🐛 የዌብሳይት ችግር', desc: 'Bug' },
-                    { id: 'idea', label: '💡 አዲስ ሀሳብ', desc: 'New Idea' },
-                    { id: 'general', label: '💬 አጠቃላይ', desc: 'General' },
+                    { id: 'course', label: 'የኮርስ አስተያየት', desc: 'Course' },
+                    { id: 'bug', label: 'የዌብሳይት ችግር', desc: 'Bug' },
+                    { id: 'idea', label: 'አዲስ ሀሳብ', desc: 'New Idea' },
+                    { id: 'general', label: 'አጠቃላይ', desc: 'General' },
                   ].map((item) => (
                     <button
                       key={item.id}

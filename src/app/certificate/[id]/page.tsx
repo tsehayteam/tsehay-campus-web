@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, use } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { Lightbulb } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -69,7 +70,7 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
   const courseTitle = certData?.courseTitle || 'Mastery Masterclass';
   const studentName = certData?.studentName || 'Tsehay Graduate';
 
-  const linkedInCaption = `🎓 Exciting Milestone! I'm thrilled to announce that I have successfully completed the "${courseTitle}" masterclass from Tsehay Campus!\n\n💡 Throughout this intensive practical training, I gained deep hands-on skills, built real-world projects, and achieved mastery certification.\n\n🔗 View & Verify my official credential:\n${publicUrl}\n\n#TsehayCampus #ContinuousLearning #ProfessionalGrowth #DigitalSkills #Certification #Achievement`;
+  const linkedInCaption = `Exciting Milestone! I'm thrilled to announce that I have successfully completed the "${courseTitle}" masterclass from Tsehay Campus!\n\nThroughout this intensive practical training, I gained deep hands-on skills, built real-world projects, and achieved mastery certification.\n\nView & Verify my official credential:\n${publicUrl}\n\n#TsehayCampus #ContinuousLearning #ProfessionalGrowth #DigitalSkills #Certification #Achievement`;
 
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {
@@ -419,7 +420,7 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
         </div>
       </main>
 
-      {/* 🚀 LINKEDIN SHARE POP-UP MODAL (Pre-filled Hook + Value + Payoff Caption) */}
+      {/*  LINKEDIN SHARE POP-UP MODAL (Pre-filled Hook + Value + Payoff Caption) */}
       {showLinkedInModal && (
         <div 
           className="fixed inset-0 z-[9999999] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300"
@@ -484,8 +485,9 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
               </button>
             </div>
 
-            <p className="text-[11px] text-slate-400 text-center leading-normal">
-              💡 "በ LinkedIn ላይ ለጥፍ" ሲጫኑ ጽሑፉ በራስ-ሰር ኮፒ ይደረጋል፤ በሊንክድኢን መስኮት ላይ <strong className="text-white">Ctrl + V (Paste)</strong> በማድረግ በቀላሉ ይለጥፉ!
+            <p className="text-[11px] text-slate-400 text-center leading-normal flex items-center justify-center gap-1.5">
+              <Lightbulb className="w-3.5 h-3.5 text-[#f9b03c] shrink-0" aria-hidden="true" />
+              <span>"በ LinkedIn ላይ ለጥፍ" ሲጫኑ ጽሑፉ በራስ-ሰር ኮፒ ይደረጋል፤ በሊንክድኢን መስኮት ላይ <strong className="text-white">Ctrl + V (Paste)</strong> በማድረግ በቀላሉ ይለጥፉ!</span>
             </p>
           </div>
         </div>

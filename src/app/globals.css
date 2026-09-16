@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-primary: var(--font-primary-amharic), 'Noto Sans Ethiopic', sans-serif;
+  --font-secondary: var(--font-secondary-heading), 'Plus Jakarta Sans', var(--font-primary-amharic), 'Noto Sans Ethiopic', sans-serif;
+  --font-tertiary: var(--font-tertiary-mono), 'JetBrains Mono', monospace;
+
+  /* Aliases for backwards compatibility & standard utility classes */
+  --font-sans: var(--font-primary-amharic), var(--font-secondary-heading), 'Noto Sans Ethiopic', 'Plus Jakarta Sans', sans-serif;
+  --font-heading: var(--font-secondary-heading), 'Plus Jakarta Sans', var(--font-primary-amharic), 'Noto Sans Ethiopic', sans-serif;
+  --font-body: var(--font-primary-amharic), 'Noto Sans Ethiopic', var(--font-secondary-heading), 'Plus Jakarta Sans', sans-serif;
+  --font-mono: var(--font-tertiary-mono), 'JetBrains Mono', monospace;
 
   --color-primary: #F9B03C;
   --color-secondary: #3268BA;
@@ -14,8 +21,6 @@
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
 
-  --font-heading: var(--font-heading-var), Montserrat, 'Noto Sans Ethiopic', sans-serif;
-  --font-body: var(--font-ethiopic-var), var(--font-heading-var), Inter, Roboto, sans-serif;
   --font-serif: 'Playfair Display', serif;
   --font-script: 'Great Vibes', cursive;
 
@@ -27,10 +32,33 @@
 }
 
 :root {
+  --font-primary-amharic: 'Noto Sans Ethiopic', sans-serif;
+  --font-secondary-heading: 'Plus Jakarta Sans', 'Noto Sans Ethiopic', sans-serif;
+  --font-tertiary-mono: 'JetBrains Mono', monospace;
+  --font-heading-var: var(--font-secondary-heading);
+  --font-ethiopic-var: var(--font-primary-amharic);
+  --font-geist-sans: var(--font-primary-amharic);
+  --font-geist-mono: var(--font-tertiary-mono);
+
   --background: #f8fafc;
   --foreground: #0f172a;
   --plyr-color-main: #f59e0b;
   --bodyBg: #f8fafc;
+}
+
+/* ==========================================================================
+   🖋️ Typography Utility Classes (Primary Amharic, Secondary Headings, Tertiary Mono)
+   ========================================================================== */
+.font-primary {
+  font-family: var(--font-primary-amharic), 'Noto Sans Ethiopic', sans-serif;
+}
+
+.font-secondary {
+  font-family: var(--font-secondary-heading), 'Plus Jakarta Sans', var(--font-primary-amharic), 'Noto Sans Ethiopic', sans-serif;
+}
+
+.font-tertiary {
+  font-family: var(--font-tertiary-mono), 'JetBrains Mono', monospace;
 }
 
 :root.dark, html.dark {
@@ -58,14 +86,102 @@ html.dark, html.dark body {
   color: #ededed !important;
 }
 
+/* ==========================================================================
+   🌟 World-Class Light Theme Elevation (Clean Neutral Grayscale & Soft Shadows)
+   ========================================================================== */
 html:not(.dark), html:not(.dark) body {
-  background-color: #f1f5f9 !important;
-  background: #f1f5f9 !important;
+  background-color: #f8fafc !important;
+  background: #f8fafc !important;
   color: #0f172a !important;
 }
 
+html:not(.dark) {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --bodyBg: #f8fafc;
+  --color-bodyBg: #f8fafc;
+  color-scheme: light;
+}
+
+/* Light mode card elevations & glass surfaces */
+html:not(.dark) .bg-slate-900,
+html:not(.dark) .bg-slate-900\/80,
+html:not(.dark) .bg-slate-900\/85,
+html:not(.dark) .bg-slate-900\/90,
+html:not(.dark) .bg-slate-900\/95,
+html:not(.dark) .bg-slate-950,
+html:not(.dark) .bg-slate-950\/80,
+html:not(.dark) .bg-slate-950\/90,
+html:not(.dark) .bg-slate-950\/95,
+html:not(.dark) .bg-\[\#030509\],
+html:not(.dark) .bg-\[\#070b14\],
+html:not(.dark) .bg-\[\#0a0f1d\],
+html:not(.dark) .bg-dark,
+html:not(.dark) .bg-darkCard {
+  background-color: #ffffff !important;
+  border-color: rgba(226, 232, 240, 0.85) !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03) !important;
+}
+
+/* Light mode text readability */
+html:not(.dark) .bg-slate-900 .text-white,
+html:not(.dark) .bg-slate-950 .text-white,
+html:not(.dark) .bg-\[\#030509\] .text-white,
+html:not(.dark) .bg-\[\#070b14\] .text-white,
+html:not(.dark) .text-slate-100 {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .bg-slate-900 .text-slate-400,
+html:not(.dark) .bg-slate-950 .text-slate-400,
+html:not(.dark) .bg-\[\#030509\] .text-slate-400,
+html:not(.dark) .bg-slate-900 .text-slate-300,
+html:not(.dark) .bg-slate-950 .text-slate-300 {
+  color: #475569 !important;
+}
+
+/* Light mode border refinement */
+html:not(.dark) .border-white\/10,
+html:not(.dark) .border-white\/15,
+html:not(.dark) .border-white\/20,
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-800\/80,
+html:not(.dark) .border-slate-700 {
+  border-color: rgba(226, 232, 240, 0.8) !important;
+}
+
+/* Light mode input & control refinement */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html:not(.dark) textarea,
+html:not(.dark) select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Light mode glassmorphism navbar & overlays */
+html:not(.dark) .glass-panel,
+html:not(.dark) .glassmorphism {
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-color: rgba(226, 232, 240, 0.85) !important;
+  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Light mode modal backdrops */
+html:not(.dark) .modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
 body {
-  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  font-family: var(--font-primary-amharic), 'Noto Sans Ethiopic', var(--font-body), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
   max-width: 100%;
   width: 100%;
@@ -2399,4 +2515,103 @@ img, video, canvas {
     transform: scale(1) translateY(0);
   }
 }
+
+/* ⚡ 60 FPS Viewport & Scroll Performance Optimizations */
+.optimize-viewport-render {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 700px;
+}
+
+.hardware-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* 🌼 Promo Banner Top Offset Coordination with Floating Menu Capsule */
+#tsehay-navbar-capsule {
+  transition: top 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.has-promo-banner:not(.scrolled-past-banner) #tsehay-navbar-capsule {
+  top: 4.8rem !important;
+}
+
+@media (min-width: 768px) {
+  html.has-promo-banner:not(.scrolled-past-banner) #tsehay-navbar-capsule {
+    top: 3.4rem !important;
+  }
+}
+
+/* 🌟 Dual-Color Alternating Glow Pulse for Top-Right Screen Expander */
+@keyframes dualPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(249, 176, 60, 0.45), 0 0 28px rgba(249, 176, 60, 0.2);
+    border-color: rgba(249, 176, 60, 0.75);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(50, 104, 186, 0.55), 0 0 30px rgba(50, 104, 186, 0.25);
+    border-color: rgba(50, 104, 186, 0.8);
+  }
+}
+
+/* 🌼 Promo Banner Floating & Breathing Animations */
+@keyframes bannerSubtleFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.015);
+  }
+}
+
+@keyframes flowerFloatAndGlow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+    box-shadow: 0 0 10px rgba(249, 176, 60, 0.35);
+  }
+  50% {
+    transform: translateY(-2.5px) rotate(6deg) scale(1.08);
+    box-shadow: 0 0 22px rgba(249, 176, 60, 0.7);
+  }
+}
+
+/* 🌟 Promo Code Pill Radiant Golden Glow Pulse */
+@keyframes goldPillGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(249, 176, 60, 0.35), inset 0 0 6px rgba(249, 176, 60, 0.15);
+    border-color: rgba(249, 176, 60, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(249, 176, 60, 0.75), inset 0 0 12px rgba(249, 176, 60, 0.35);
+    border-color: #f9b03c;
+  }
+}
+
+/* 🌟 Hero Video Unmute Button Breathing Pulse Glow (Golden Orange & Cobalt Blue) */
+@keyframes heroUnmuteBreathing {
+  0%, 100% {
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.9), 0 0 24px rgba(249, 176, 60, 0.45), 0 0 45px rgba(50, 104, 186, 0.25);
+    border-color: rgba(249, 176, 60, 0.85);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 20px 55px rgba(0, 0, 0, 0.95), 0 0 35px rgba(50, 104, 186, 0.6), 0 0 55px rgba(249, 176, 60, 0.35);
+    border-color: rgba(50, 104, 186, 0.9);
+    transform: scale(1.025);
+  }
+}
+
+@keyframes heroUnmuteIconPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(249, 176, 60, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(50, 104, 186, 0.85), 0 0 16px rgba(249, 176, 60, 0.5);
+    transform: scale(1.06);
+  }
+}
+
+
 

@@ -25,7 +25,7 @@ export default function ShareEventModal({
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tsehaycampus.com';
   const shareUrl = `${baseUrl}/events/${eventSlug}`;
-  const shareCaption = `ይህንን እጅግ አነቃቂ የTsehay Campus የቀጥታ ስልጠና አግኝቻለሁ! አብረን እንማር? እዚህ ይመዝገቡ👇\n\n📌 ${eventTitle}\n📅 ቀን፡ ${eventDate || 'በቅርቡ'}\n📍 ቦታ፡ ${eventLocation || 'Addis Ababa'}\n\n👉 `;
+  const shareCaption = `ይህንን እጅግ አነቃቂ የTsehay Campus የቀጥታ ስልጠና አግኝቻለሁ! አብረን እንማር? እዚህ ይመዝገቡ፦\n\n• ዝግጅት፡ ${eventTitle}\n• ቀን፡ ${eventDate || 'በቅርቡ'}\n• ቦታ፡ ${eventLocation || 'Addis Ababa'}\n\n`;
 
   const fullShareText = `${shareCaption}${shareUrl}`;
 

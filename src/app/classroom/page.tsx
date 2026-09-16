@@ -7,7 +7,14 @@ export default function ClassroomRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/dashboard');
+    try {
+      localStorage.setItem('tsehay_dashboard_last_view', 'classroom');
+    } catch (e) {}
+    if (typeof window !== 'undefined') {
+      window.location.replace('/dashboard?view=classroom');
+    } else {
+      router.replace('/dashboard?view=classroom');
+    }
   }, [router]);
 
   return (

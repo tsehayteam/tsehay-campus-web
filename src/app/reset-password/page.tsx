@@ -53,8 +53,8 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (cleanPass.length < 6) {
-      setError('አዲሱ የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።');
+    if (cleanPass.length < 8) {
+      setError('አዲሱ የይለፍ ቃል ቢያንስ 8 ፊደላትና ቁጥሮች መሆን አለበት (Min. 8 characters)።');
       return;
     }
 
@@ -86,18 +86,41 @@ function ResetPasswordForm() {
       setIsSuccess(true);
 
       // Attempt immediate sign in with Supabase
+      let authedUser: any = null;
       try {
         const { data: signData } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password: cleanPass
         });
         if (signData?.user) {
-          const formatted = formatSupabaseUser(signData.user);
-          window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: formatted }));
-          window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: formatted }));
+          authedUser = formatSupabaseUser(signData.user);
         }
       } catch (passErr) {
         console.warn('Password login notice:', passErr);
+      }
+
+      // Fail-Safe Sync Login Fallback
+      if (!authedUser) {
+        try {
+          const syncRes = await fetch('/api/auth/sync-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: cleanEmail, password: cleanPass })
+          });
+          const syncData = await syncRes.json().catch(() => ({}));
+          if (syncData?.success && syncData?.user) {
+            authedUser = formatSupabaseUser(syncData.user);
+            supabase.auth.signInWithPassword({ email: cleanEmail, password: cleanPass }).catch(() => {});
+          }
+        } catch (e) {}
+      }
+
+      if (authedUser) {
+        try {
+          localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(authedUser));
+        } catch (e) {}
+        window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: authedUser }));
+        window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: authedUser }));
       }
 
       // Check for pending actions in sessionStorage to return seamlessly
@@ -234,10 +257,10 @@ function ResetPasswordForm() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
-                minLength={6}
+                minLength={8}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="ቢያንስ 6 ፊደላት ወይም ቁጥሮች"
+                placeholder="ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)"
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 focus:border-[#f9b03c] rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none transition-colors pr-10"
               />
               <button
@@ -248,6 +271,9 @@ function ResetPasswordForm() {
                 <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
               </button>
             </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              ቢያንስ 8 ፊደላትና ቁጥሮች ይጠቀሙ (Min. 8 characters)
+            </p>
           </div>
 
           {/* Confirm New Password */}
@@ -259,7 +285,7 @@ function ResetPasswordForm() {
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 required
-                minLength={6}
+                minLength={8}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="የይለፍ ቃሉን በድጋሚ ያስገቡ"

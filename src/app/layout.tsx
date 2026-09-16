@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Script from "next/script";
-import { Geist, Geist_Mono, Montserrat, Noto_Sans_Ethiopic } from "next/font/google";
+import { Noto_Sans_Ethiopic, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
+import PromoBanner from "@/components/PromoBanner";
 import ContentProtection from "@/components/ContentProtection";
 import ReferralTracker from "@/components/ReferralTracker";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -14,37 +15,38 @@ import TsehayExperienceProvider from "@/components/experience/TsehayExperiencePr
 
 import GlobalModals from "@/components/GlobalModals";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const montserrat = Montserrat({
-  variable: "--font-heading-var",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
-
+// 1. Primary Amharic Font
 const notoSansEthiopic = Noto_Sans_Ethiopic({
-  variable: "--font-ethiopic-var",
   subsets: ["ethiopic"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-primary-amharic",
   display: "swap",
-  weight: ["400", "500", "600", "700", "800", "900"],
+});
+
+// 2. Secondary Display/Headings Font
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-secondary-heading",
+  display: "swap",
+});
+
+// 3. Tertiary Monospace Font (Prices, Metrics, Badges)
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-tertiary-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Tsehay Campus - ፀሐይ ካምፓስ | የኦንላይን እና የተግባር የክህሎት ማሰልጠኛ ፕላትፎርም",
-  description: "በፀሐይ ካምፓስ (Tsehay Campus) የቴክኖሎጂ፣ የዲጂታል ማርኬቲንግ፣ የኢኮሜርስ እና የቢዝነስ ክህሎቶችን በኦንላይን እና በተግባር ይማሩ። በ AI የታገዘ ዘመናዊ ስልጠና ወስደው ገቢዎን ያሳድጉ!",
+  title: "Tsehay Campus | የቀጣዩ ትውልድ የክህሎት ማዕከል",
+  description: "በTsehay Campus ዘመናዊና ተግባር-ተኮር የፊልም ስራ፣ ዲጂታል ማርኬቲንግ እና የቴክኖሎጂ ኮርሶችን ከባለሙያዎች ይማሩ።",
   keywords: [
     "Tsehay Campus", "ፀሐይ ካምፓስ", "Eyoub Sahle", "የኦንላይን ትምህርት", "የክህሎት ስልጠና", 
     "ዲጂታል ማርኬቲንግ", "ኢኮሜርስ", "Python", "Full-Stack", "Online Learning Ethiopia", 
-    "Ethiopian e-learning", "Social Media Marketing", "Dropshipping Ethiopia", "Digital Skills"
+    "Ethiopian e-learning", "Social Media Marketing", "Dropshipping Ethiopia", "Digital Skills",
+    "ፊልም ስራ", "ቪዲዮ ኤዲቲንግ"
   ],
   authors: [{ name: "Eyoub Sahle" }, { name: "Tsehay Campus Team" }],
   creator: "Tsehay Campus",
@@ -72,8 +74,8 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png"
   },
   openGraph: {
-    title: "Tsehay Campus - ፀሐይ ካምፓስ | የኦንላይን እና የተግባር የክህሎት ማሰልጠኛ",
-    description: "በማንኛውም ቦታና ሰዓት በሀገራችን ቋንቋ የቴክኖሎጂ፣ የቢዝነስ እና የዲጂታል ክህሎት ስልጠናዎችን በኦንላይን እና በተግባር የሚወስዱበት ዘመናዊ ፕላትፎርም።",
+    title: "Tsehay Campus | የቀጣዩ ትውልድ የክህሎት ማዕከል",
+    description: "በTsehay Campus ዘመናዊና ተግባር-ተኮር የፊልም ስራ፣ ዲጂታል ማርኬቲንግ እና የቴክኖሎጂ ኮርሶችን ከባለሙያዎች ይማሩ።",
     url: "https://www.tsehaycampus.com",
     siteName: "Tsehay Campus",
     images: [
@@ -81,7 +83,7 @@ export const metadata: Metadata = {
         url: "https://www.tsehaycampus.com/tc-logo.jpg",
         width: 1200,
         height: 1200,
-        alt: "Tsehay Campus - ፀሐይ ካምፓስ Logo"
+        alt: "Tsehay Campus Logo"
       }
     ],
     locale: "am_ET",
@@ -89,8 +91,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tsehay Campus - ፀሐይ ካምፓስ | የኦንላይን እና የተግባር የክህሎት ማሰልጠኛ",
-    description: "በሀገራችን ቋንቋ የቴክኖሎጂ፣ የቢዝነስ እና የዲጂታል ክህሎት ስልጠናዎች በኦንላይን እና በተግባር",
+    title: "Tsehay Campus | የቀጣዩ ትውልድ የክህሎት ማዕከል",
+    description: "በTsehay Campus ዘመናዊና ተግባር-ተኮር የፊልም ስራ፣ ዲጂታል ማርኬቲንግ እና የቴክኖሎጂ ኮርሶችን ከባለሙያዎች ይማሩ።",
     images: ["https://www.tsehaycampus.com/tc-logo.jpg"]
   },
   robots: {
@@ -115,7 +117,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="am" className="dark notranslate tsehay-loading" translate="no" suppressHydrationWarning>
+    <html
+      lang="am"
+      className={`${notoSansEthiopic.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} dark notranslate`}
+      translate="no"
+      suppressHydrationWarning
+    >
       <head>
         <meta name="google" content="notranslate" />
         <meta name="googlebot" content="notranslate" />
@@ -151,15 +158,67 @@ export default function RootLayout({
                 visibility: hidden !important;
                 pointer-events: none !important;
               }
-              #tsehay-page-wrapper {
-                transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s;
+              html:not(.tsehay-loading) #tsehay-lusion-preloader {
+                display: none !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
               }
+              #tsehay-page-wrapper {
+                transition: opacity 0.4s ease-out;
+              }
+            `,
+          }}
+        />
+        <script
+          id="tsehay-preloader-session-detector"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  // 1. Strict Back/Forward Navigation Guard: NEVER lock page or show preloader on history pop
+                  var nav = window.performance && window.performance.getEntriesByType && window.performance.getEntriesByType('navigation')[0];
+                  var isBackForward = (nav && nav.type === 'back_forward') || (window.performance && window.performance.navigation && window.performance.navigation.type === 2);
+                  if (isBackForward) {
+                    document.documentElement.classList.remove('tsehay-loading');
+                    return;
+                  }
+
+                  var p = location.pathname;
+                  var isLanding = (p === '/' || p === '');
+                  var seen = sessionStorage.getItem('tsehay_preloader_shown') === 'true' || 
+                             sessionStorage.getItem('tsehay_preloader_seen') === 'true' ||
+                             localStorage.getItem('tsehay_preloader_seen') === 'true';
+                  var userCached = Boolean(localStorage.getItem('tsehay_auth_user_cache'));
+
+                  if (isLanding && !seen && !userCached) {
+                    document.documentElement.classList.add('tsehay-loading');
+                  } else {
+                    document.documentElement.classList.remove('tsehay-loading');
+                  }
+
+                  // 2. Proactive listeners to immediately unlock on popstate (browser back/forward) or pageshow (BFCache restore)
+                  window.addEventListener('popstate', function() {
+                    document.documentElement.classList.remove('tsehay-loading');
+                    var pl = document.getElementById('tsehay-lusion-preloader');
+                    if (pl) pl.style.display = 'none';
+                  }, { passive: true });
+
+                  window.addEventListener('pageshow', function() {
+                    document.documentElement.classList.remove('tsehay-loading');
+                    var pl = document.getElementById('tsehay-lusion-preloader');
+                    if (pl) pl.style.display = 'none';
+                  }, { passive: true });
+
+                } catch (e) {
+                  document.documentElement.classList.remove('tsehay-loading');
+                }
+              })();
             `,
           }}
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} ${notoSansEthiopic.variable} antialiased pt-0 notranslate`}
+        className={`${notoSansEthiopic.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} font-primary antialiased pt-0 notranslate`}
         translate="no"
         suppressHydrationWarning
       >
@@ -217,11 +276,12 @@ export default function RootLayout({
         <LanguageProvider>
           <AuthProvider>
             <SmoothScrollAndScrollyProvider>
-              {/* 🌟 Lusion.co-Level Solar Gravity Atmosphere & Synesthetic Audio Engine */}
+              {/*  Lusion.co-Level Solar Gravity Atmosphere & Synesthetic Audio Engine */}
               <TsehayExperienceProvider />
               
               <div id="tsehay-page-wrapper" className="w-full min-h-screen">
                 <ContentProtection />
+                <PromoBanner />
                 <Navbar />
                 
                 <PageTransitionWrapper>

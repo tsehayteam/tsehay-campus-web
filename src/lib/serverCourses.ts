@@ -63,29 +63,62 @@ export async function getLiveCoursesServer(): Promise<any[]> {
       }
     } catch (e) {}
 
-    // 2. Fetch active courses from Supabase using projected columns
+    // 2. Fetch persistent coming soon courses from site_settings
+    let persistentComingSoon: any[] = [];
+    try {
+      const { data: csData } = await supabaseServer
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'coming_soon_courses')
+        .maybeSingle();
+      if (Array.isArray(csData?.data)) {
+        persistentComingSoon = csData.data;
+      }
+    } catch (e) {}
+
+    // 3. Fetch active courses from Supabase using projected columns
     const { data: sbCourses, error: sbErr }: any = await (supabaseServer
       .from('courses') as any)
       .select(COURSE_COLUMNS_PROJECTION)
       .order('created_at', { ascending: false });
 
+    let activeCourses: any[] = [];
     if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
-      const active = sbCourses
+      activeCourses = sbCourses
         .filter(c => c && c.id && c.status !== 'Deleted' && !c.isDeleted && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
         .map(c => {
           const desc = formatCourseDesc(c);
           return { ...c, desc, description: desc };
         });
-
-      if (active.length > 0) {
-        cachedServerCourses = { data: active, timestamp: Date.now() };
-        return active;
-      }
     }
 
-    if (deletedCourses.length === 0) {
-      return DEFAULT_COURSES;
+    if (activeCourses.length === 0 && deletedCourses.length === 0) {
+      activeCourses = DEFAULT_COURSES.filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
     }
+
+    // Merge persistent coming soon courses
+    const courseMap = new Map<string, any>();
+    activeCourses.forEach(c => {
+      const key = c.id || c.slug;
+      if (key) courseMap.set(key, c);
+    });
+
+    persistentComingSoon.forEach(cs => {
+      if (!cs || deletedCourses.includes(cs.id) || deletedCourses.includes(cs.slug)) return;
+      const key = cs.id || cs.slug;
+      courseMap.set(key, {
+        ...(courseMap.get(key) || {}),
+        ...cs,
+        status: 'coming_soon',
+        isComingSoon: true
+      });
+    });
+
+    const finalResult = Array.from(courseMap.values());
+    if (finalResult.length > 0) {
+      cachedServerCourses = { data: finalResult, timestamp: Date.now() };
+    }
+    return finalResult;
   } catch (error) {
     console.warn('getLiveCoursesServer error:', error);
   }

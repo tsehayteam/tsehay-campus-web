@@ -194,6 +194,45 @@ export async function handleLakiPayWebhook(request: Request): Promise<Response> 
           });
 
           console.log(`LakiPay Webhook: Successfully granted course ${courseId} access to user ${userId}`);
+
+          // 📧 Send Course Enrollment Confirmation Email
+          try {
+            const { sendCourseEnrollmentEmail } = await import('@/lib/email');
+            const { DEFAULT_COURSES } = await import('@/lib/courseCache');
+
+            const { data: profile } = await supabaseServer
+              .from('profiles')
+              .select('email, full_name, display_name')
+              .eq('id', userId)
+              .maybeSingle();
+
+            const { data: dbCourse } = await supabaseServer
+              .from('courses')
+              .select('title, desc, description')
+              .or(`id.eq.${courseId},slug.eq.${courseId}`)
+              .maybeSingle();
+
+            const defaultMatch = DEFAULT_COURSES.find(c => c.id === courseId || c.slug === courseId);
+            const courseTitle = dbCourse?.title || defaultMatch?.title || 'የፀሐይ ካምፓስ ስልጠና';
+            const courseDescription = dbCourse?.desc || dbCourse?.description || defaultMatch?.description || '';
+
+            const studentEmail = pendingDoc?.email || profile?.email;
+            const studentName = pendingDoc?.name || profile?.full_name || profile?.display_name || studentEmail?.split('@')[0];
+
+            if (studentEmail) {
+              sendCourseEnrollmentEmail({
+                to: studentEmail,
+                name: studentName,
+                courseTitle,
+                courseDescription,
+                price: amount || Number(pendingDoc?.price || 0),
+                referenceId: tx_ref,
+                accessUrl: `https://www.tsehaycampus.com/dashboard?view=classroom&courseId=${encodeURIComponent(courseId)}`
+              }).catch(e => console.warn('[LakiPay Course Email Dispatch Error]:', e));
+            }
+          } catch (mailErr) {
+            console.warn('[LakiPay Course Email Error]:', mailErr);
+          }
         } catch (err) {
           console.error("Error saving enrollment to Supabase:", err);
         }

@@ -3,26 +3,48 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTsehayInteractions } from '@/hooks/useTsehayInteractions';
+import { useLanguage } from '@/context/LanguageContext';
+import { Volume2, VolumeX } from 'lucide-react';
 
 /**
  * TsehayAudio - Synesthetic Sound System & Ethiopian Rhythmic Soundscape
- * - No Mute Button (Lusion.co philosophy: invisible, continuous, seamless audio)
- * - Rhythmic Beat & Ethiopian Touch: Algorithmic Tizita (ትዝታ) pentatonic melody,
- *   soft Kebero-inspired sub-kick, and traditional acoustic shaker syncopation
- * - Context-Aware Tracks:
- *   * Above the fold (Hero): Serene, spacious ambient solar drone & harp overture
- *   * Scrolled down (Courses/Preview/Workshops): Upbeat rhythmic groove swells
- *   * Video playback/viewport: Complete instant ducking to silence
- * - Interactive Audio Feedback: Distinct pleasant clicks for primary CTAs vs standard controls
+ * Features:
+ * - Algorithmic Tizita (ትዝታ) pentatonic melody, soft Kebero-inspired sub-kick,
+ *   and traditional acoustic shaker syncopation
+ * - Page Visibility API lifecycle: automatically fades out and pauses when tab is hidden,
+ *   smoothly cross-fades back in when tab is visible
+ * - User Preference Respect: strictly keeps audio muted if user previously muted it
+ * - Interactive Audio Feedback: clicks for primary CTAs vs standard controls
  */
 export default function TsehayAudio() {
   // Global non-invasive interaction observer
   useTsehayInteractions();
 
   const pathname = usePathname();
+  const { lang } = useLanguage();
+
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isDucked, setIsDucked] = useState(false);
   const [scrollMode, setScrollMode] = useState<'ambient' | 'groove'>('ambient');
+
+  // Mute state synced with localStorage
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('tsehay_ambient_sound_muted') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+  const [isTabHidden, setIsTabHidden] = useState(false);
+
+  const isMutedRef = useRef(isMuted);
+  const isTabHiddenRef = useRef(false);
+  const wasPlayingBeforeTabHideRef = useRef(false);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
@@ -35,9 +57,10 @@ export default function TsehayAudio() {
   const stepRef = useRef(0);
   const nextNoteTimeRef = useRef(0);
 
-  // Quiet / classroom / admin routes
+  // Quiet / classroom / admin / dashboard routes
   const isQuietRoute =
     pathname?.startsWith('/classroom') ||
+    pathname?.startsWith('/dashboard') ||
     pathname?.startsWith('/admin');
 
   // Ethiopian Tizita Pentatonic Scale Frequencies (Major Pentatonic: C, D, E, G, A)
@@ -98,9 +121,10 @@ export default function TsehayAudio() {
     highPassFilter.connect(ctx.destination);
     masterGainRef.current = masterGain;
 
-    // 2. Dedicated UI Click & Feedback Gain (Direct to destination, NEVER silenced by video ducking)
+    // 2. Dedicated UI Click & Feedback Gain (Silenced if user is muted)
+    const initialMuted = typeof window !== 'undefined' && localStorage.getItem('tsehay_ambient_sound_muted') === 'true';
     const uiGain = ctx.createGain();
-    uiGain.gain.setValueAtTime(0.22, ctx.currentTime);
+    uiGain.gain.setValueAtTime(initialMuted ? 0 : 0.22, ctx.currentTime);
     uiGain.connect(ctx.destination);
     uiGainRef.current = uiGain;
 
@@ -314,6 +338,46 @@ export default function TsehayAudio() {
     }
   }, [scrollMode]);
 
+  // Toggle Mute / Unmute with silky smooth gain ramping
+  const toggleMute = useCallback(() => {
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    isMutedRef.current = nextMuted;
+    try {
+      localStorage.setItem('tsehay_ambient_sound_muted', nextMuted ? 'true' : 'false');
+    } catch (e) {}
+
+    const ctx = audioCtxRef.current || initAudioEngine();
+    const master = masterGainRef.current;
+    if (ctx && master) {
+      const now = ctx.currentTime;
+      master.gain.cancelScheduledValues(now);
+      if (uiGainRef.current) {
+        uiGainRef.current.gain.cancelScheduledValues(now);
+      }
+      if (nextMuted) {
+        // Mute: smooth quick fade to silence
+        master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), now);
+        master.gain.linearRampToValueAtTime(0.0001, now + 0.25);
+        if (uiGainRef.current) {
+          uiGainRef.current.gain.setValueAtTime(0, now);
+        }
+      } else {
+        // Unmute: Resume ctx if needed, fade up to pleasant ambient volume
+        if (ctx.state === 'suspended' || (ctx as any).state === 'interrupted') {
+          ctx.resume().catch(() => {});
+        }
+        setIsUnlocked(true);
+        nextNoteTimeRef.current = ctx.currentTime + 0.1;
+        master.gain.setValueAtTime(0.0001, now);
+        master.gain.linearRampToValueAtTime(0.28, now + 0.6);
+        if (uiGainRef.current) {
+          uiGainRef.current.gain.setValueAtTime(0.22, now);
+        }
+      }
+    }
+  }, [initAudioEngine, isMuted]);
+
   // Autoplay Unlock on First User Action (Mobile touch/click/scroll) & Persistent Reload State
   useEffect(() => {
     const resumeAudioContext = () => {
@@ -348,16 +412,86 @@ export default function TsehayAudio() {
     window.addEventListener('keydown', handleUserGesture, { passive: true });
     window.addEventListener('tsehay-preloader-complete', resumeAudioContext);
 
-    // Visibility observer (mobile app switch / screen lock/unlock)
+    // 👁️ Page Visibility API Integration (Tab Visibility Audio Lifecycle)
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        const ctx = audioCtxRef.current || initAudioEngine();
-        if (ctx && (ctx.state === 'suspended' || (ctx as any).state === 'interrupted')) {
-          ctx.resume().catch(() => {});
+      const isHidden = document.hidden || document.visibilityState === 'hidden';
+      setIsTabHidden(isHidden);
+      isTabHiddenRef.current = isHidden;
+
+      const ctx = audioCtxRef.current;
+      const master = masterGainRef.current;
+
+      if (isHidden) {
+        // --- 1. TAB IS HIDDEN (User switched tabs or minimized browser) ---
+        const userMuted = isMutedRef.current || (typeof window !== 'undefined' && localStorage.getItem('tsehay_ambient_sound_muted') === 'true');
+        const wasAudible = isUnlocked && !userMuted && !isDucked && !isQuietRoute;
+        wasPlayingBeforeTabHideRef.current = wasAudible;
+
+        if (ctx && master) {
+          const now = ctx.currentTime;
+          // Smooth quick fade-out (150ms) to eliminate audio clicks/pops
+          master.gain.cancelScheduledValues(now);
+          master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), now);
+          master.gain.linearRampToValueAtTime(0.0001, now + 0.15);
+
+          // Gracefully suspend audio context slightly after fade-out to guarantee complete silence and save system resources
+          setTimeout(() => {
+            if ((document.hidden || document.visibilityState === 'hidden') && ctx.state === 'running') {
+              ctx.suspend().catch(() => {});
+            }
+          }, 180);
+        }
+      } else {
+        // --- 2. TAB IS VISIBLE (User returned to Tsehay Campus tab) ---
+        // REQUIREMENT 2: Respect user preference!
+        // If user manually muted the sound beforehand, DO NOT force play!
+        const userMuted = isMutedRef.current || (typeof window !== 'undefined' && localStorage.getItem('tsehay_ambient_sound_muted') === 'true');
+        if (userMuted || isQuietRoute || isDucked) {
+          if (master && ctx) {
+            const now = ctx.currentTime;
+            master.gain.cancelScheduledValues(now);
+            master.gain.setValueAtTime(0.0001, now);
+          }
+          return;
+        }
+
+        // Only restore if it was actively playing before tab switch or unlocked
+        if (wasPlayingBeforeTabHideRef.current || isUnlocked) {
+          if (ctx) {
+            // Re-align nextNoteTime to avoid backlog burst of notes upon resume
+            nextNoteTimeRef.current = ctx.currentTime + 0.1;
+
+            if (ctx.state === 'suspended' || (ctx as any).state === 'interrupted') {
+              ctx.resume().then(() => {
+                if (master && audioCtxRef.current && !isMutedRef.current && !isDucked && !isQuietRoute) {
+                  const now = audioCtxRef.current.currentTime;
+                  nextNoteTimeRef.current = now + 0.1;
+                  master.gain.cancelScheduledValues(now);
+                  master.gain.setValueAtTime(0.0001, now);
+                  master.gain.linearRampToValueAtTime(0.28, now + 0.6); // Smooth cross-fade in (600ms)
+                }
+              }).catch(() => {});
+            } else if (ctx.state === 'running') {
+              if (master) {
+                const now = ctx.currentTime;
+                nextNoteTimeRef.current = now + 0.1;
+                master.gain.cancelScheduledValues(now);
+                master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), now);
+                master.gain.linearRampToValueAtTime(0.28, now + 0.6); // Smooth cross-fade in (600ms)
+              }
+            }
+          }
         }
       }
     };
+
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', () => {
+      if (document.hidden) handleVisibility();
+    });
+    window.addEventListener('focus', () => {
+      if (!document.hidden) handleVisibility();
+    });
 
     // Initial check: if audio was previously unlocked, attempt instant initialization
     try {
@@ -376,7 +510,7 @@ export default function TsehayAudio() {
       window.removeEventListener('tsehay-preloader-complete', resumeAudioContext);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [initAudioEngine]);
+  }, [initAudioEngine, isUnlocked, isDucked, isQuietRoute]);
 
   // Universal Audio Ducking Listener (Hero Video, YouTube Embeds, Modals, HTMLMediaElements)
   useEffect(() => {
@@ -417,11 +551,13 @@ export default function TsehayAudio() {
 
     const handleMediaPauseOrEnd = (e: Event) => {
       if (e.target instanceof HTMLMediaElement) {
-        const allMedia = Array.from(document.querySelectorAll('video, audio')) as HTMLMediaElement[];
-        const anyAudible = allMedia.some(m => !m.paused && !m.ended && !m.muted && m.volume > 0);
-        if (!anyAudible) {
-          setIsDucked(false);
-        }
+        setTimeout(() => {
+          const allMedia = Array.from(document.querySelectorAll('video, audio')) as HTMLMediaElement[];
+          const anyAudible = allMedia.some(m => !m.paused && !m.ended && !m.muted && m.volume > 0);
+          if (!anyAudible) {
+            setIsDucked(false);
+          }
+        }, 50);
       }
     };
 
@@ -439,19 +575,34 @@ export default function TsehayAudio() {
       }
     };
 
-    // 4. YouTube Iframe postMessage state sync (captures embedded YouTube play/pause events)
+    // 4. Embedded Iframe postMessage state sync (captures Bunny Stream, Player.js, and YouTube play/pause events)
     const handleWindowMessage = (event: MessageEvent) => {
       try {
         let data = event.data;
         if (typeof data === 'string') {
-          data = JSON.parse(data);
+          try { data = JSON.parse(data); } catch (_) {}
         }
+        // Bunny Stream
+        if (data?.channel === 'bunnystream') {
+          if (data.event === 'play') {
+            setIsDucked(true);
+          } else if (data.event === 'pause' || data.event === 'ended') {
+            setIsDucked(false);
+          }
+        }
+        // Player.js
+        if (data?.context === 'player.js') {
+          if (data.event === 'play') {
+            setIsDucked(true);
+          } else if (data.event === 'pause' || data.event === 'ended') {
+            setIsDucked(false);
+          }
+        }
+        // YouTube API onStateChange
         if (data?.event === 'onStateChange') {
-          // 1 = PLAYING
           if (data.info === 1) {
             setIsDucked(true);
           } else if (data.info === 2 || data.info === 0) {
-            // 2 = PAUSED, 0 = ENDED
             setIsDucked(false);
           }
         }
@@ -487,23 +638,26 @@ export default function TsehayAudio() {
     if (!ctx || !master) return;
 
     const now = ctx.currentTime;
-    const shouldMute = isQuietRoute || isDucked;
+    const shouldMute = isQuietRoute || isDucked || isMuted || isTabHidden;
 
     master.gain.cancelScheduledValues(now);
     if (shouldMute) {
-      // Fast, clean fade to silence (0.25s) when any media has sound
+      // Fast, clean fade to silence (0.25s) when muted, hidden, or media has sound
       master.gain.linearRampToValueAtTime(0.0001, now + 0.25);
-    } else if (isUnlocked) {
-      // Smooth restoration to pleasant ambient volume (0.8s) when media pauses or leaves view
+    } else if (isUnlocked && !isTabHidden) {
+      // Smooth restoration to pleasant ambient volume (0.8s) when active
       master.gain.linearRampToValueAtTime(0.28, now + 0.8);
     }
-  }, [isQuietRoute, isDucked, isUnlocked]);
+  }, [isQuietRoute, isDucked, isUnlocked, isMuted, isTabHidden]);
 
-  // 🔔 Distinct Interactive Click & Hover Audio Feedback (Always active, NEVER blocked by video ducking)
+  // 🔔 Tactile UI Audio Feedback (Subtle High-Tech Click SFX - strictly silenced when muted)
   useEffect(() => {
     // Crisp Tactile Micro-Tick on Hover
     const onHover = () => {
       if (isQuietRoute) return;
+      if (isMutedRef.current || (typeof window !== 'undefined' && localStorage.getItem('tsehay_ambient_sound_muted') === 'true')) {
+        return;
+      }
       const ctx = audioCtxRef.current;
       const uiGain = uiGainRef.current;
       if (!ctx || !uiGain || ctx.state !== 'running') return;
@@ -512,21 +666,25 @@ export default function TsehayAudio() {
       const osc = ctx.createOscillator();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(1800, now);
-      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.035);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.025);
 
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.02, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+      gain.gain.setValueAtTime(0.015, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.028);
 
       osc.connect(gain);
       gain.connect(uiGain);
       osc.start(now);
-      osc.stop(now + 0.045);
+      osc.stop(now + 0.030);
     };
 
-    // Primary vs Standard Button Click Feedback
+    // Primary vs Standard Button Click Feedback (Subtle, High-Tech Tap / Click SFX)
     const onPulse = (e: Event) => {
       if (isQuietRoute) return;
+      // 🔇 Audio Constraint & Mute Sync: Completely muted if global mute toggle is on
+      if (isMutedRef.current || (typeof window !== 'undefined' && localStorage.getItem('tsehay_ambient_sound_muted') === 'true')) {
+        return;
+      }
       const ctx = audioCtxRef.current;
       const uiGain = uiGainRef.current;
       if (!ctx || !uiGain) return;
@@ -538,37 +696,52 @@ export default function TsehayAudio() {
       const now = ctx.currentTime;
 
       if (isPrimary) {
-        // Golden Tizita Tri-Tone Chime for Primary CTAs (C5 + E5 + G5)
-        [523.25, 659.25, 783.99].forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.015);
+        // 🌟 Subtle High-Tech Primary Double Micro-Tap (Crisp, Ultra-Short, Zero Ear Strain)
+        // Micro-tap 1 (1500Hz -> 750Hz over 22ms)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(1500, now);
+        osc1.frequency.exponentialRampToValueAtTime(750, now + 0.022);
+        gain1.gain.setValueAtTime(0.0001, now);
+        gain1.gain.linearRampToValueAtTime(0.042, now + 0.002);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.024);
+        osc1.connect(gain1);
+        gain1.connect(uiGain);
+        osc1.start(now);
+        osc1.stop(now + 0.026);
 
-          const gain = ctx.createGain();
-          gain.gain.setValueAtTime(0.001, now + idx * 0.015);
-          gain.gain.linearRampToValueAtTime(0.08, now + idx * 0.015 + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.015 + 0.22);
-
-          osc.connect(gain);
-          gain.connect(uiGain);
-          osc.start(now + idx * 0.015);
-          osc.stop(now + idx * 0.015 + 0.25);
-        });
+        // Micro-tap 2 (1800Hz -> 880Hz over 20ms, offset by 16ms)
+        const t2 = now + 0.016;
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1800, t2);
+        osc2.frequency.exponentialRampToValueAtTime(880, t2 + 0.020);
+        gain2.gain.setValueAtTime(0.0001, t2);
+        gain2.gain.linearRampToValueAtTime(0.045, t2 + 0.002);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, t2 + 0.022);
+        osc2.connect(gain2);
+        gain2.connect(uiGain);
+        osc2.start(t2);
+        osc2.stop(t2 + 0.025);
       } else {
-        // Crisp Modern Tactile Snap for standard controls & links (1200Hz -> 550Hz, zero mud)
+        // 🌟 Modern Tactile High-Tech Tap / Click SFX (Buttons, Navbar Links, Cards, Tab Switches)
+        // Single ultra-short, smooth micro-click (1350Hz -> 540Hz over 26ms, gain 0.04)
         const osc = ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1200, now);
-        osc.frequency.exponentialRampToValueAtTime(550, now + 0.035);
-
         const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.09, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1350, now);
+        osc.frequency.exponentialRampToValueAtTime(540, now + 0.026);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.04, now + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.028);
 
         osc.connect(gain);
         gain.connect(uiGain);
         osc.start(now);
-        osc.stop(now + 0.045);
+        osc.stop(now + 0.030);
       }
     };
 
@@ -581,6 +754,45 @@ export default function TsehayAudio() {
     };
   }, [isQuietRoute]);
 
-  // Zero DOM rendering: Seamless invisible audio experience like lusion.co (no mute button)
-  return null;
+  if (isQuietRoute) return null;
+
+  const isActuallyPlaying = isUnlocked && !isMuted && !isDucked && !isTabHidden;
+
+  return (
+    <div className="fixed bottom-5 left-5 z-40 select-none notranslate" translate="no">
+      <button
+        type="button"
+        onClick={toggleMute}
+        className={`group relative flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full backdrop-blur-2xl border transition-all duration-300 shadow-[0_8px_24px_rgba(0,0,0,0.6)] cursor-pointer active:scale-90 ${
+          isActuallyPlaying
+            ? 'bg-[#0b1222]/90 hover:bg-[#0f1b33] border-[#f9b03c]/60 hover:border-[#f9b03c] text-[#f9b03c] shadow-[0_0_20px_rgba(249,176,60,0.3)] ring-1 ring-[#f9b03c]/30'
+            : isMuted
+            ? 'bg-black/80 hover:bg-black/95 border-white/10 text-slate-400 hover:text-white'
+            : 'bg-[#080d1a]/85 hover:bg-[#0c1428] border-white/15 hover:border-[#f9b03c]/50 text-slate-300'
+        }`}
+        title={
+          isMuted
+            ? (lang === 'en' ? 'Unmute Background Music' : 'የጀርባ ሙዚቃ ክፈት')
+            : (lang === 'en' ? 'Mute Background Music' : 'የጀርባ ሙዚቃ አጥፋ')
+        }
+        aria-label={
+          isMuted
+            ? (lang === 'en' ? 'Unmute Background Music' : 'የጀርባ ሙዚቃ ክፈት')
+            : (lang === 'en' ? 'Mute Background Music' : 'የጀርባ ሙዚቃ አጥፋ')
+        }
+      >
+        {/* Ambient pulse bloom when audio is playing */}
+        {isActuallyPlaying && (
+          <span className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#f9b03c]/25 via-amber-500/20 to-[#3268ba]/25 blur-sm pointer-events-none -z-10 animate-pulse" />
+        )}
+
+        {/* Minimalist Icon: Volume2 when playing, VolumeX when muted */}
+        {isActuallyPlaying ? (
+          <Volume2 className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+        ) : (
+          <VolumeX className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+        )}
+      </button>
+    </div>
+  );
 }

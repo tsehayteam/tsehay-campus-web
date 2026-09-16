@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import AuthModal from "./AuthModal";
 import SmartSearchInput from "./SmartSearchInput";
 import { getCachedCourses, subscribeToCourses } from "@/lib/courseCache";
@@ -151,10 +151,20 @@ export default function Navbar() {
     window.addEventListener('close-nav-curtain', handleCloseCurtain);
     window.addEventListener('toggle-nav-curtain', handleToggleCurtain);
 
+    const handlePopHistory = () => {
+      setIsCurtainOpen(false);
+      setIsSearchActive(false);
+      setShowProfileDropdown(false);
+    };
+    window.addEventListener('popstate', handlePopHistory, { passive: true });
+    window.addEventListener('pageshow', handlePopHistory, { passive: true });
+
     return () => {
       window.removeEventListener('open-nav-curtain', handleOpenCurtain);
       window.removeEventListener('close-nav-curtain', handleCloseCurtain);
       window.removeEventListener('toggle-nav-curtain', handleToggleCurtain);
+      window.removeEventListener('popstate', handlePopHistory);
+      window.removeEventListener('pageshow', handlePopHistory);
     };
   }, []);
 
@@ -223,6 +233,13 @@ export default function Navbar() {
       }
     });
 
+    if (typeof window !== 'undefined') {
+      window.openAuthModal = (isSignUp: boolean) => {
+        setIsSignupMode(isSignUp);
+        setIsAuthModalOpen(true);
+      };
+    }
+
     return () => {
       window.removeEventListener('open-auth-modal', handleOpenAuth);
       document.removeEventListener('mousedown', handleClickOutside);
@@ -241,10 +258,26 @@ export default function Navbar() {
     localStorage.setItem('theme', newTheme);
   };
 
-  const openAuthModal = (signup: boolean) => {
+  const openAuthModal = useCallback((signup: boolean) => {
     setIsSignupMode(signup);
     setIsAuthModalOpen(true);
-  };
+  }, []);
+
+  const handleLoginClick = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+    if (e && typeof e.stopPropagation === 'function') {
+      e.stopPropagation();
+    }
+    setIsAuthModalOpen(true);
+    setIsSignupMode(false);
+    setIsCurtainOpen(false);
+    setIsSearchActive(false);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-auth-modal', { 
+        detail: { isSignupMode: false, isSignUp: false } 
+      }));
+    }
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -275,19 +308,21 @@ export default function Navbar() {
       {/* ===================== 1. FLOATING CAPSULE (ONLY WHEN CLOSED) ===================== */}
       {!isCurtainOpen && (
         <div 
+          id="tsehay-navbar-capsule"
           className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-50 animate-in fade-in"
           title="ዋና ማውጫ / Menu"
         >
           {/* Subtle #f9b03c ambient breathing glow */}
           <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#f9b03c]/40 via-[#3268ba]/30 to-[#f9b03c]/40 blur-md pointer-events-none animate-pulse" />
 
+          {/* Main Menu Capsule Button */}
           <button
             type="button"
             onClick={openCurtain}
-            className="relative pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)]"
+            className="relative pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)] touch-manipulation"
           >
             <span className="text-xs sm:text-[13px] font-black tracking-wide whitespace-nowrap flex items-center gap-1.5 font-heading text-white group-hover:text-[#f9b03c] transition-colors">
-              🧭 ዋና ማውጫ ▾
+              ዋና ማውጫ ▾
             </span>
           </button>
         </div>
@@ -454,15 +489,12 @@ export default function Navbar() {
               {!mounted || !user ? (
                 <div className="hidden sm:block">
                   <Tilt3DLoginButton
-                    onClick={() => {
-                      openAuthModal(false);
-                      closeCurtain();
-                    }}
+                    onClick={handleLoginClick}
                     label={lang === 'en' ? 'Login' : 'ይግቡ (Login)'}
                   />
                 </div>
               ) : (
-                <div className="relative" ref={profileDropdownRef}>
+                <div className="hidden sm:block relative" ref={profileDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setShowProfileDropdown(prev => !prev)}
@@ -556,7 +588,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* ===================== 📱 MOBILE MENU PANEL ===================== */}
+          {/* =====================  MOBILE MENU PANEL ===================== */}
           <div key={`mobile-nav-${animationKey}`} className="xl:hidden pb-3 sm:pb-4 pt-2 space-y-3.5 max-w-lg mx-auto w-full flex flex-col items-center text-center">
             
             {/* Drag Bar Indicator */}
@@ -657,10 +689,7 @@ export default function Navbar() {
                 <div className="w-full flex justify-center">
                   <Tilt3DLoginButton
                     className="w-full justify-center py-3.5"
-                    onClick={() => {
-                      openAuthModal(false);
-                      closeCurtain();
-                    }}
+                    onClick={handleLoginClick}
                     label={t('login') || (lang === 'en' ? 'Login / Sign Up' : 'ግባ ወይም ተመዝገብ (Login / Sign Up)')}
                   />
                 </div>
@@ -735,7 +764,7 @@ export default function Navbar() {
             className="pointer-events-auto bg-black/95 text-white border-x border-b border-[#f9b03c]/40 hover:border-[#f9b03c] text-xs font-black font-heading px-6 py-2 rounded-b-2xl shadow-[0_12px_25px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.95),0_0_25px_rgba(249,176,60,0.45)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
             title="ዋና ማውጫ ዝጋ / Close Menu"
           >
-            <span>🧭 ዋና ማውጫ ዝጋ ▴</span>
+            <span>ዋና ማውጫ ዝጋ ▴</span>
           </button>
         </div>
       )}

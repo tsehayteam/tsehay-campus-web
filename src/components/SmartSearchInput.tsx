@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation';
 import { searchCourses } from '@/lib/smartSearch';
 import { getCourseSlug, getCachedCourses, getCleanCourseImage, subscribeToCourses } from '@/lib/courseCache';
+import { Lightbulb } from 'lucide-react';
 
 interface SmartSearchInputProps {
   courses?: any[];
@@ -225,7 +226,7 @@ export default function SmartSearchInput({
         </div>
       </div>
 
-      {/* 🌟 Futuristic YouTube/Algolia Style Live Predictive Autocomplete Dropdown */}
+      {/*  Futuristic YouTube/Algolia Style Live Predictive Autocomplete Dropdown */}
       {isOpen && (
         <div 
           className={`absolute top-full mt-2 bg-black/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[10001] max-h-[420px] overflow-y-auto animate-in slide-in-from-top-2 duration-200 divide-y divide-white/10 ${
@@ -303,8 +304,9 @@ export default function SmartSearchInput({
                             {course.category || 'General'}
                           </span>
                           {course.matchedReason && (
-                            <span className="text-[10px] font-bold text-[#f9b03c] truncate">
-                              💡 {course.matchedReason}
+                            <span className="text-[10px] font-bold text-[#f9b03c] truncate flex items-center gap-1">
+                              <Lightbulb className="w-3 h-3 text-[#f9b03c] shrink-0" aria-hidden="true" />
+                              <span>{course.matchedReason}</span>
                             </span>
                           )}
                         </div>

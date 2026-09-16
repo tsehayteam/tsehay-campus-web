@@ -6,7 +6,6 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import Navbar from '@/components/Navbar';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
@@ -14,6 +13,7 @@ import TypingCourseTitle from '@/components/TypingCourseTitle';
 import FormattedAiText from '@/components/FormattedAiText';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses, formatCleanCategory, fetchLiveCoursesClient } from '@/lib/courseCache';
 import { parseVideoEmbedUrl } from '@/lib/videoParser';
+import { Crown, Sparkles } from 'lucide-react';
 
 function CoursePreviewContent() {
   const routeParams = useParams();
@@ -39,6 +39,27 @@ function CoursePreviewContent() {
   const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+
+  // Auto-duck / silence background ambient audio when course preview video is playing
+  useEffect(() => {
+    if (isPlaying) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+      }
+    } else {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      }
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      }
+    };
+  }, [isPlaying]);
 
   useEffect(() => {
     if (!id) {
@@ -208,6 +229,36 @@ function CoursePreviewContent() {
     };
   }, [user, course]);
 
+  // 🌟 Auto-Apply Promo Code and Auto-Open Checkout Modal from URL params or event
+  useEffect(() => {
+    if (!course || typeof window === 'undefined') return;
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const promo = params.get('promo') || params.get('coupon') || params.get('code');
+      const shouldBuy = params.get('buy') === '1' || params.get('buy') === 'true' || 
+                        params.get('checkout') === '1' || params.get('checkout') === 'true';
+
+      if (promo) {
+        localStorage.setItem('tsehay_applied_referral_code', promo.trim().toUpperCase());
+      }
+
+      if (shouldBuy) {
+        setShowPaymentModal(true);
+      }
+    } catch (e) {
+      console.warn('Error processing course promo query parameters:', e);
+    }
+  }, [course]);
+
+  useEffect(() => {
+    const handleOpenPayment = () => {
+      setShowPaymentModal(true);
+    };
+    window.addEventListener('open-payment-modal', handleOpenPayment);
+    return () => window.removeEventListener('open-payment-modal', handleOpenPayment);
+  }, []);
+
   const handleBuyClick = () => {
     if (!user) {
       try {
@@ -332,7 +383,6 @@ function CoursePreviewContent() {
 
   return (
     <div className="min-h-screen bg-[#030509] text-white flex flex-col selection:bg-[#f9b03c]/30 selection:text-[#f9b03c]">
-      <Navbar />
 
       {/* Dynamic Background Atmosphere (Dual Golden Yellow & Royal Blue Mesh) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
@@ -378,17 +428,19 @@ function CoursePreviewContent() {
                 </div>
 
                 {isFree ? (
-                  <span className="bg-[#3268ba] text-white text-xs font-black px-3.5 py-1.5 rounded-full shadow-[0_0_15px_rgba(50,104,186,0.4)] border border-white/20">
-                    ★ FREE
+                  <span className="bg-[#3268ba] text-white text-xs font-black px-3.5 py-1.5 rounded-full shadow-[0_0_15px_rgba(50,104,186,0.4)] border border-white/20 inline-flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-white" aria-hidden="true" />
+                    <span>FREE</span>
                   </span>
                 ) : (
-                  <span className="bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-xs font-black px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(249,176,60,0.5)]">
-                    👑 PREMIUM
+                  <span className="bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-xs font-black px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(249,176,60,0.5)] inline-flex items-center gap-1.5">
+                    <Crown className="w-3.5 h-3.5 text-slate-950" aria-hidden="true" />
+                    <span>PREMIUM</span>
                   </span>
                 )}
               </div>
 
-              {/* 🌟 Cinematic Typing Title with Alternating Dual Glow Pulse */}
+              {/*  Cinematic Typing Title with Alternating Dual Glow Pulse */}
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-black font-heading tracking-tight leading-[1.15] text-white min-h-[70px] sm:min-h-[90px]">
                 <TypingCourseTitle title={course.title} />
               </h1>

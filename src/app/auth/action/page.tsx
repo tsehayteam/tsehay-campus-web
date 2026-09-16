@@ -83,10 +83,10 @@ function AuthActionHandler() {
             <i className="fa-solid fa-check"></i>
           </div>
           <h2 className="text-xl font-black text-white font-heading">
-            🎉 ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል!
+            ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል!
           </h2>
           <p className="text-xs sm:text-sm text-slate-300">
-            ወ ወደ ፀሐይ ካምፓስ መማሪያ ክፍልዎ በቀጥታ እየተላለፉ ነው...
+            ወደ ፀሐይ ካምፓስ መማሪያ ክፍልዎ በቀጥታ እየተላለፉ ነው...
           </p>
           <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden mt-4">
             <div className="bg-emerald-500 h-full animate-pulse w-full"></div>

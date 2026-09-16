@@ -12,12 +12,15 @@ import {
   getRemainingSeats, 
   formatDriveImageUrl,
   getCachedUserTickets,
-  saveCachedUserTicket
+  saveCachedUserTicket,
+  getDeletedEventIds,
+  recordDeletedEventId
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import TwoStageEventBookingModal from '@/components/TwoStageEventBookingModal';
+import { Ban } from 'lucide-react';
 import { parseVideoEmbedUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
 
 export default function UpcomingEventsSection() {
@@ -51,19 +54,75 @@ export default function UpcomingEventsSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  // 🌟 User Booked Tickets Map: eventId/slug -> EventTicket
-  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => getCachedUserTickets());
+  // 🌟 User Booked Tickets Map: eventId/slug -> EventTicket (Strictly User-Scoped)
+  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => user?.id ? getCachedUserTickets(user.id) : {});
 
   // 🌟 Live Real-time Events Listener (Firestore + Local Broadcast + API)
   const [registrationsCountByEvent, setRegistrationsCountByEvent] = useState<Record<string, number>>({});
 
+  // 🔒 Strict User-Session Ticket Isolation
+  useEffect(() => {
+    if (!user || !user.id) {
+      setUserBookedTickets({});
+      return;
+    }
+
+    const cached = getCachedUserTickets(user.id);
+    setUserBookedTickets(cached);
+
+    let isMounted = true;
+    const fetchUserTickets = async () => {
+      try {
+        const query = user.email 
+          ? `userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(user.email)}`
+          : `userId=${encodeURIComponent(user.id)}`;
+        const res = await fetch(`/api/events/tickets?${query}`, { cache: 'no-store' });
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data.tickets && Array.isArray(data.tickets)) {
+            const map: Record<string, EventTicket> = {};
+            data.tickets.forEach((t: EventTicket) => {
+              if (t.eventId) map[t.eventId] = t;
+              if (t.eventSlug) map[t.eventSlug] = t;
+              saveCachedUserTicket(t, user.id);
+            });
+            setUserBookedTickets(map);
+          }
+        }
+      } catch (e) {}
+    };
+    fetchUserTickets();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
+
   useEffect(() => {
     const handleEventsUpdate = (e: any) => {
+      if (e.detail?.deletedId || e.detail?.deletedSlug) {
+        const dId = (e.detail.deletedId || '').toLowerCase();
+        const dSlug = (e.detail.deletedSlug || '').toLowerCase();
+        if (dId) recordDeletedEventId(dId);
+        if (dSlug) recordDeletedEventId(dSlug);
+        setEvents(prev => prev.filter(ev => {
+          const cId = (ev.id || '').toLowerCase();
+          const cSlug = (ev.slug || '').toLowerCase();
+          return cId !== dId && (!dSlug || cSlug !== dSlug);
+        }));
+      }
       if (e.detail?.events && Array.isArray(e.detail.events)) {
-        setEvents(e.detail.events);
+        const deletedIds = getDeletedEventIds();
+        setEvents(e.detail.events.filter((ev: TsehayEvent) => 
+          !deletedIds.includes((ev.id || '').toLowerCase()) && 
+          !(ev.slug && deletedIds.includes(ev.slug.toLowerCase()))
+        ));
       } else if (e.detail?.event) {
         const single = e.detail.event;
-        setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
+        const deletedIds = getDeletedEventIds();
+        if (!deletedIds.includes((single.id || '').toLowerCase()) && !(single.slug && deletedIds.includes(single.slug.toLowerCase()))) {
+          setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
+        }
       }
     };
     window.addEventListener('tsehay_events_updated', handleEventsUpdate);
@@ -85,11 +144,29 @@ export default function UpcomingEventsSection() {
     try {
       bc = new BroadcastChannel('tsehay_events_sync');
       bc.onmessage = (msg) => {
+        if (msg.data?.type === 'EVENT_DELETED' || msg.data?.deletedId || msg.data?.deletedSlug) {
+          const dId = (msg.data.deletedId || '').toLowerCase();
+          const dSlug = (msg.data.deletedSlug || '').toLowerCase();
+          if (dId) recordDeletedEventId(dId);
+          if (dSlug) recordDeletedEventId(dSlug);
+          setEvents(prev => prev.filter(ev => {
+            const cId = (ev.id || '').toLowerCase();
+            const cSlug = (ev.slug || '').toLowerCase();
+            return cId !== dId && (!dSlug || cSlug !== dSlug);
+          }));
+        }
         if (msg.data?.events && Array.isArray(msg.data.events)) {
-          setEvents(msg.data.events);
+          const deletedIds = getDeletedEventIds();
+          setEvents(msg.data.events.filter((ev: TsehayEvent) => 
+            !deletedIds.includes((ev.id || '').toLowerCase()) && 
+            !(ev.slug && deletedIds.includes(ev.slug.toLowerCase()))
+          ));
         } else if (msg.data?.event) {
           const single = msg.data.event;
-          setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
+          const deletedIds = getDeletedEventIds();
+          if (!deletedIds.includes((single.id || '').toLowerCase()) && !(single.slug && deletedIds.includes(single.slug.toLowerCase()))) {
+            setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
+          }
         }
         if (msg.data?.type === 'ticket_registered' && msg.data?.eventId) {
           const eId = msg.data.eventId;
@@ -104,7 +181,7 @@ export default function UpcomingEventsSection() {
     } catch (e) {}
 
     const handleTicketSaved = (e: any) => {
-      if (e.detail?.ticket) {
+      if (e.detail?.ticket && user?.id && (!e.detail.userId || e.detail.userId === user.id)) {
         const t = e.detail.ticket as EventTicket;
         setUserBookedTickets(prev => ({
           ...prev,
@@ -119,25 +196,48 @@ export default function UpcomingEventsSection() {
     let rootList: TsehayEvent[] = [];
 
     const syncAndSet = () => {
+      const deletedIds = getDeletedEventIds();
+      const isDeleted = (idOrSlug?: string) => {
+        if (!idOrSlug || deletedIds.length === 0) return false;
+        return deletedIds.includes(idOrSlug.trim().toLowerCase());
+      };
+
+      // 🌟 Authoritative sync: If server returned an active events list, use it directly (purging any deleted events)
+      if (artifactList && artifactList.length > 0) {
+        const cleanServerList = artifactList
+          .filter(ev => ev && (ev.id || ev.slug) && !isDeleted(ev.id) && !isDeleted(ev.slug))
+          .map(ev => ({
+            ...ev,
+            image: formatDriveImageUrl(ev.image) || ev.image || ''
+          }));
+        setEvents(cleanServerList);
+        try {
+          localStorage.setItem('tsehay_events_cache', JSON.stringify(cleanServerList));
+        } catch (e) {}
+        return;
+      }
+
       const eventMap = new Map<string, TsehayEvent>();
 
-      // 1. Preload DEFAULT_EVENTS
+      // 1. Preload DEFAULT_EVENTS ONLY if not permanently deleted
       DEFAULT_EVENTS.forEach(ev => {
-        eventMap.set(ev.id, { ...ev });
-        if (ev.slug) eventMap.set(ev.slug, { ...ev });
+        if (!isDeleted(ev.id) && !isDeleted(ev.slug)) {
+          eventMap.set(ev.id, { ...ev });
+          if (ev.slug) eventMap.set(ev.slug, { ...ev });
+        }
       });
 
-      // 2. Overlay LocalStorage Cached Events
+      // 2. Overlay LocalStorage Cached Events (filtered)
       getCachedEvents().forEach(ev => {
-        if (ev && (ev.id || ev.slug)) {
+        if (ev && (ev.id || ev.slug) && !isDeleted(ev.id) && !isDeleted(ev.slug)) {
           const key = ev.id || ev.slug!;
           eventMap.set(key, { ...(eventMap.get(key) || {}), ...ev });
         }
       });
 
-      // 3. Overlay Live Firestore Documents (Root & Artifact)
+      // 3. Overlay Live API / Firestore Documents (Root & Artifact)
       [...artifactList, ...rootList].forEach(ev => {
-        if (ev && (ev.id || ev.slug)) {
+        if (ev && (ev.id || ev.slug) && !isDeleted(ev.id) && !isDeleted(ev.slug)) {
           const key = ev.id || ev.slug!;
           const existing: any = eventMap.get(key) || (ev.slug ? eventMap.get(ev.slug) : null) || {};
           const cleanImage = formatDriveImageUrl(ev.image) || ev.image || existing.image;
@@ -155,16 +255,16 @@ export default function UpcomingEventsSection() {
 
       const uniqueMap = new Map<string, TsehayEvent>();
       eventMap.forEach(v => {
-        if (v && v.id) uniqueMap.set(v.id, v);
+        if (v && v.id && !isDeleted(v.id) && !isDeleted(v.slug)) {
+          uniqueMap.set(v.id, v);
+        }
       });
 
       const combined = Array.from(uniqueMap.values());
-      if (combined.length > 0) {
-        setEvents(combined);
-        try {
-          localStorage.setItem('tsehay_events_cache', JSON.stringify(combined));
-        } catch (e) {}
-      }
+      setEvents(combined);
+      try {
+        localStorage.setItem('tsehay_events_cache', JSON.stringify(combined));
+      } catch (e) {}
     };
 
     // 1. Fetch live events from API
@@ -173,7 +273,10 @@ export default function UpcomingEventsSection() {
         const res = await fetch('/api/events');
         if (res.ok) {
           const data = await res.json();
-          if (data.events && Array.isArray(data.events) && data.events.length > 0) {
+          if (data.deletedIds && Array.isArray(data.deletedIds)) {
+            data.deletedIds.forEach((d: string) => recordDeletedEventId(d));
+          }
+          if (data.events && Array.isArray(data.events)) {
             artifactList = data.events;
             syncAndSet();
           }
@@ -549,8 +652,9 @@ export default function UpcomingEventsSection() {
 
             const userTicket = userBookedTickets[event.id] || (event.slug ? userBookedTickets[event.slug] : null);
             const isAlreadyRegistered = Boolean(userTicket);
-            const hasVideo = Boolean(event.videoUrl || (event.image && isMediaVideo(event.image)));
-            const effectiveVideoUrl = event.videoUrl || (event.image && isMediaVideo(event.image) ? event.image : '');
+            const cleanVid = (event.videoUrl || '').trim();
+            const hasVideo = Boolean(cleanVid && cleanVid !== 'none' && cleanVid !== 'yelewim');
+            const effectiveVideoUrl = hasVideo ? cleanVid : '';
             const posterUrl = formatEventBannerUrl(event.image) || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
 
             return (
@@ -593,8 +697,9 @@ export default function UpcomingEventsSection() {
                           <span>ተመዝግበዋል</span>
                         </span>
                       ) : isSoldOut ? (
-                        <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md animate-pulse">
-                          ❌ አልቋል (Sold Out)
+                        <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md animate-pulse flex items-center gap-1">
+                          <Ban className="w-3 h-3 text-white" aria-hidden="true" />
+                          <span>አልቋል (Sold Out)</span>
                         </span>
                       ) : null}
                     </div>
@@ -670,17 +775,23 @@ export default function UpcomingEventsSection() {
                   {/* Action Buttons Row */}
                   <div className="flex items-center gap-2.5">
                     {isAlreadyRegistered ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveTicket(userTicket);
-                          setIsTicketModalOpen(true);
-                        }}
-                        className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.35)] border border-emerald-400/40 active:scale-95"
-                      >
-                        <i className="fa-solid fa-circle-check text-white text-sm"></i>
-                        <span>ቲኬት ቆርጠዋል (Already Registered)</span>
-                      </button>
+                      <div className="flex-1 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[11px] font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                          <span>Already Purchased / ትኬት ተቆርጧል</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTicket(userTicket);
+                            setIsTicketModalOpen(true);
+                          }}
+                          className="w-full py-3 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.35)] border border-emerald-400/40 active:scale-95"
+                        >
+                          <i className="fa-solid fa-ticket text-white text-xs"></i>
+                          <span>ትኬትህን እይ (View Ticket)</span>
+                        </button>
+                      </div>
                     ) : isSoldOut ? (
                       <button
                         type="button"
@@ -735,14 +846,34 @@ export default function UpcomingEventsSection() {
         initialAttendeeEmail={attendeeEmail}
         initialAttendeePhone={attendeePhone}
         onSuccess={(ticket) => {
-          saveCachedUserTicket(ticket);
-          if (selectedEvent) {
-            setUserBookedTickets(prev => ({
+          if (user?.id) {
+            saveCachedUserTicket(ticket, user.id);
+            if (selectedEvent) {
+              setUserBookedTickets(prev => ({
+                ...prev,
+                [selectedEvent.id]: ticket,
+                ...(selectedEvent.slug ? { [selectedEvent.slug]: ticket } : {})
+              }));
+            }
+          }
+          // Instant Live Count Decrement
+          const eId = selectedEvent?.id || ticket.eventId;
+          const eSlug = selectedEvent?.slug || ticket.eventSlug;
+          if (eId) {
+            setRegistrationsCountByEvent(prev => ({
               ...prev,
-              [selectedEvent.id]: ticket,
-              ...(selectedEvent.slug ? { [selectedEvent.slug]: ticket } : {})
+              [eId]: (prev[eId] || 0) + 1,
+              ...(eSlug ? { [eSlug]: (prev[eSlug] || 0) + 1 } : {})
             }));
           }
+          try {
+            const bc = new BroadcastChannel('tsehay_events_sync');
+            bc.postMessage({ type: 'ticket_registered', eventId: eId, eventSlug: eSlug, ticket });
+            bc.close();
+          } catch (e) {}
+          window.dispatchEvent(new CustomEvent('tsehay_ticket_registered', {
+            detail: { eventId: eId, eventSlug: eSlug, ticket }
+          }));
           setActiveTicket(ticket);
           setIsBookingOpen(false);
           setIsTicketModalOpen(true);
@@ -782,7 +913,8 @@ export default function UpcomingEventsSection() {
             {/* Video Player Stage */}
             <div className="relative aspect-video w-full bg-black">
               {(() => {
-                const vidUrl = previewVideoEvent.videoUrl || (previewVideoEvent.image && isMediaVideo(previewVideoEvent.image) ? previewVideoEvent.image : '');
+                const cleanVid = (previewVideoEvent.videoUrl || '').trim();
+                const vidUrl = (cleanVid && cleanVid !== 'none' && cleanVid !== 'yelewim') ? cleanVid : '';
                 const parsed = parseVideoEmbedUrl(vidUrl, true);
                 if (parsed.type === 'video') {
                   return (

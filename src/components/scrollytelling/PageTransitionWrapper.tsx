@@ -12,16 +12,50 @@ export default function PageTransitionWrapper({
   const [displayChildren, setDisplayChildren] = useState(children);
   const [transitionStage, setTransitionStage] = useState<'enter' | 'active'>('active');
   const prevPathRef = useRef(pathname);
+  const isPopStateRef = useRef(false);
+
+  // 🌟 Detect browser back / forward navigation (popstate) & BFCache restore (pageshow)
+  useEffect(() => {
+    const handlePopState = () => {
+      isPopStateRef.current = true;
+      setTransitionStage('active');
+    };
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        isPopStateRef.current = true;
+        setTransitionStage('active');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState, { passive: true });
+    window.addEventListener('pageshow', handlePageShow, { passive: true });
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, []);
 
   useEffect(() => {
     if (prevPathRef.current !== pathname) {
       prevPathRef.current = pathname;
+
+      // 🌟 On Browser Back / Forward, render INSTANTLY with 0ms delay and zero blank flash!
+      if (isPopStateRef.current) {
+        isPopStateRef.current = false;
+        setTransitionStage('active');
+        setDisplayChildren(children);
+        return;
+      }
+
+      // Normal link navigation: snappy subtle reveal
       setTransitionStage('enter');
       setDisplayChildren(children);
 
       const timer = setTimeout(() => {
         setTransitionStage('active');
-      }, 50);
+      }, 30);
 
       return () => clearTimeout(timer);
     } else {
@@ -31,14 +65,13 @@ export default function PageTransitionWrapper({
 
   return (
     <div
-      key={pathname}
-      className={`w-full min-h-screen relative z-10 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+      className={`w-full min-h-screen relative z-10 transition-opacity duration-200 ease-out ${
         transitionStage === 'enter'
-          ? 'opacity-0 translate-y-3'
-          : 'opacity-100 translate-y-0'
+          ? 'opacity-0'
+          : 'opacity-100'
       }`}
       style={{
-        willChange: 'opacity, transform',
+        willChange: 'opacity',
       }}
     >
       {displayChildren}

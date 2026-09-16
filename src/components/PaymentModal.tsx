@@ -1,18 +1,31 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { validateReferralCode, recordReferralUsage } from '@/lib/referralService';
 import { getCleanCourseImage } from '@/lib/courseCache';
 
 export default function PaymentModal({ course: propCourse, onClose: propOnClose }: any) {
+  const router = useRouter();
   const [internalCourse, setInternalCourse] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const course = propCourse || internalCourse;
   const isControlled = propCourse !== undefined;
+
+  // Close modal on browser back/forward history navigation
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePop = () => {
+      setIsOpen(false);
+      if (propOnClose) propOnClose();
+    };
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [isOpen, propOnClose]);
 
   const [paymethod, setPaymethod] = useState('lakipay');
   const [isPaying, setIsPaying] = useState(false);
@@ -90,12 +103,19 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
     };
     window.addEventListener('keydown', handleKeyDown);
 
-    // Auto-check for stored referral code
+    // Auto-check for stored referral code or URL promo parameter
     try {
-      const savedCode = localStorage.getItem('tsehay_applied_referral_code');
-      if (savedCode && course?.id) {
-        setReferralInput(savedCode);
-        validateAndApplyCode(savedCode);
+      let codeToApply = '';
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        codeToApply = urlParams.get('promo') || urlParams.get('coupon') || urlParams.get('code') || '';
+      }
+      if (!codeToApply) {
+        codeToApply = localStorage.getItem('tsehay_applied_referral_code') || '';
+      }
+      if (codeToApply && course?.id) {
+        setReferralInput(codeToApply.trim().toUpperCase());
+        validateAndApplyCode(codeToApply.trim().toUpperCase());
       }
     } catch (e) {}
 
@@ -232,9 +252,9 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           }).catch(e => console.warn("Background enrollment sync:", e));
         } catch (authErr) {}
 
-        if (typeof window !== 'undefined') {
-          window.location.href = `/dashboard?courseId=${targetCourseId}&lesson=0`;
-        }
+        router.push(`/dashboard?courseId=${targetCourseId}&lesson=0`);
+        setIsOpen(false);
+        if (propOnClose) propOnClose();
         return;
       } catch (err: any) {
         console.error("Free enrollment error:", err);
@@ -293,10 +313,10 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
         if (e.target === e.currentTarget && !isPaying) handleClose(); 
       }}
     >
-      {/* 🌟 Rotating Glowing Border Beam Wrapper (ሽክርክር የሚል የመስመር ብርሃን) */}
+      {/*  Rotating Glowing Border Beam Wrapper (ሽክርክር የሚል የመስመር ብርሃን) */}
       <div className="relative p-[2px] rounded-[2rem] overflow-hidden max-w-lg w-full m-auto shadow-[0_25px_90px_rgba(0,0,0,0.95)] animate-[paymentModalPop_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards] group">
         
-        {/* 💫 360° Rotating Cybernetic Border Beam (ሽክርክር የሚል የመስመር ብርሃን) */}
+        {/*  360° Rotating Cybernetic Border Beam (ሽክርክር የሚል የመስመር ብርሃን) */}
         <div 
           className="absolute -inset-[200%] z-0 rounded-full animate-[spinLightBeam_5s_linear_infinite]"
           style={{
@@ -305,7 +325,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           }}
         />
 
-        {/* 🌟 Ambient Glow Diffusion Aura */}
+        {/*  Ambient Glow Diffusion Aura */}
         <div 
           className="absolute -inset-[200%] z-0 rounded-full animate-[spinLightBeam_5s_linear_infinite] opacity-60 pointer-events-none"
           style={{
@@ -314,7 +334,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           }}
         />
 
-        {/* 🌟 Inner Centered Modal Card */}
+        {/*  Inner Centered Modal Card */}
         <div 
           className="bg-[#0b0f19] text-white w-full max-h-[90vh] flex flex-col relative z-10 rounded-[calc(2rem-2px)] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
@@ -361,7 +381,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
               </div>
             </div>
 
-            {/* 🌟 Promo Code Box */}
+            {/*  Promo Code Box */}
             <div className="bg-[#121a2d]/80 p-3.5 sm:p-4 rounded-2xl border border-gray-800/90 space-y-2">
               <div className="flex items-center justify-between text-xs font-bold text-gray-300">
                 <span className="flex items-center gap-1.5">
@@ -369,7 +389,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                   <span>የቅናሽ ኮድ (Promo Code)</span>
                 </span>
                 {appliedCode && (
-                  <span className="text-[11px] text-emerald-400 font-bold">✓ ተተግብሯል ({discountPercent}% OFF)</span>
+                  <span className="text-[11px] text-emerald-400 font-bold">ተተግብሯል ({discountPercent}% OFF)</span>
                 )}
               </div>
 
@@ -452,9 +472,11 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                       onChange={() => setPaymethod('lakipay')} 
                       className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
                     />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                      <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">For Local Payments</span>
+                      <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">
+                        For Local Payments
+                      </span>
                     </div>
                   </div>
                   <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
@@ -532,7 +554,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
               ) : isFreeAfterDiscount ? (
                 <>
                   <i className="fa-solid fa-gift text-lg buy-icon-animated"></i>
-                  <span className="font-black">በነፃ ይመዝገቡ (Enroll 100% Free) 🎉</span>
+                  <span className="font-black">በነፃ ይመዝገቡ (Enroll 100% Free)</span>
                 </>
               ) : (
                 <>

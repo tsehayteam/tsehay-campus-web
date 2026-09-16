@@ -3,7 +3,8 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 
 
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, isEmailAdmin, clearUserSessionData } from '@/context/AuthContext';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import nextDynamic from 'next/dynamic';
@@ -22,6 +23,7 @@ import FeedbackModal from '@/components/FeedbackModal';
 import { speakWithLanguageDetection } from '@/lib/ttsHelper';
 import { parseVideoUrl } from '@/lib/videoParser';
 import { supabase } from '@/lib/supabase/client';
+import { Crown, Check, Clock, X, Target, BookOpen, Sparkles, PartyPopper, Lightbulb, Rocket, Camera, FolderOpen, Palette, ChevronDown, ChevronUp, Maximize, Minimize2 } from 'lucide-react';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (
@@ -64,7 +66,8 @@ function StudentDashboardContent() {
   const validViews = ['classroom', 'courses', 'referrals', 'messages', 'ai', 'certificates', 'settings'];
   const initialView = (urlViewParam && validViews.includes(urlViewParam))
     ? urlViewParam
-    : (typeof window !== 'undefined' && localStorage.getItem('tsehay_dashboard_last_view')) || 'classroom';
+    : (typeof window !== 'undefined' && localStorage.getItem('tsehay_dashboard_last_view')) ||
+      (typeof window !== 'undefined' && (!localStorage.getItem('tsehay_user_courses_cache') || (JSON.parse(localStorage.getItem('tsehay_user_courses_cache') || '[]').length === 0)) ? 'courses' : 'classroom');
 
   const [currentView, _setCurrentView] = useState<string>(initialView);
 
@@ -115,14 +118,47 @@ function StudentDashboardContent() {
     }
   };
 
-  // Auth Guard: Only redirect if explicitly confirmed NOT authenticated after auth check completes
+  // Auth & Onboarding Guard: Protects dashboard from unauthenticated and incomplete ghost users
   useEffect(() => {
-    if (authInitialized && !authLoading && !user) {
+    if (!authInitialized || authLoading) return;
+
+    if (!user) {
       if (typeof window !== 'undefined') {
         window.location.href = '/';
       } else {
         router.replace('/');
       }
+      return;
+    }
+
+    // Admins are always authorized
+    if (user.email && isEmailAdmin(user.email)) return;
+
+    // Check if student profile is complete (phone number verified or active enrollments)
+    const cachedPhone = (typeof window !== 'undefined' && (localStorage.getItem('tsehay_user_phone') || (user as any).phone)) || '';
+    const cleanDigits = String(cachedPhone).replace(/[^0-9]/g, '');
+
+    if (cleanDigits.length < 7) {
+      // Check server if they are a registered student or an incomplete visitor
+      fetch('/api/auth/check-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.uid, email: user.email })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data && !data.isStudent && !data.hasEnrollments && !data.hasValidPhone) {
+            console.warn('[Dashboard Guard] Incomplete onboarding detected. Rolling back ghost session.');
+            supabase.auth.signOut().catch(() => {});
+            clearUserSessionData();
+            if (typeof window !== 'undefined') {
+              window.location.replace('/');
+            } else {
+              router.replace('/');
+            }
+          }
+        })
+        .catch(() => {});
     }
   }, [authInitialized, authLoading, user, router]);
 
@@ -142,17 +178,26 @@ function StudentDashboardContent() {
       return {};
     }
   });
+  const [hasPaidEnrollment, setHasPaidEnrollment] = useState<boolean>(false);
+  const [loadingSafetyBypass, setLoadingSafetyBypass] = useState<boolean>(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingSafetyBypass(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [courses, setCourses] = useState<any[]>(() => {
-    if (typeof window === 'undefined') return DEFAULT_COURSES;
+    if (typeof window === 'undefined') return [];
     try {
       const cached = localStorage.getItem('tsehay_user_courses_cache');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
-      const allCached = getCachedCourses();
-      return allCached.length > 0 ? allCached : DEFAULT_COURSES;
-    } catch (e) { return DEFAULT_COURSES; }
+      return [];
+    } catch (e) { return []; }
   });
   const [loading, setLoading] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -162,28 +207,98 @@ function StudentDashboardContent() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   const [activeCourse, setActiveCourse] = useState<any>(() => {
-    if (typeof window === 'undefined') return DEFAULT_COURSES[0];
     try {
-      const cachedCourse = localStorage.getItem('tsehay_user_active_course');
-      if (cachedCourse) {
-        const parsed = JSON.parse(cachedCourse);
-        if (parsed && parsed.id) return parsed;
+      if (typeof window !== 'undefined') {
+        const sp = new URLSearchParams(window.location.search);
+        const qCourse = sp.get('courseId') || sp.get('course');
+        const allCached = getCachedCourses();
+        const allPool = allCached.length > 0 ? allCached : DEFAULT_COURSES;
+        if (qCourse) {
+          const match = allPool.find(c => c.id === qCourse || c.slug === qCourse) || DEFAULT_COURSES.find(c => c.id === qCourse || c.slug === qCourse);
+          if (match) return match;
+        }
+        const cachedCourse = localStorage.getItem('tsehay_user_active_course');
+        if (cachedCourse) {
+          try {
+            const parsed = JSON.parse(cachedCourse);
+            if (parsed && (parsed.id || parsed.title)) return parsed;
+          } catch (pe) {
+            const found = allPool.find(c => c.id === cachedCourse || c.slug === cachedCourse) || DEFAULT_COURSES.find(c => c.id === cachedCourse || c.slug === cachedCourse);
+            if (found) return found;
+          }
+        }
+        // Check enrolled cache
+        const userCoursesRaw = localStorage.getItem('tsehay_user_courses_cache');
+        if (userCoursesRaw) {
+          try {
+            const parsedArr = JSON.parse(userCoursesRaw);
+            if (Array.isArray(parsedArr) && parsedArr.length > 0) return parsedArr[0];
+          } catch (e) {}
+        }
+        return DEFAULT_COURSES[0] || null;
       }
-      const allCached = getCachedCourses();
-      return allCached[0] || DEFAULT_COURSES[0];
-    } catch (e) { return DEFAULT_COURSES[0]; }
+      return DEFAULT_COURSES[0] || null;
+    } catch (e) { return DEFAULT_COURSES[0] || null; }
   });
   const [activeLesson, setActiveLesson] = useState<any>(() => {
-    if (typeof window === 'undefined') return DEFAULT_COURSES[0]?.lessons?.[0] || null;
     try {
-      const cachedLesson = localStorage.getItem('tsehay_user_active_lesson');
-      if (cachedLesson) {
-        const parsed = JSON.parse(cachedLesson);
-        if (parsed && parsed.title) return parsed;
+      if (typeof window !== 'undefined') {
+        const sp = new URLSearchParams(window.location.search);
+        const qCourse = sp.get('courseId') || sp.get('course');
+        const qLesson = sp.get('lesson');
+        const allCached = getCachedCourses();
+        const allPool = allCached.length > 0 ? allCached : DEFAULT_COURSES;
+        let matchedCourse = null;
+        if (qCourse) {
+          matchedCourse = allPool.find(c => c.id === qCourse || c.slug === qCourse) || DEFAULT_COURSES.find(c => c.id === qCourse || c.slug === qCourse);
+        }
+        if (!matchedCourse) {
+          const cachedCourse = localStorage.getItem('tsehay_user_active_course');
+          if (cachedCourse) {
+            try {
+              const parsed = JSON.parse(cachedCourse);
+              if (parsed && (parsed.id || parsed.title)) matchedCourse = parsed;
+            } catch (pe) {
+              matchedCourse = allPool.find(c => c.id === cachedCourse || c.slug === cachedCourse);
+            }
+          }
+        }
+        if (!matchedCourse) {
+          matchedCourse = DEFAULT_COURSES[0];
+        }
+        if (matchedCourse) {
+          if (qLesson !== null && qLesson !== undefined && matchedCourse.lessons?.length > 0) {
+            const lNum = parseInt(qLesson, 10);
+            if (!isNaN(lNum) && matchedCourse.lessons[lNum]) {
+              return { ...matchedCourse.lessons[lNum], moduleIndex: 0, lessonIndex: lNum };
+            }
+          }
+          return matchedCourse.lessons?.[0] || null;
+        }
+        const cachedLesson = localStorage.getItem('tsehay_user_active_lesson');
+        if (cachedLesson) {
+          try {
+            const parsed = JSON.parse(cachedLesson);
+            if (parsed && parsed.title) return parsed;
+          } catch (e) {}
+        }
       }
       return DEFAULT_COURSES[0]?.lessons?.[0] || null;
     } catch (e) { return DEFAULT_COURSES[0]?.lessons?.[0] || null; }
   });
+
+  // Immediate URL course synchronizer (instant switch without waiting for network)
+  useEffect(() => {
+    if (!urlCourseId) return;
+    const allAvailable = courses.length > 0 ? courses : (getCachedCourses().length > 0 ? getCachedCourses() : DEFAULT_COURSES);
+    const matched = allAvailable.find(c => c.id === urlCourseId || c.slug === urlCourseId);
+    if (matched && (!activeCourse || activeCourse.id !== matched.id)) {
+      setActiveCourse(matched);
+      try {
+        localStorage.setItem('tsehay_user_active_course', JSON.stringify(matched));
+      } catch (e) {}
+    }
+  }, [urlCourseId, courses]);
   const [activeTab, setActiveTab] = useState('overview');
   const [modules, setModules] = useState<any[]>(() => {
     const defaultMod = [{ id: 'main', title: 'Course Content', order: 1, lessons: DEFAULT_COURSES[0]?.lessons || [] }];
@@ -441,14 +556,82 @@ function StudentDashboardContent() {
   const [aiRecordingSeconds, setAiRecordingSeconds] = useState(0);
   const [playingAiAudioIdx, setPlayingAiAudioIdx] = useState<number | null>(null);
   const currentAiAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
-  const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(true);
+  const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(false);
+
+  const getActiveViewSubtitle = () => {
+    switch (currentView) {
+      case 'classroom':
+        return 'ኮርስ';
+      case 'courses':
+        return 'ኮርሶች';
+      case 'referrals':
+        return 'ሪፈራል';
+      case 'messages':
+        return 'መልዕክቶች';
+      case 'ai':
+        return 'የAI ረዳት';
+      case 'certificates':
+        return 'ሰርተፊኬቶች';
+      case 'settings':
+        return 'ማስተካከያ';
+      default:
+        return 'ኮርስ';
+    }
+  };
+
+  const handleNavSelect = (view: string) => {
+    setCurrentView(view);
+    setIsNavDrawerExpanded(false);
+  };
   const [isCurriculumSubmenuOpen, setIsCurriculumSubmenuOpen] = useState(true);
   const [openSidebarModuleIdx, setOpenSidebarModuleIdx] = useState<number | null>(0);
   const [isSyllabusCollapsed, setIsSyllabusCollapsed] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFocusMode) {
+        setIsFocusMode(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFocusMode]);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
+      setIsFullscreen(false);
+      setIsFocusMode(false);
+      return;
+    }
+
+    if (isFocusMode) {
+      setIsFocusMode(false);
+      return;
+    }
+
+    setIsFocusMode(true);
+    setIsSyllabusCollapsed(true);
+  };
   
   // 🗑️ Tsehay AI 15-Day Recycle Bin State
+  const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
   const [showAiTrashModal, setShowAiTrashModal] = useState(false);
   const [aiTrashList, setAiTrashList] = useState<Array<{
     id: string;
@@ -625,7 +808,7 @@ function StudentDashboardContent() {
     const imageToSend = lessonAiAttachedImage;
     if ((!queryText && !imageToSend) || isLessonAiLoading) return;
 
-    const userMsg = { role: 'user' as const, text: queryText || "📸 ፎቶ ተያይዟል", image: imageToSend || undefined };
+    const userMsg = { role: 'user' as const, text: queryText || "ፎቶ ተያይዟል (Photo attached)", image: imageToSend || undefined };
     setLessonAiMessages(prev => [...prev, userMsg]);
     setLessonAiQuery('');
     setLessonAiAttachedImage(null);
@@ -663,10 +846,12 @@ function StudentDashboardContent() {
   // Student Display Name, Photo and Pro Status Computed Helpers
   const studentDisplayName = settingsName?.trim() || user?.displayName || (user?.email ? user.email.split('@')[0] : '') || 'ተማሪ (Student)';
   const studentPhotoUrl = settingsPhotoUrl || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
-  const isProStudent = courses.some(c => {
-    const isFree = c.isFree === true || c.price === 'Free' || c.price === '0' || c.price === 0 || Number(c.price) === 0;
-    return !isFree;
-  }) || Boolean((user as any)?.isPro || (user as any)?.role === 'pro' || (user as any)?.role === 'admin');
+  const isProStudent = Boolean(
+    hasPaidEnrollment ||
+    (user as any)?.isPro ||
+    (user as any)?.role === 'pro' ||
+    (user as any)?.role === 'admin'
+  );
 
   const handleProfilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -769,6 +954,7 @@ function StudentDashboardContent() {
 
         // 2. Fetch student enrollments from Supabase enrollments table
         let userCourses: any[] = [];
+        let hasPaid = false;
         try {
           const { data: enrollments } = await supabase
             .from('enrollments')
@@ -778,6 +964,14 @@ function StudentDashboardContent() {
           if (enrollments && Array.isArray(enrollments) && enrollments.length > 0) {
             const enrolledIds = enrollments.map((enr: any) => enr.course_id);
             userCourses = allCatalogCourses.filter(c => enrolledIds.includes(c.id) || enrolledIds.includes(c.slug));
+
+            // User is Pro Member ONLY if they purchased a paid course
+            hasPaid = enrollments.some((enr: any) => {
+              const amount = Number(enr.amount);
+              const method = String(enr.payment_method || '').toLowerCase();
+              const isCompleted = enr.status === 'completed' || enr.status === 'success' || !enr.status;
+              return isCompleted && ((!isNaN(amount) && amount > 0) || (method !== 'free' && method !== ''));
+            });
           }
         } catch (e) {}
 
@@ -802,40 +996,14 @@ function StudentDashboardContent() {
           }
         }
 
-        // 🌟 If student has no purchased courses yet, provide full catalog (including free course)
-        if (userCourses.length === 0) {
-          userCourses = allCatalogCourses;
-
-          // Auto-persist free course enrollment for student in Supabase
-          try {
-            const freeCourse = userCourses.find(c => c.isFree || c.id === 'digital_marketing_free') || userCourses[0];
-            if (freeCourse) {
-              (async () => {
-                try {
-                  await supabase.from('enrollments').upsert({
-                    id: `enr_${user.uid}_${freeCourse.id}`,
-                    user_id: user.uid,
-                    user_email: user.email || '',
-                    course_id: freeCourse.id,
-                    course_title: freeCourse.title,
-                    amount: 0,
-                    payment_method: 'free',
-                    status: 'completed'
-                  });
-                } catch (e) {}
-              })();
-            }
-          } catch (e) {}
-        }
-
-
+        // 🌟 Enrollment Integrity: Users start with exactly what they enrolled in (Empty if none)
+        setHasPaidEnrollment(hasPaid);
         setCourses(userCourses);
         try {
           localStorage.setItem(`tsehay_user_courses_${user.uid}`, JSON.stringify(userCourses));
           localStorage.setItem('tsehay_user_courses_cache', JSON.stringify(userCourses));
         } catch(e) {}
 
-          
         if (userCourses.length > 0) {
           setActiveCourse((prev: any) => {
             // 1. Priority: URL courseId parameter
@@ -866,7 +1034,12 @@ function StudentDashboardContent() {
             return userCourses[0];
           });
         } else {
-          setActiveCourse(DEFAULT_COURSES[0]);
+          setActiveCourse(null);
+          setActiveLesson(null);
+          try {
+            localStorage.removeItem(`tsehay_user_active_course_${user.uid}`);
+            localStorage.removeItem('tsehay_user_active_course');
+          } catch(e) {}
         }
       } catch (error) {
         console.error("Error fetching courses", error);
@@ -1466,8 +1639,8 @@ function StudentDashboardContent() {
 
     let userMsg = queryText;
     if (!userMsg) {
-      if (audioToSend) userMsg = "🎙️ የድምፅ መልዕክት (Voice Note)";
-      else if (imageToSend) userMsg = "📸 ፎቶ ተያይዟል";
+      if (audioToSend) userMsg = "የድምፅ መልዕክት (Voice Note)";
+      else if (imageToSend) userMsg = "ፎቶ ተያይዟል (Photo attached)";
     }
 
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1837,14 +2010,15 @@ function StudentDashboardContent() {
     return handleSendAiMessage(e);
   };
 
-  if ((authLoading && !user) || (!authInitialized && !user) || (loading && courses.length === 0 && !activeCourse)) {
+  const isCachedUserAvailable = typeof window !== 'undefined' && Boolean(localStorage.getItem('tsehay_auth_user_cache'));
+  if (!loadingSafetyBypass && !user && !isCachedUserAvailable && (authLoading || !authInitialized)) {
     return <DashboardLoadingScreen message="የመማሪያ ክፍልዎን በማዘጋጀት ላይ... (Loading Classroom...)" />;
   }
 
   return (
     <div className="min-h-screen bg-[#030509] text-slate-200 flex flex-col md:flex-row font-body relative overflow-x-hidden selection:bg-[#f9b03c]/30">
       
-      {/* 🌟 Floating Distraction-Free Focus Mode Exit Button (Icon Only - Zero Text, Bold Glowing/Pulsing Visual Feedback) */}
+      {/* Floating Distraction-Free Focus Mode Exit Button (Icon Only - Zero Text, Bold Glowing/Pulsing Visual Feedback) */}
       {isFocusMode && (
         <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[9999] animate-in fade-in zoom-in-95 duration-300">
           <button
@@ -1920,64 +2094,83 @@ function StudentDashboardContent() {
 
         <nav className="flex-1 overflow-y-auto py-2 md:py-3 px-3 space-y-1 font-body no-scrollbar w-full flex flex-col gap-2 items-stretch">
           
-          {/* 🌟 ULTRA-CLEAN CONSOLIDATED SINGLE MENU BUTTON (ACCORDION SLIDE-DOWN) */}
-          <div className="w-full mb-1">
+          {/* CENTERED COLLAPSIBLE FLOATING MASTER NAVIGATION BAR */}
+          <div className="w-full px-1 mb-2">
             <button
               type="button"
               onClick={() => setIsNavDrawerExpanded(prev => !prev)}
-              className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-300 group cursor-pointer active:scale-[0.98] border ${
+              className={`w-full relative overflow-hidden flex flex-col items-center justify-center py-2.5 px-3.5 rounded-2xl transition-all duration-300 group cursor-pointer active:scale-[0.98] select-none border ${
                 isNavDrawerExpanded
-                  ? 'bg-white/[0.06] border-white/15 shadow-md'
-                  : 'bg-gradient-to-r from-[#3268ba]/20 via-[#3268ba]/10 to-transparent border-[#3268ba]/50 hover:border-[#f9b03c] shadow-[0_0_20px_rgba(50,104,186,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.3)]'
+                  ? 'bg-gradient-to-b from-[#14203b]/95 via-[#0e1628]/95 to-[#080d1a] border-[#3268ba]/60 shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_20px_rgba(50,104,186,0.3)]'
+                  : 'bg-gradient-to-b from-[#142240]/90 via-[#0b1326]/90 to-[#070b16] border-[#f9b03c]/40 hover:border-[#f9b03c] shadow-[0_10px_35px_rgba(0,0,0,0.7),0_0_25px_rgba(249,176,60,0.25)] hover:shadow-[0_0_35px_rgba(249,176,60,0.45)]'
               }`}
-              title={isNavDrawerExpanded ? "ማውጫውን እጠፍ (Collapse Menu)" : "ማውጫውን ክፈት (Open Menu)"}
+              title={isNavDrawerExpanded ? "ዋና ሜኑን እጠፍ (Collapse Menu)" : "ዋና ሜኑን ዘርጋ (Open Main Menu)"}
+              aria-expanded={isNavDrawerExpanded}
             >
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs shadow-sm transition-all duration-300 ${
-                  isNavDrawerExpanded
-                    ? 'bg-white/10 text-white border border-white/20'
-                    : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.6)]'
-                }`}>
-                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <span className="font-heading font-black text-xs sm:text-[13px] text-white tracking-wide block leading-tight">
-                    {t('main_menu') || 'ዋና ማውጫ'}
-                  </span>
-                  <span className="text-[10px] text-[#f9b03c] font-black block leading-tight mt-0.5">
-                    {currentView === 'classroom' && '• መማሪያ ክፍል'}
-                    {currentView === 'courses' && '• የእኔ ኮርሶች'}
-                    {currentView === 'messages' && '• መልዕክቶች'}
-                    {currentView === 'ai' && '• AI ረዳት'}
-                    {currentView === 'certificates' && '• ሰርተፊኬት'}
-                    {currentView === 'settings' && '• ማስተካከያ'}
-                  </span>
-                </div>
+              {/* Dual-Color Radial Glow Accents (Golden Orange Left, Cobalt Blue Right) */}
+              <div 
+                className="absolute left-6 top-1/2 -translate-y-1/2 w-20 h-10 bg-[#f9b03c]/20 blur-xl rounded-full pointer-events-none transition-opacity duration-500"
+                style={{ opacity: isNavDrawerExpanded ? 0.3 : 0.8 }}
+              />
+              <div 
+                className="absolute right-6 top-1/2 -translate-y-1/2 w-20 h-10 bg-[#3268ba]/25 blur-xl rounded-full pointer-events-none transition-opacity duration-500"
+                style={{ opacity: isNavDrawerExpanded ? 0.3 : 0.8 }}
+              />
+
+              {/* Ambient Glow Aura */}
+              <div 
+                className={`absolute inset-0 bg-gradient-to-r from-[#f9b03c]/10 via-transparent to-[#3268ba]/10 transition-opacity duration-500 pointer-events-none ${
+                  isNavDrawerExpanded ? 'opacity-30' : 'opacity-80 animate-pulse'
+                }`}
+              />
+
+              {/* Centered Main Title: "ዋና ሜኑ" with Dual-Color Glow Accents */}
+              <div className="relative z-10 flex items-center justify-center gap-2.5">
+                {/* Left Brand Glow Accent: Golden Orange */}
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] shadow-[0_0_8px_#f9b03c] opacity-90 inline-block" aria-hidden="true"></span>
+                
+                <span className="font-heading font-black text-sm sm:text-base text-white tracking-wide drop-shadow-md text-center">
+                  {t('main_menu') || 'ዋና ሜኑ'}
+                </span>
+
+                {/* Right Brand Glow Accent: Cobalt Blue */}
+                <span className="w-1.5 h-1.5 rounded-full bg-[#3268ba] shadow-[0_0_8px_#3268ba] opacity-90 inline-block" aria-hidden="true"></span>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-slate-300 transition-transform duration-300 ${isNavDrawerExpanded ? 'rotate-180 text-[#f9b03c]' : 'rotate-0'}`}>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                  </svg>
+              {/* Dynamic Active-State Subtitle / Contextual Indicator */}
+              <div className="relative z-10 mt-1 flex items-center justify-center text-center">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] bg-[#f9b03c]/15 px-3 py-0.5 rounded-full border border-[#f9b03c]/30 shadow-inner">
+                  {getActiveViewSubtitle()}
+                </span>
+              </div>
+
+              {/* Centered Pulsing / Blinking Arrow Cue */}
+              <div className="relative z-10 mt-1.5 flex items-center justify-center">
+                <div className={`p-1 rounded-full bg-white/[0.06] border border-white/10 transition-all duration-300 group-hover:scale-110 ${
+                  isNavDrawerExpanded 
+                    ? 'text-slate-300' 
+                    : 'text-[#f9b03c] shadow-[0_0_12px_rgba(249,176,60,0.6)]'
+                }`}>
+                  {isNavDrawerExpanded ? (
+                    <ChevronUp className="w-4 h-4 transition-transform duration-300 text-slate-300" strokeWidth={2.8} />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 animate-bounce text-[#f9b03c]" strokeWidth={2.8} />
+                  )}
                 </div>
               </div>
             </button>
           </div>
 
-          {/* 🌟 SMOOTH SLIDE-DOWN ACCORDION MENU CONTAINER */}
+          {/* SMOOTH SLIDE-DOWN ACCORDION MENU CONTAINER */}
           <div className={`space-y-1.5 w-full transition-all duration-500 ease-in-out flex flex-col gap-1.5 items-stretch ${
             isNavDrawerExpanded 
               ? 'max-h-[85vh] overflow-y-auto opacity-100 transform translate-y-0 py-1 no-scrollbar' 
               : 'max-h-0 opacity-0 transform -translate-y-2 pointer-events-none overflow-hidden'
           }`}>
-
             {/* 1. Classroom (መማሪያ ክፍል) & Embedded Course Curriculum */}
             <div className="w-full flex flex-col gap-1.5">
               <button 
-                onClick={() => setCurrentView('classroom')} 
+                onClick={() => handleNavSelect('classroom')} 
                 className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                   currentView === 'classroom' 
                     ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
@@ -2003,7 +2196,7 @@ function StudentDashboardContent() {
                 )}
               </button>
 
-              {/* 🌟 EMBEDDED COURSE CURRICULUM (ACCORDION DRAWER SHELF) */}
+              {/* EMBEDDED COURSE CURRICULUM (ACCORDION DRAWER SHELF) */}
               {currentView === 'classroom' && (
                 <div className="w-full pl-1 sm:pl-2 pr-1 pt-1 pb-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   {/* Curriculum Header & Shelf Toggle */}
@@ -2103,7 +2296,7 @@ function StudentDashboardContent() {
                                           disabled={!isUnlocked}
                                           onClick={() => {
                                             if (!isUnlocked) {
-                                              alert("🔒 ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                              alert("ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
                                               return;
                                             }
                                             const selectedLesson = { ...lesson, moduleIndex: mIdx, lessonIndex: lIdx };
@@ -2112,6 +2305,7 @@ function StudentDashboardContent() {
                                               localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
                                             } catch (e) {}
                                             updateUrlState({ view: 'classroom', courseId: activeCourse?.id, lesson: lIdx });
+                                            setIsNavDrawerExpanded(false);
                                           }}
                                           className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition text-xs cursor-pointer ${
                                             !isUnlocked
@@ -2159,7 +2353,7 @@ function StudentDashboardContent() {
             
             {/* 2. My Courses (የእኔ ኮርሶች) */}
             <button 
-              onClick={() => setCurrentView('courses')} 
+              onClick={() => handleNavSelect('courses')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'courses' 
                   ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
@@ -2189,7 +2383,7 @@ function StudentDashboardContent() {
 
             {/* 3. Messages & Support (መልዕክቶች እና ድጋፍ) */}
             <button 
-              onClick={() => setCurrentView('messages')} 
+              onClick={() => handleNavSelect('messages')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'messages' 
                   ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
@@ -2220,6 +2414,7 @@ function StudentDashboardContent() {
             {/* 3.5. Community & Social Feed */}
             <a 
               href="/community" 
+              onClick={() => setIsNavDrawerExpanded(false)}
               className="flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent cursor-pointer"
             >
               <div className="flex items-center gap-3">
@@ -2236,7 +2431,7 @@ function StudentDashboardContent() {
 
             {/* 4. Tsehay AI Tutor */}
             <button 
-              onClick={() => setCurrentView('ai')} 
+              onClick={() => handleNavSelect('ai')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'ai' 
                   ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#e59b2b] text-slate-950 shadow-xl shadow-[#f9b03c]/40 font-black border border-white/30 scale-[1.02]' 
@@ -2266,7 +2461,7 @@ function StudentDashboardContent() {
             
             {/* 5. Certificates (የብቃት ሰርተፊኬት) */}
             <button 
-              onClick={() => setCurrentView('certificates')} 
+              onClick={() => handleNavSelect('certificates')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'certificates' 
                   ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
@@ -2296,7 +2491,7 @@ function StudentDashboardContent() {
 
             {/* 6. Refer a Friend */}
             <button 
-              onClick={() => setCurrentView('referrals')} 
+              onClick={() => handleNavSelect('referrals')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'referrals' 
                   ? 'bg-gradient-to-r from-amber-500 via-[#f9b03c] to-yellow-400 text-slate-950 shadow-xl shadow-[#f9b03c]/40 font-black border border-white/30 scale-[1.02]' 
@@ -2323,41 +2518,11 @@ function StudentDashboardContent() {
                 </svg>
               )}
             </button>
-            
-            {/* 7. Settings */}
-            <button 
-              onClick={() => setCurrentView('settings')} 
-              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
-                currentView === 'settings' 
-                  ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
-                  : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                  currentView === 'settings'
-                    ? 'bg-white/20 text-white shadow-inner'
-                    : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
-                }`}>
-                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-                  </svg>
-                </span>
-                <span className="font-black text-sm tracking-tight drop-shadow-xs">
-                  {t('settings')}
-                </span>
-              </div>
-              {currentView === 'settings' && (
-                <svg className="w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              )}
-            </button>
           </div>
         </nav>
 
         <div className="hidden md:block p-4 w-full border-t border-white/[0.06]">
-          {/* 🌟 Student Profile & Settings Navigation (Logout cleanly managed inside Settings) */}
+          {/* Student Profile & Settings Navigation (Logout cleanly managed inside Settings) */}
           <div 
             onClick={() => setCurrentView('settings')}
             className="flex items-center justify-center lg:justify-start gap-3.5 p-2.5 rounded-2xl hover:bg-white/[0.06] transition cursor-pointer group border border-transparent hover:border-white/10"
@@ -2365,7 +2530,7 @@ function StudentDashboardContent() {
           >
             {isProStudent ? (
               <div className="relative shrink-0 flex items-center justify-center">
-                {/* 🌟 Rotating & Pulsing Glow Ring in Primary (#f9b03c) and Secondary (#3268ba) */}
+                {/* Rotating & Pulsing Glow Ring in Primary (#f9b03c) and Secondary (#3268ba) */}
                 <div 
                   className="absolute -inset-1 rounded-full bg-gradient-to-tr from-[#f9b03c] via-[#3268ba] to-[#f9b03c] opacity-90 blur-[1px]"
                   style={{ animation: 'spin 5s linear infinite' }}
@@ -2411,13 +2576,14 @@ function StudentDashboardContent() {
                   {isProStudent ? (
                     <span className="text-[#f9b03c] font-black flex items-center gap-1 drop-shadow-[0_0_8px_rgba(249,176,60,0.4)]">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping inline-block"></span>
-                      👑 {t('pro_member') || 'PRO አባል (Pro Member)'}
+                      <Crown className="w-3.5 h-3.5 text-[#f9b03c] inline mr-1" aria-hidden="true" />{t('pro_member') || 'PRO አባል (Pro Member)'}
                     </span>
-                  ) : 'Free Member'}
+                  ) : (
+                    <span className="text-slate-400 font-medium">
+                      {t('free_member') || 'ነፃ አባል (Free Member)'}
+                    </span>
+                  )}
                 </p>
-                <span className="text-[10px] text-slate-500 group-hover:text-slate-300 font-medium">
-                  <i className="fa-solid fa-gear text-[10px]"></i>
-                </span>
               </div>
             </div>
           </div>
@@ -2444,7 +2610,7 @@ function StudentDashboardContent() {
             
             <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 relative">
                 
-                {/* 🌟 Unified Points Counter Badge */}
+                {/* Unified Points Counter Badge */}
                 <div 
                   className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-[#f9b03c]/40 px-3 sm:px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(249,176,60,0.15)] cursor-help hover:scale-105 transition" 
                   title="የተከማቹ ፖይንቶች ከመቶ (Earned Points out of 100)"
@@ -2491,34 +2657,86 @@ function StudentDashboardContent() {
       <main className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-[#030509] ${isFocusMode ? 'p-1 sm:p-3 lg:p-4' : 'p-4 lg:p-8'} transition-all duration-300`}>
         
         {currentView === 'classroom' && (
+          (!activeCourse && courses.length === 0) ? (
+            <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 text-center animate-in fade-in zoom-in-95 duration-300">
+              <div className="p-8 sm:p-12 rounded-3xl bg-white dark:bg-[#0c1017]/95 border border-amber-400/30 dark:border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.4)] backdrop-blur-2xl">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-[#f9b03c]/15 border border-[#f9b03c]/30 text-[#f9b03c] flex items-center justify-center text-3xl sm:text-4xl mx-auto mb-6 shadow-[0_0_30px_rgba(249,176,60,0.2)]">
+                  <i className="fa-solid fa-graduation-cap"></i>
+                </div>
+                <span className="inline-block px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-black uppercase tracking-wider mb-3">
+                  የተመዘገበ ኮርስ የለም (No Enrolled Courses)
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black font-heading text-gray-900 dark:text-white mb-3">
+                  እስካሁን የተመዘገቡበት ኮርስ የለም
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-slate-300 max-w-md mx-auto mb-8 leading-relaxed">
+                  ወደ ፀሐይ ካምፓስ እንኳን ደህና መጡ! ወደ መማሪያ ክፍልዎ ለመግባት እና ትምህርት ለመጀመር ከተዘጋጁት ጥራት ያላቸው ኮርሶች መካከል አንዱን ይምረጡ።
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentView('courses')}
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-sm hover:brightness-110 shadow-[0_0_25px_rgba(249,176,60,0.4)] transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-compass"></i>
+                    <span>ኮርሶችን ያስሱ (Browse Courses)</span>
+                  </button>
+                  <Link
+                    href="/courses"
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-900 dark:text-white font-bold text-sm border border-gray-200 dark:border-white/10 transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>ሙሉ ካታሎግ ይመልከቱ</span>
+                    <i className="fa-solid fa-arrow-right text-xs"></i>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : (
           <div className={`${isFocusMode ? 'max-w-[1700px] w-full' : 'max-w-[1600px]'} mx-auto transition-all duration-500`}>
-            {/* 🌟 Top Course Title & Action Header (Completely hidden during Focus Mode to eliminate clutter) */}
-            {!isFocusMode && (
-              <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Top Course Title & Action Header (Directly beneath Points Counter) */}
+            <div className={`${isFocusMode ? 'mb-3' : 'mb-6'} flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300`}>
+                {!isFocusMode ? (
                   <div>
                       <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title || 'የመማሪያ ክፍል (Classroom)'}</h1>
                       <p className="text-slate-400 font-body text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
                   </div>
-
-                  {/* 🌟 Standalone Glowing Focus Mode Toggle Button (Icon Button Only - Zero Text) */}
-                  <div className="flex items-center gap-3">
-                      <button
-                          type="button"
-                          onClick={() => {
-                            setIsFocusMode(true);
-                            setIsSyllabusCollapsed(true);
-                          }}
-                          className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#3268ba]/20 hover:bg-[#3268ba]/35 text-[#5a93e8] hover:text-white border border-[#3268ba]/50 hover:border-[#f9b03c] shadow-[0_0_20px_rgba(50,104,186,0.35)] hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 group"
-                          title="የትኩረት ሁነታ (Focus Theater Mode)"
-                          aria-label="Focus Theater Mode"
-                      >
-                          <svg className="w-5 h-5 text-blue-200 group-hover:text-white group-hover:scale-110 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                          </svg>
-                      </button>
+                ) : (
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#f9b03c] bg-[#f9b03c]/15 px-3 py-1 rounded-full border border-[#f9b03c]/30 shadow-inner">
+                      የትኩረት ሁነታ (Focus Theater Mode)
+                    </span>
+                    <span className="text-xs text-slate-400 font-bold truncate max-w-[200px] sm:max-w-[400px]">
+                      {(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title}
+                    </span>
                   </div>
-              </div>
-            )}
+                )}
+
+                {/* Enhanced Existing Screen Expander with Dual-Color Alternating Pulse */}
+                <div className="flex items-center gap-3 shrink-0">
+                    <button
+                        type="button"
+                        onClick={toggleFullscreen}
+                        className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-[#0c1326] via-[#101c3d] to-[#080d1a] text-white border transition-all duration-500 flex items-center justify-center cursor-pointer active:scale-95 group animate-[dualPulseGlow_3s_ease-in-out_infinite]"
+                        title={isFocusMode || isFullscreen ? "ስክሪን አሳንስ (Exit Focus Mode)" : "ስክሪን አስፋ (Focus Theater Mode)"}
+                        aria-label="Focus Theater Mode"
+                    >
+                        {/* Dual-Color Alternating Pulsing Corner Cue */}
+                        <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 pointer-events-none">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#3268ba] border border-white/40 shadow-sm animate-pulse"></span>
+                        </span>
+
+                        {/* Ambient dual-color sheen */}
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-[#3268ba]/20 to-[#f9b03c]/20 opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+                        {isFocusMode || isFullscreen ? (
+                          <Minimize2 className="w-5 h-5 text-[#f9b03c] group-hover:scale-110 transition-transform duration-200 relative z-10" />
+                        ) : (
+                          <Maximize className="w-5 h-5 text-amber-300 group-hover:text-white group-hover:scale-110 transition-transform duration-200 relative z-10" />
+                        )}
+                    </button>
+                </div>
+            </div>
 
             {/* Seamless Theater Video Arena (Expands to Full Theater View in Focus Mode) */}
             <div className={`w-full ${isFocusMode ? 'max-w-7xl 2xl:max-w-[1700px]' : 'max-w-6xl'} mx-auto flex flex-col gap-6 lg:gap-8 transition-all duration-500`}>
@@ -2527,7 +2745,10 @@ function StudentDashboardContent() {
                 <div className="flex flex-col gap-6 w-full">
                     
                     {/* Cinematic Video Player */}
-                    <div className={`bg-dark ${isFocusMode ? 'rounded-2xl sm:rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] border-slate-700/80 ring-1 ring-white/10' : 'rounded-2xl shadow-2xl border-gray-800'} overflow-hidden relative border aspect-video flex items-center justify-center group/player transition-all duration-500`}>
+                    <div 
+                      ref={videoContainerRef}
+                      className={`bg-dark ${isFocusMode ? 'rounded-2xl sm:rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] border-slate-700/80 ring-1 ring-white/10' : 'rounded-2xl shadow-2xl border-gray-800'} overflow-hidden relative border aspect-video flex items-center justify-center group/player transition-all duration-500`}
+                    >
                         
                         {/* Auto-Resume Floating Toast */}
                         {resumeToast && (
@@ -2550,9 +2771,9 @@ function StudentDashboardContent() {
                                 </button>
                                 <button 
                                     onClick={() => setResumeToast(null)}
-                                    className="text-gray-400 hover:text-white text-xs px-1"
+                                    className="text-gray-400 hover:text-white text-xs px-1 flex items-center"
                                 >
-                                    ✕
+                                    <X className="w-3.5 h-3.5" aria-hidden="true" />
                                 </button>
                             </div>
                         )}
@@ -2561,13 +2782,13 @@ function StudentDashboardContent() {
 
                         {/* Video End Course Rating Overlay */}
                         {isCourseCompleted && activeCourse?.id && !ratedCourses[activeCourse.id] && !(typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse.id}`)) && !dismissedRatingOverlay[activeCourse.id] && (
-                          <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+                          <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
                              <button 
                                onClick={() => setDismissedRatingOverlay(prev => ({ ...prev, [activeCourse.id]: true }))}
                                className="absolute top-4 right-4 text-gray-400 hover:text-white text-sm font-bold w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer"
                                title="ዝጋ (Close)"
                              >
-                               ✕
+                               <X className="w-4 h-4" aria-hidden="true" />
                              </button>
                              <div className="w-14 h-14 bg-amber-400/20 text-primary rounded-full flex items-center justify-center text-2xl mb-3 border-2 border-primary animate-bounce">
                                  <i className="fa-solid fa-star"></i>
@@ -2737,7 +2958,7 @@ function StudentDashboardContent() {
                                             <i className={`fa-solid ${isCurrentCompleted ? 'fa-check' : 'fa-check'} text-[10px]`}></i>
                                         </span>
                                         <span className="font-extrabold tracking-wide">
-                                            {isCurrentCompleted ? (lang === 'am' ? 'ተጠናቋል ✓' : 'Completed ✓') : (lang === 'am' ? 'ጨርሻለሁ' : 'Mark Complete')}
+                                            {isCurrentCompleted ? (lang === 'am' ? 'ተጠናቋል' : 'Completed') : (lang === 'am' ? 'ጨርሻለሁ' : 'Mark Complete')}
                                         </span>
                                         {!isCurrentCompleted && (
                                             <span className="text-[10px] bg-primary text-dark font-black px-1.5 py-0.5 rounded-md ml-0.5 shadow-xs animate-pulse">
@@ -2932,7 +3153,7 @@ function StudentDashboardContent() {
                                                                     key={lidx} 
                                                                     onClick={() => {
                                                                         if (!isUnlocked) {
-                                                                            alert("🔒 ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                                                            alert("ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
                                                                             return;
                                                                         }
                                                                         const selectedLesson = {...lesson, moduleIndex: idx, lessonIndex: lidx};
@@ -3017,9 +3238,9 @@ function StudentDashboardContent() {
                                                     </button>
                                                     <button
                                                         onClick={() => setLessonSummary(null)}
-                                                        className="text-gray-400 hover:text-white text-xs px-1"
+                                                        className="text-gray-400 hover:text-white text-xs px-1 flex items-center"
                                                     >
-                                                        ✕
+                                                        <X className="w-3.5 h-3.5" aria-hidden="true" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -3074,7 +3295,7 @@ function StudentDashboardContent() {
                                                 <i className="fa-solid fa-star text-amber-500"></i>
                                                 <span>
                                                     {ratedCourses[activeCourse?.id] || (typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse?.id}`))
-                                                        ? 'ደረጃ ሰጥተዋል ✓'
+                                                        ? 'ደረጃ ሰጥተዋል'
                                                         : 'ሬቲንግ ስጥ'}
                                                 </span>
                                             </button>
@@ -3278,7 +3499,7 @@ function StudentDashboardContent() {
 
                                                                     {isHighlighted && (
                                                                         <span className="text-[10px] bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-black px-2.5 py-0.5 rounded-full shadow-md animate-bounce flex items-center gap-1">
-                                                                            ✨ አዲስ የተጨመረ ማስታወሻ
+                                                                            <Sparkles className="w-3 h-3 text-slate-950 inline mr-1" aria-hidden="true" /> አዲስ የተጨመረ ማስታወሻ
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -3358,7 +3579,7 @@ function StudentDashboardContent() {
                                                                 <span className="text-xs font-bold text-dark dark:text-white">እርስዎ የጠየቁት ጥያቄ፦</span>
                                                             </div>
                                                             <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${ticket.status === "replied" ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" : "bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30"}`}>
-                                                                {ticket.status === "replied" ? "✓ መልስ ተሰጥቷል" : "⏳ በመጠባበቅ ላይ"}
+                                                                {ticket.status === "replied" ? <span className="inline-flex items-center gap-1"><Check className="w-3 h-3 text-emerald-500" aria-hidden="true" /> መልስ ተሰጥቷል</span> : <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3 text-amber-500" aria-hidden="true" /> በመጠባበቅ ላይ</span>}
                                                             </span>
                                                         </div>
 
@@ -3522,7 +3743,7 @@ function StudentDashboardContent() {
                                                     className="px-7 py-3.5 bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-amber-400/25 hover:scale-105 transition flex items-center justify-center gap-2 mx-auto cursor-pointer"
                                                 >
                                                     <i className="fa-solid fa-list-check"></i>
-                                                    <span>🎯 ወደ ፈተናው ይሂዱ (Take Exam)</span>
+                                                    <span><Target className="w-4 h-4 text-slate-950 inline mr-1.5" aria-hidden="true" />ወደ ፈተናው ይሂዱ (Take Exam)</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -3534,11 +3755,12 @@ function StudentDashboardContent() {
                 </div>
             </div>
           </div>
+          )
         )}
 
         {currentView === 'courses' && (
           <div className="max-w-7xl mx-auto py-10">
-            {/* 🌟 Referral Incentive Banner in My Courses */}
+            {/* Referral Incentive Banner in My Courses */}
             <div 
               onClick={() => setCurrentView('referrals')}
               className="mb-8 p-5 sm:p-6 rounded-3xl border border-amber-400/40 bg-gradient-to-r from-amber-500/10 via-[#f9b03c]/10 to-blue-500/10 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer hover:border-[#f9b03c] transition-all group shadow-lg shadow-black/20"
@@ -3633,12 +3855,12 @@ function StudentDashboardContent() {
                                  <div className="flex justify-between items-start">
                                      <div>
                                          <span className="text-[11px] font-bold bg-primary/20 text-dark dark:text-primary px-3 py-1 rounded-full">
-                                             📚 {ticket.courseName || 'General Course'}
+                                             <BookOpen className="w-3.5 h-3.5 text-primary inline mr-1" aria-hidden="true" /> {ticket.courseName || 'General Course'}
                                          </span>
                                          <p className="text-[10px] text-gray-400 mt-1">{ticket.createdAt ? new Date(ticket.createdAt.seconds ? ticket.createdAt.seconds * 1000 : ticket.createdAt).toLocaleString() : ''}</p>
                                      </div>
                                      <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${ticket.status === 'replied' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'}`}>
-                                         {ticket.status === 'replied' ? '✓ መልስ ተሰጥቷል (Replied)' : '⏳ በመጠባበቅ ላይ (Pending)'}
+                                         {ticket.status === 'replied' ? <span className="inline-flex items-center gap-1"><Check className="w-3 h-3 text-emerald-600" aria-hidden="true" /> መልስ ተሰጥቷል (Replied)</span> : <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3 text-amber-600" aria-hidden="true" /> በመጠባበቅ ላይ (Pending)</span>}
                                      </span>
                                  </div>
 
@@ -3684,7 +3906,7 @@ function StudentDashboardContent() {
                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.08),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.12),transparent_50%)] pointer-events-none" />
                  <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
-                 {/* 🛡️ Custom Sleek Branded Confirmation Modal */}
+                 {/*️ Custom Sleek Branded Confirmation Modal */}
                  {showDashboardClearAiModal && (
                    <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
                      <div className="relative bg-white dark:bg-[#0b1222] border border-gray-200 dark:border-white/20 rounded-3xl p-6 w-full max-w-[320px] shadow-[0_20px_50px_rgba(0,0,0,0.9)] text-center space-y-4 animate-in zoom-in-95 duration-200">
@@ -3718,7 +3940,7 @@ function StudentDashboardContent() {
                    </div>
                  )}
 
-                  {/* 🗑️ 15-Day Recycle Bin Modal (Restore & Auto-Purge Manager) */}
+                  {/*️ 15-Day Recycle Bin Modal (Restore & Auto-Purge Manager) */}
                   {showAiTrashModal && (
                     <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
                       <div className="relative bg-white dark:bg-[#0b1222] border border-gray-200 dark:border-white/20 rounded-3xl p-5 sm:p-6 w-full max-w-lg shadow-[0_25px_60px_rgba(0,0,0,0.9)] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
@@ -3860,10 +4082,10 @@ function StudentDashboardContent() {
                          }}
                          className="bg-gray-100 dark:bg-slate-800 text-xs font-bold text-dark dark:text-[#f9b03c] border border-gray-200 dark:border-white/10 rounded-xl px-3 py-1.5 outline-none focus:border-[#f9b03c] transition max-w-[200px] truncate cursor-pointer"
                        >
-                         <option value="" className="bg-white dark:bg-slate-900 text-dark dark:text-white">🌐 አጠቃላይ (General Campus AI)</option>
+                         <option value="" className="bg-white dark:bg-slate-900 text-dark dark:text-white">አጠቃላይ (General Campus AI)</option>
                          {courses.map(c => (
                            <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900 text-dark dark:text-white">
-                             📚 {c.title}
+                             {c.title}
                            </option>
                          ))}
                        </select>
@@ -3938,7 +4160,7 @@ function StudentDashboardContent() {
                              {/* Action buttons under AI response */}
                              {!isUser && i > 0 && (
                                  <div className="flex items-center gap-2 mt-1.5 ml-9 flex-wrap">
-                                     {/* 🔊 Voice Audio Player Button */}
+                                     {/* Voice Audio Player Button */}
                                      <button 
                                         onClick={() => playAiVoiceResponse(m.text, i)}
                                         className={`text-[11px] font-bold px-3 py-1 rounded-xl border flex items-center gap-1.5 transition cursor-pointer active:scale-95 shadow-xs ${
@@ -3974,7 +4196,7 @@ function StudentDashboardContent() {
                                          className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 flex items-center gap-1 transition cursor-pointer"
                                      >
                                          <i className={`fa-solid ${copiedMsgIdx === i ? 'fa-check text-emerald-500' : 'fa-copy'}`}></i>
-                                         <span>{copiedMsgIdx === i ? '✓ ተገልብጧል' : 'ኮፒ'}</span>
+                                         <span>{copiedMsgIdx === i ? 'ተገልብጧል' : 'ኮፒ'}</span>
                                      </button>
 
                                       <button 
@@ -3993,7 +4215,7 @@ function StudentDashboardContent() {
                                           title={savedAiNotes[i] ? "ወደ ማስታወሻ ተመዝግቧል (Saved to Notes)" : "ወደ ማስታወሻ አድ አድርግ (Save to Notes)"}
                                       >
                                           <i className={`fa-solid ${savedAiNotes[i] ? "fa-circle-check text-emerald-600 dark:text-emerald-400 animate-bounce" : "fa-bookmark text-[10px]"}`}></i> 
-                                          <span>{savedAiNotes[i] ? "✓ ወደ ማስታወሻ ተመዝግቧል" : "ወደ ማስታወሻ አድ አድርግ"}</span>
+                                          <span>{savedAiNotes[i] ? "ወደ ማስታወሻ ተመዝግቧል" : "ወደ ማስታወሻ አድ አድርግ"}</span>
                                       </button>
 
                                       {savedAiNotes[i] && (
@@ -4034,7 +4256,7 @@ function StudentDashboardContent() {
                        <img src={aiAttachedImage} alt="Preview" className="w-12 h-12 object-cover rounded-xl border border-[#f9b03c]/50 shadow-sm" />
                        <div className="text-xs">
                          <span className="font-bold text-dark dark:text-white block">ፎቶ ተያይዟል (Attached Photo)</span>
-                         <span className="text-[10px] text-emerald-600 dark:text-emerald-400">✓ ለ AIው ትንታኔ ተዘጋጅቷል</span>
+                         <span className="text-[10px] text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1"><Check className="w-3 h-3 text-emerald-500" aria-hidden="true" /> ለ AIው ትንታኔ ተዘጋጅቷል</span>
                        </div>
                      </div>
                      <button 
@@ -4061,7 +4283,7 @@ function StudentDashboardContent() {
                       ))}
                   </div>
 
-                  {/* ✍️ Clean Single Persistent Input Bar (Photo, Text Input, Live Mic / Send) */}
+                  {/*️ Clean Single Persistent Input Bar (Photo, Text Input, Live Mic / Send) */}
                   <form onSubmit={(e) => handleSendAiMessage(e)} className="relative z-10 flex items-center gap-2">
                       {/* Photo Upload Button */}
                       <button
@@ -4081,7 +4303,7 @@ function StudentDashboardContent() {
                             onChange={e => setChatInput(e.target.value)}
                             placeholder={
                               isAiVoiceRecording
-                                ? "🔴 እያዳመጥኩ ነው... ይናገሩ (Listening... speak now)"
+                                ? "እያዳመጥኩ ነው... ይናገሩ (Listening... speak now)"
                                 : selectedAiCourse 
                                   ? `ስለ ${selectedAiCourse.title} ለ Tsehay AI ጥያቄዎን እዚህ ይጻፉ...` 
                                   : "ለ Tsehay AI ማንኛውንም ጥያቄ እዚህ ይጻፉ..."
@@ -4164,7 +4386,7 @@ function StudentDashboardContent() {
                   }}
                   className="px-6 py-3 bg-gradient-to-r from-amber-400 to-yellow-400 text-dark font-black text-xs sm:text-sm rounded-xl shadow-md hover:scale-105 transition cursor-pointer"
                 >
-                  🚀 ወደ መማሪያ ክፍል ይሂዱ
+                  <span className="inline-flex items-center gap-1.5"><Rocket className="w-4 h-4 text-slate-950" aria-hidden="true" /> ወደ መማሪያ ክፍል ይሂዱ</span>
                 </button>
               </div>
             ) : (
@@ -4190,7 +4412,7 @@ function StudentDashboardContent() {
           </div>
         )}
 
-        {/* 🌟 Refer a Friend (Tsehay Campus Growth Program View) */}
+        {/* Refer a Friend (Tsehay Campus Growth Program View) */}
         {currentView === 'referrals' && (
           <div className="py-6">
             <StudentReferralSection 
@@ -4278,7 +4500,7 @@ function StudentDashboardContent() {
                       <span>ፎቶ ይጫኑ (Upload Photo)</span>
                     </button>
 
-                    {/* 📸 AI Live Camera & Avatar Generator Button */}
+                    {/* AI Live Camera & Avatar Generator Button */}
                     <button
                       type="button"
                       onClick={() => {
@@ -4289,17 +4511,17 @@ function StudentDashboardContent() {
                       className="px-4 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 border border-purple-400/30"
                     >
                       <i className="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
-                      <span>✨ በ AI አቫተር ፍጠር (Camera/AI)</span>
+                      <span className="inline-flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-amber-300" aria-hidden="true" /> በ AI አቫተር ፍጠር (Camera/AI)</span>
                     </button>
 
-                    {/* 🇪🇹 Ethiopian Avatar Presets Toggle */}
+                    {/* Ethiopian Avatar Presets Toggle */}
                     <button
                       type="button"
                       onClick={() => setShowAvatarPresets(prev => !prev)}
                       className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-300 dark:border-slate-700"
                     >
                       <i className="fa-solid fa-masks-theater text-primary"></i>
-                      <span>🇪🇹 የሐበሻ አቫታሮች</span>
+                      <span>የሐበሻ አቫታሮች</span>
                     </button>
 
                     {settingsPhotoUrl && (
@@ -4323,21 +4545,21 @@ function StudentDashboardContent() {
                 </div>
               </div>
 
-              {/* 🇪🇹 Rich Ethiopian Avatars Presets Grid */}
+              {/* Rich Ethiopian Avatars Presets Grid */}
               {showAvatarPresets && (
                 <div className="pt-4 border-t border-slate-200 dark:border-slate-700/80 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <p className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                      <span>🇪🇹 የኢትዮጵያዊያን ተማሪዎች እና ፈጣሪዎች አቫታሮች</span>
+                      <span>የኢትዮጵያዊያን ተማሪዎች እና ፈጣሪዎች አቫታሮች</span>
                     </p>
 
                     {/* Gender / Category Filters */}
                     <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                       {[
                         { id: 'all', label: 'ሁሉም (All)' },
-                        { id: 'male', label: '👨 ወንድ' },
-                        { id: 'female', label: '👩 ሴት' },
-                        { id: '3d', label: '🤖 3D & AI' }
+                        { id: 'male', label: 'ወንድ (Male)' },
+                        { id: 'female', label: 'ሴት (Female)' },
+                        { id: '3d', label: '3D & AI' }
                       ].map(cat => (
                         <button
                           key={cat.id}
@@ -4516,7 +4738,7 @@ function StudentDashboardContent() {
         }}
       />
 
-      {/* 📸 AI Live Camera & Avatar Generator Modal */}
+      {/* AI Live Camera & Avatar Generator Modal */}
       {showAiAvatarModal && (
         <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
           {/* Hidden Canvas for Camera Snapshots */}
@@ -4540,7 +4762,7 @@ function StudentDashboardContent() {
                 </div>
                 <div>
                   <h4 className="font-black text-sm sm:text-base text-white flex items-center gap-1.5">
-                    <span>✨ የ AI አቫታር ፈጣሪ (AI Avatar Studio)</span>
+                    <span className="inline-flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-amber-300" aria-hidden="true" /> የ AI አቫታር ፈጣሪ (AI Avatar Studio)</span>
                   </h4>
                   <p className="text-[11px] text-slate-400">በካሜራ አንስተው ወይም ፎቶ አፕሎድ አድርገው በ AI አቫተር ያመንጩ</p>
                 </div>
@@ -4572,7 +4794,7 @@ function StudentDashboardContent() {
                   }`}
                 >
                   <i className="fa-solid fa-camera"></i>
-                  <span>📸 በካሜራ አንሳ (Live Selfie)</span>
+                  <span className="inline-flex items-center gap-1.5"><Camera className="w-4 h-4" aria-hidden="true" /> በካሜራ አንሳ (Live Selfie)</span>
                 </button>
 
                 <button
@@ -4588,7 +4810,7 @@ function StudentDashboardContent() {
                   }`}
                 >
                   <i className="fa-solid fa-upload"></i>
-                  <span>📁 ፎቶ ምረጥ (Upload)</span>
+                  <span className="inline-flex items-center gap-1.5"><FolderOpen className="w-4 h-4" aria-hidden="true" /> ፎቶ ምረጥ (Upload)</span>
                 </button>
               </div>
 
@@ -4665,14 +4887,14 @@ function StudentDashboardContent() {
               {capturedPhoto && (
                 <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-300">
-                    🎨 የ AI አቫታር ስታይል ይምረጡ (Select Style)፦
+                    <span className="inline-flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-primary" aria-hidden="true" /> የ AI አቫታር ስታይል ይምረጡ (Select Style)፦</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: '3d_cyber', name: '✨ 3D Cyber Habesha', desc: 'ዘመናዊ 3D ቴክኖሎጂ አቫታር' },
-                      { id: 'habesha_art', name: '🎨 Habesha Digital Art', desc: 'የሐበሻ ስነ-ጥበብ ዲጂታል አቫታር' },
-                      { id: 'digital_entrepreneur', name: '🕶️ VIP Entrepreneur', desc: 'ዘመናዊ የቢዝነስ ፈጣሪ' },
-                      { id: 'anime_habesha', name: '🌟 Anime Habesha', desc: 'የአኒሜ ካርቱን ስታይል' }
+                      { id: '3d_cyber', name: '3D Cyber Habesha', desc: 'ዘመናዊ 3D ቴክኖሎጂ አቫታር' },
+                      { id: 'habesha_art', name: 'Habesha Digital Art', desc: 'የሐበሻ ስነ-ጥበብ ዲጂታል አቫታር' },
+                      { id: 'digital_entrepreneur', name: 'VIP Entrepreneur', desc: 'ዘመናዊ የቢዝነስ ፈጣሪ' },
+                      { id: 'anime_habesha', name: 'Anime Habesha', desc: 'የአኒሜ ካርቱን ስታይል' }
                     ].map(st => (
                       <div
                         key={st.id}
@@ -4704,7 +4926,7 @@ function StudentDashboardContent() {
                     ) : (
                       <>
                         <i className="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
-                        <span>✨ በ AI አቫተር አዘጋጅ (Generate AI Avatar)</span>
+                        <span className="inline-flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-amber-300" aria-hidden="true" /> በ AI አቫተር አዘጋጅ (Generate AI Avatar)</span>
                       </>
                     )}
                   </button>
@@ -4715,7 +4937,7 @@ function StudentDashboardContent() {
               {generatedAiAvatarUrl && (
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/50 to-indigo-950/50 border border-purple-400/40 text-center space-y-3 animate-in zoom-in-95 duration-200">
                   <span className="inline-block text-[10px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30">
-                    🎉 አዲሱ የ AI አቫታርዎ ዝግጁ ነው!
+                    <span className="inline-flex items-center gap-1.5"><PartyPopper className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" /> አዲሱ የ AI አቫታርዎ ዝግጁ ነው!</span>
                   </span>
 
                   <div className="w-24 h-24 rounded-full overflow-hidden mx-auto border-2 border-primary shadow-[0_0_25px_rgba(249,176,60,0.4)]">
@@ -4771,7 +4993,7 @@ function StudentDashboardContent() {
                                 <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-black">ACTIVE</span>
                               </h4>
                               <p className="text-[11px] text-[#f9b03c] font-bold truncate max-w-xs sm:max-w-sm">
-                                  📚 {activeLesson?.title || activeCourse?.title}
+                                  <span className="inline-flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5 text-primary" aria-hidden="true" /> {activeLesson?.title || activeCourse?.title}</span>
                               </p>
                           </div>
                       </div>
@@ -4780,7 +5002,7 @@ function StudentDashboardContent() {
                           className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500 text-gray-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
                           title="ዝጋ (Close)"
                       >
-                          ✕
+                          <X className="w-4 h-4" aria-hidden="true" />
                       </button>
                   </div>
 
@@ -4797,13 +5019,13 @@ function StudentDashboardContent() {
                                       onClick={() => handleAskLessonAi(`ይህንን ትምህርት ("${activeLesson?.title || activeCourse?.title}") በምሳሌ በአጭሩ አስረዳኝ።`)}
                                       className="text-[11px] font-bold bg-white/5 hover:bg-[#f9b03c] text-gray-200 hover:text-slate-950 border border-white/10 px-3 py-1.5 rounded-full transition-all duration-150 active:scale-95 cursor-pointer"
                                   >
-                                      💡 በምሳሌ አስረዳኝ
+                                      <span className="inline-flex items-center gap-1"><Lightbulb className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" /> በምሳሌ አስረዳኝ</span>
                                   </button>
                                   <button
                                       onClick={() => handleAskLessonAi(`በዚህ ሌሰን ላይ የተማርነውን በገቢ ለመቀየር ምን ምን እርምጃዎችን መውሰድ አለብኝ?`)}
                                       className="text-[11px] font-bold bg-white/5 hover:bg-[#f9b03c] text-gray-200 hover:text-slate-950 border border-white/10 px-3 py-1.5 rounded-full transition-all duration-150 active:scale-95 cursor-pointer"
                                   >
-                                      🚀 ተግባራዊ እርምጃዎች
+                                      <span className="inline-flex items-center gap-1"><Rocket className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" /> ተግባራዊ እርምጃዎች</span>
                                   </button>
                               </div>
                           </div>
@@ -4862,13 +5084,13 @@ function StudentDashboardContent() {
                     <div className="relative z-10 px-4 py-2 bg-[#0c1326] border-t border-white/10 flex items-center justify-between animate-in fade-in">
                       <div className="flex items-center gap-2.5">
                         <img src={lessonAiAttachedImage} alt="Preview" className="w-10 h-10 object-cover rounded-xl border border-[#f9b03c]/50" />
-                        <span className="text-xs font-bold text-white">📸 ፎቶ ተያይዟል</span>
+                        <span className="text-xs font-bold text-white inline-flex items-center gap-1.5"><Camera className="w-3.5 h-3.5 text-primary" aria-hidden="true" /> ፎቶ ተያይዟል</span>
                       </div>
                       <button 
                         onClick={() => setLessonAiAttachedImage(null)}
                         className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs cursor-pointer hover:bg-red-500 hover:text-white transition"
                       >
-                        ✕
+                        <X className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                     </div>
                   )}
@@ -4934,7 +5156,7 @@ function StudentDashboardContent() {
           </div>
       )}
 
-      {/* 💡 Floating Feedback Trigger Button (Hidden in Classroom to eliminate clutter) */}
+      {/* Floating Feedback Trigger Button (Hidden in Classroom to eliminate clutter) */}
       {currentView !== 'classroom' && (
         <div className="fixed bottom-22 sm:bottom-24 right-4 sm:right-6 z-40">
           <button
@@ -4944,7 +5166,7 @@ function StudentDashboardContent() {
             title="ለ ፀሐይ ካምፓስ አስተያየት ይስጡ (Send Feedback)"
           >
             <span className="w-6 h-6 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] group-hover:bg-[#f9b03c] group-hover:text-slate-950 flex items-center justify-center text-xs font-black transition-colors shadow-xs">
-              💡
+              <Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
             </span>
             <span className="font-heading font-black text-xs text-white group-hover:text-[#f9b03c] transition-colors pr-1">
               አስተያየት
@@ -4953,7 +5175,7 @@ function StudentDashboardContent() {
         </div>
       )}
 
-      {/* 💡 Feedback Modal */}
+      {/* Feedback Modal */}
       <FeedbackModal 
         isOpen={showFeedbackModal} 
         onClose={() => setShowFeedbackModal(false)} 

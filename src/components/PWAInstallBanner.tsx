@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { Zap, Sparkles } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -107,7 +108,7 @@ export default function PWAInstallBanner() {
         console.warn('Install prompt error:', err);
       }
     } else if (isIOS) {
-      alert("በ Safari ላይ 'Share' (📤) ምልክትን ተጭነው 'Add to Home Screen' (➕) ይምረጡ።");
+      alert("በ Safari ላይ 'Share' ምልክትን ተጭነው 'Add to Home Screen' ይምረጡ።");
     } else {
       alert("አፑን ለመጫን በብራውዘርዎ ሜኑ (⋮) ላይ 'Install app' ወይም 'Add to Home screen' የሚለውን ይጫኑ።");
     }
@@ -161,12 +162,14 @@ export default function PWAInstallBanner() {
             <span className="text-xs sm:text-sm font-black text-white font-heading truncate tracking-wide">
               የፀሐይ ካምፓስ አፕሊኬሽን
             </span>
-            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/35 whitespace-nowrap">
-              📱💻 PWA
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/35 whitespace-nowrap flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5 text-[#f9b03c]" aria-hidden="true" />
+              <span>PWA APP</span>
             </span>
           </div>
-          <p className="text-[11px] text-slate-300 font-medium leading-snug">
-            🚀 በ1 ክሊክ ፈጣን ትምህርት፣ ከመስመር ውጭ ዝግጁነት እና የቀጥታ ማሳወቂያዎች ያግኙ!
+          <p className="text-[11px] text-slate-300 font-medium leading-snug flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-[#f9b03c] shrink-0" aria-hidden="true" />
+            <span>በ1 ክሊክ ፈጣን ትምህርት፣ ከመስመር ውጭ ዝግጁነት እና የቀጥታ ማሳወቂያዎች ያግኙ!</span>
           </p>
         </div>
 
