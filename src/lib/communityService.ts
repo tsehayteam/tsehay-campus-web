@@ -256,7 +256,7 @@ export const subscribeCommunityPosts = (
 
   // 2. Supabase Realtime WebSocket Subscription
   const channel = supabase
-    .channel(`realtime_community_posts_${Date.now()}`)
+    .channel('realtime_community_posts')
     .on(
       'postgres_changes',
       {
@@ -571,7 +571,7 @@ export const subscribePostComments = (
 
   // Supabase Realtime channel for comments
   const channel = supabase
-    .channel(`realtime_comments_${postId}_${Date.now()}`)
+    .channel(`realtime_comments_${postId}`)
     .on(
       'postgres_changes',
       {
@@ -768,7 +768,7 @@ export const subscribeUserConversations = (
 
   // Supabase Realtime for conversations
   const channel = supabase
-    .channel(`realtime_user_convs_${userId}_${Date.now()}`)
+    .channel(`realtime_user_convs_${userId}`)
     .on(
       'postgres_changes',
       {
@@ -856,7 +856,7 @@ export const subscribeConversationMessages = (
 
   // Supabase Realtime for Direct Messages
   const channel = supabase
-    .channel(`realtime_conv_msgs_${conversationId}_${Date.now()}`)
+    .channel(`realtime_conv_msgs_${conversationId}`)
     .on(
       'postgres_changes',
       {

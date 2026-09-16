@@ -206,99 +206,19 @@ export default function HomeClient({
     }
   };
 
-  // Synchronously initialize cached courses on mount & connect zero-refresh live sync
+  // Synchronously initialize cached courses on mount & connect shared zero-refresh live sync
   useEffect(() => {
     setIsMounted(true);
 
-    const fetchLiveCourses = async () => {
-      try {
-        const res = await fetch(`/api/courses?t=${Date.now()}`, {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && Array.isArray(data.courses)) {
-            setCourses(data.courses);
-            saveCachedCourses(data.courses);
-          }
-        }
-      } catch (err) {
-        console.warn("API courses fetch notice:", err);
-      } finally {
-        setLoading(false);
+    const unsubscribe = subscribeToCourses((updatedCourses) => {
+      if (Array.isArray(updatedCourses) && updatedCourses.length > 0) {
+        setCourses(updatedCourses);
       }
-    };
-
-    fetchLiveCourses();
-
-    // 1. Supabase Realtime WebSocket subscriptions on courses & site_settings
-    const coursesChannel = supabase
-      .channel('realtime_home_courses_sync')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'courses' },
-        () => {
-          fetchLiveCourses();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'site_settings' },
-        (payload: any) => {
-          if (payload?.new && payload.new.key === 'deleted_courses') {
-            fetchLiveCourses();
-          }
-        }
-      )
-      .subscribe();
-
-    // 2. Cross-Tab Broadcast Channel & Custom Event Listeners
-    let bc: BroadcastChannel | null = null;
-    try {
-      if (typeof BroadcastChannel !== 'undefined') {
-        bc = new BroadcastChannel('tsehay_live_courses_channel');
-        bc.onmessage = (event) => {
-          if (event.data && event.data.type === 'COURSES_UPDATED' && Array.isArray(event.data.courses)) {
-            setCourses(event.data.courses);
-          } else {
-            fetchLiveCourses();
-          }
-        };
-      }
-    } catch (e) {}
-
-    const handleCustomCoursesUpdate = (e: any) => {
-      if (e.detail?.courses && Array.isArray(e.detail.courses)) {
-        setCourses(e.detail.courses);
-      } else {
-        fetchLiveCourses();
-      }
-    };
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        fetchLiveCourses();
-      }
-    };
-
-    window.addEventListener('tsehay_courses_updated', handleCustomCoursesUpdate);
-    window.addEventListener('tsehay_course_update', handleCustomCoursesUpdate);
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'tsehay_courses_cache' || e.key === 'tsehay_admin_courses_cache') {
-        fetchLiveCourses();
-      }
+      setLoading(false);
     });
-    window.addEventListener('focus', fetchLiveCourses);
-    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      supabase.removeChannel(coursesChannel);
-      if (bc) bc.close();
-      window.removeEventListener('tsehay_courses_updated', handleCustomCoursesUpdate);
-      window.removeEventListener('tsehay_course_update', handleCustomCoursesUpdate);
-      window.removeEventListener('focus', fetchLiveCourses);
-      document.removeEventListener('visibilitychange', handleVisibility);
+      unsubscribe();
     };
   }, []);
 

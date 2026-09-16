@@ -12,7 +12,7 @@ import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
 import TypingCourseTitle from '@/components/TypingCourseTitle';
 import FormattedAiText from '@/components/FormattedAiText';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses, formatCleanCategory } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses, formatCleanCategory, fetchLiveCoursesClient } from '@/lib/courseCache';
 import { parseVideoEmbedUrl } from '@/lib/videoParser';
 
 function CoursePreviewContent() {
@@ -94,21 +94,14 @@ function CoursePreviewContent() {
           }
         } catch (e) {}
 
-        // Fetch all courses from /api/courses
+        // Deduplicated fetch of courses catalog
         let allList: any[] = [];
         try {
-          const allRes = await fetch('/api/courses');
-          if (allRes.ok) {
-            const allData = await allRes.json();
-            if (allData.courses && Array.isArray(allData.courses)) {
-              allList = allData.courses;
-            }
-          }
+          allList = await fetchLiveCoursesClient();
         } catch (e) {}
 
         if (allList.length > 0 && isMounted) {
           setAllCourses(allList);
-          saveCachedCourses(allList);
         }
 
         if (!loadedCourseData && allList.length > 0) {

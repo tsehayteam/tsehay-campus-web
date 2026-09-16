@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
+import { invalidateServerCoursesCache } from '@/lib/serverCourses';
 
 export const memorySiteSettingsCache = sharedSiteSettingsCache;
 
@@ -121,6 +122,9 @@ export async function POST(req: NextRequest) {
     // 2. In-Memory & File Store Cache
     memorySiteSettingsCache.set(settingKey, payload);
     savePersistedSetting(settingKey, payload);
+    try {
+      invalidateServerCoursesCache();
+    } catch (e) {}
 
     return NextResponse.json({ 
       success: true, 

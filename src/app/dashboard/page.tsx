@@ -13,7 +13,7 @@ const ReactPlayer: any = nextDynamic(() => import('react-player'), { ssr: false 
 import CourseRatingModal from '@/components/CourseRatingModal';
 import CourseQuiz from '@/components/CourseQuiz';
 import CourseCertificate from '@/components/CourseCertificate';
-import { formatDriveImageUrl, getCleanCourseImage, DEFAULT_COURSES, getCachedCourses } from '@/lib/courseCache';
+import { formatDriveImageUrl, getCleanCourseImage, DEFAULT_COURSES, getCachedCourses, fetchLiveCoursesClient } from '@/lib/courseCache';
 import FormattedAiText from '@/components/FormattedAiText';
 import StudentReferralSection from '@/components/StudentReferralSection';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
@@ -756,16 +756,10 @@ function StudentDashboardContent() {
           }
         }
 
-        // 1. Fetch authoritative courses from /api/courses (backed by Supabase)
+        // 1. Fetch authoritative courses from /api/courses (deduplicated & cached)
         let allCatalogCourses: any[] = [];
         try {
-          const apiRes = await fetch('/api/courses');
-          if (apiRes.ok) {
-            const apiData = await apiRes.json();
-            if (apiData.courses && Array.isArray(apiData.courses) && apiData.courses.length > 0) {
-              allCatalogCourses = apiData.courses;
-            }
-          }
+          allCatalogCourses = await fetchLiveCoursesClient();
         } catch (e) {}
 
         if (allCatalogCourses.length === 0) {

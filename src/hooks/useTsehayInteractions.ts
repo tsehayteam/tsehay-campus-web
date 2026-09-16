@@ -26,14 +26,16 @@ export function useTsehayInteractions() {
       'input[type="submit"]',
     ].join(',');
 
-    const PRIMARY_BUTTON_SELECTOR = [
-      '.btn-buy-now-vibe',
-      '[data-primary="true"]',
-      'button[type="submit"]',
-      '.bg-[#f9b03c]',
-      '.bg-amber-400',
-      '.bg-primary',
-    ].join(',');
+    const isPrimaryTarget = (el: HTMLElement | null): boolean => {
+      if (!el) return false;
+      try {
+        if (el.matches('.btn-buy-now-vibe, [data-primary="true"], button[type="submit"], .bg-amber-400, .bg-primary')) {
+          return true;
+        }
+      } catch (e) {}
+      const className = typeof el.className === 'string' ? el.className : '';
+      return className.includes('bg-[#f9b03c]') || className.includes('bg-primary') || className.includes('bg-amber-400');
+    };
 
     let lastHoverTime = 0;
 
@@ -50,7 +52,7 @@ export function useTsehayInteractions() {
         new CustomEvent('tsehay-audio-hover', {
           detail: {
             tagName: target.tagName,
-            isPrimary: target.matches(PRIMARY_BUTTON_SELECTOR),
+            isPrimary: isPrimaryTarget(target),
           },
         })
       );
@@ -60,7 +62,7 @@ export function useTsehayInteractions() {
       const target = e.currentTarget as HTMLElement | null;
       if (!target) return;
 
-      const isPrimary = target.matches(PRIMARY_BUTTON_SELECTOR);
+      const isPrimary = isPrimaryTarget(target);
       const rect = target.getBoundingClientRect();
 
       // Click location in normalized screen coordinates (-1 to 1 for 3D Three.js canvas)

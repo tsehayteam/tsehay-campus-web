@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getCachedCourses, getCourseSlug, getCourseBySlugOrId } from '@/lib/courseCache';
+import { getCachedCourses, getCourseSlug, getCourseBySlugOrId, fetchLiveCoursesClient } from '@/lib/courseCache';
 // Courses cache helper
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { useLanguage } from '@/context/LanguageContext';
@@ -89,20 +89,15 @@ export default function AITutorSection() {
       }
     } catch {}
 
-    const fetchLive = async () => {
-      try {
-        const res = await fetch('/api/courses');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setCoursesList(data);
-          }
+    fetchLiveCoursesClient()
+      .then((list) => {
+        if (Array.isArray(list) && list.length > 0) {
+          setCoursesList(list);
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         console.warn("Course fetch in AITutorSection:", err);
-      }
-    };
-    fetchLive();
+      });
   }, []);
 
   // 🚀 Scrollytelling Visibility & Typing Trigger Sequence

@@ -5,6 +5,7 @@ export const fetchCache = 'force-no-store';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
+import { invalidateServerCoursesCache } from '@/lib/serverCourses';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
     // 2. List all videos from Supabase
     const { data: rows, error: sbErr } = await supabaseServer
       .from('youtube_videos')
-      .select('*')
+      .select('id, title, youtube_url, youtube_id, thumbnail, video_src, order_num, timestamp, updated_at')
       .order('order_num', { ascending: true });
 
     let videos: any[] = [];
@@ -137,6 +138,10 @@ export async function POST(req: NextRequest) {
       }
     }, { headers: NO_CACHE_HEADERS });
 
+    try {
+      invalidateServerCoursesCache();
+    } catch (e) {}
+
   } catch (error: any) {
     console.error('Error in POST /api/admin/youtube-videos:', error);
     return NextResponse.json(
@@ -169,6 +174,10 @@ export async function DELETE(req: NextRequest) {
     } catch (e) {
       console.warn('Supabase delete warning:', e);
     }
+
+    try {
+      invalidateServerCoursesCache();
+    } catch (e) {}
 
     return NextResponse.json({
       success: true,
@@ -204,6 +213,10 @@ export async function PATCH(req: NextRequest) {
         .update({ order_num: item.order ?? 0, updated_at: new Date().toISOString() })
         .eq('id', item.id);
     }
+
+    try {
+      invalidateServerCoursesCache();
+    } catch (e) {}
 
     return NextResponse.json({ success: true, message: 'Reordered successfully' }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {

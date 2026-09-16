@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { getCachedCourses } from '@/lib/courseCache';
+import { getCachedCourses, fetchLiveCoursesClient } from '@/lib/courseCache';
 
 export default function AssessmentModal({ onClose, onRecommend }: { onClose: () => void, onRecommend: (courseId: string) => void }) {
   const [step, setStep] = useState(1);
@@ -19,11 +19,8 @@ export default function AssessmentModal({ onClose, onRecommend }: { onClose: () 
       if (cached && cached.length > 0) {
         courses = cached.map(c => ({ id: c.id, title: c.title, description: c.description, category: c.category }));
       } else {
-        const res = await fetch('/api/courses');
-        if (res.ok) {
-          const list = await res.json();
-          courses = (list || []).map((c: any) => ({ id: c.id, title: c.title, description: c.description, category: c.category }));
-        }
+        const list = await fetchLiveCoursesClient();
+        courses = (list || []).map((c: any) => ({ id: c.id, title: c.title, description: c.description, category: c.category }));
       }
 
       const prompt = `

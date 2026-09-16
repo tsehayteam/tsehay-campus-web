@@ -108,10 +108,15 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
 
     // 1. Fail-Safe Server API Fetch
     const fetchApiVideos = async () => {
+      // If initialVideos was already provided via SSR props, avoid redundant network fetching
+      if (initialVideos && Array.isArray(initialVideos) && initialVideos.length > 0) {
+        return;
+      }
+
       try {
-        let res = await fetch('/api/youtube-videos', { cache: 'no-store' });
+        let res = await fetch('/api/youtube-videos');
         if (!res.ok) {
-          res = await fetch('/api/admin/youtube-videos', { cache: 'no-store' });
+          res = await fetch('/api/admin/youtube-videos');
         }
         if (res.ok && isMounted) {
           const data = await res.json();

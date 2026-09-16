@@ -167,13 +167,10 @@ export default function UpcomingEventsSection() {
       }
     };
 
-    // 1. Fetch live events from API with cache-busting
+    // 1. Fetch live events from API
     const fetchEvents = async () => {
       try {
-        const res = await fetch(`/api/events?t=${Date.now()}`, {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-        });
+        const res = await fetch('/api/events');
         if (res.ok) {
           const data = await res.json();
           if (data.events && Array.isArray(data.events) && data.events.length > 0) {
@@ -229,20 +226,10 @@ export default function UpcomingEventsSection() {
       })
       .subscribe();
 
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        fetchEvents();
-      }
-    };
-    window.addEventListener('focus', fetchEvents);
-    document.addEventListener('visibilitychange', handleVisibility);
-
     return () => {
       supabase.removeChannel(eventsChannel);
       window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
       window.removeEventListener('tsehay_user_ticket_saved', handleTicketSaved);
-      window.removeEventListener('focus', fetchEvents);
-      document.removeEventListener('visibilitychange', handleVisibility);
       if (bc) bc.close();
     };
   }, [user]);

@@ -1,7 +1,54 @@
 import { supabaseServer } from '@/lib/supabase/server';
 import { DEFAULT_COURSES, formatCourseDesc } from '@/lib/courseCache';
 
+const COURSE_COLUMNS_PROJECTION = [
+  'id',
+  'slug',
+  'title',
+  'title_en',
+  'description',
+  'price',
+  'old_price',
+  'instructor',
+  'instructor_name',
+  'instructor_image',
+  'image',
+  'banner',
+  'category',
+  'rating',
+  'status',
+  'is_published',
+  'created_at',
+  'updated_at',
+  'lessons',
+  'modules',
+  'requirements',
+  'target_audience',
+  'what_you_will_learn',
+  'ai_prompt'
+].join(', ');
+
+// Server-side in-memory caches (120-second TTL)
+let cachedServerCourses: { data: any[]; timestamp: number } | null = null;
+let cachedLandingVideo: { data: LiveLandingVideoData; timestamp: number } | null = null;
+let cachedAboutVideo: { data: LiveAboutVideoData; timestamp: number } | null = null;
+let cachedPortfolio: { data: LivePortfolioData; timestamp: number } | null = null;
+let cachedYouTubeVideos: { data: LiveYouTubeVideoItem[]; timestamp: number } | null = null;
+const SERVER_CACHE_TTL_MS = 120 * 1000;
+
+export function invalidateServerCoursesCache() {
+  cachedServerCourses = null;
+  cachedLandingVideo = null;
+  cachedAboutVideo = null;
+  cachedPortfolio = null;
+  cachedYouTubeVideos = null;
+}
+
 export async function getLiveCoursesServer(): Promise<any[]> {
+  if (cachedServerCourses && (Date.now() - cachedServerCourses.timestamp < SERVER_CACHE_TTL_MS)) {
+    return cachedServerCourses.data;
+  }
+
   try {
     // 1. Fetch deleted courses blacklist
     let deletedCourses: string[] = [];
@@ -16,23 +63,22 @@ export async function getLiveCoursesServer(): Promise<any[]> {
       }
     } catch (e) {}
 
-    // 2. Fetch active courses from Supabase
-    const { data: sbCourses, error: sbErr } = await supabaseServer
-      .from('courses')
-      .select('*')
+    // 2. Fetch active courses from Supabase using projected columns
+    const { data: sbCourses, error: sbErr }: any = await (supabaseServer
+      .from('courses') as any)
+      .select(COURSE_COLUMNS_PROJECTION)
       .order('created_at', { ascending: false });
 
     if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
       const active = sbCourses
         .filter(c => c && c.id && c.status !== 'Deleted' && !c.isDeleted && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
         .map(c => {
-          const raw = c.raw_data || {};
-          const merged = { ...c, ...raw };
-          const desc = formatCourseDesc(merged);
-          return { ...merged, desc, description: desc };
+          const desc = formatCourseDesc(c);
+          return { ...c, desc, description: desc };
         });
 
       if (active.length > 0) {
+        cachedServerCourses = { data: active, timestamp: Date.now() };
         return active;
       }
     }
@@ -55,6 +101,10 @@ export interface LiveLandingVideoData {
 }
 
 export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoData> {
+  if (cachedLandingVideo && (Date.now() - cachedLandingVideo.timestamp < SERVER_CACHE_TTL_MS)) {
+    return cachedLandingVideo.data;
+  }
+
   const result: LiveLandingVideoData = {
     videoUrl: DEFAULT_LANDING_VIDEO,
     thumbnail: '/assets/hero-bg-new.jpg'
@@ -74,6 +124,8 @@ export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoD
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
       if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
     }
+
+    cachedLandingVideo = { data: result, timestamp: Date.now() };
   } catch (err) {
     console.warn('getLiveLandingVideoDataServer error:', err);
   }
@@ -95,6 +147,10 @@ export interface LiveAboutVideoData {
 const DEFAULT_ABOUT_VIDEO = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
 
 export async function getLiveAboutVideoDataServer(): Promise<LiveAboutVideoData> {
+  if (cachedAboutVideo && (Date.now() - cachedAboutVideo.timestamp < SERVER_CACHE_TTL_MS)) {
+    return cachedAboutVideo.data;
+  }
+
   const result: LiveAboutVideoData = {
     videoUrl: DEFAULT_ABOUT_VIDEO,
     thumbnail: '/assets/about_video_cover.jpg',
@@ -116,6 +172,8 @@ export async function getLiveAboutVideoDataServer(): Promise<LiveAboutVideoData>
       if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
       if (data.title && typeof data.title === 'string' && data.title.trim()) result.title = data.title.trim();
     }
+
+    cachedAboutVideo = { data: result, timestamp: Date.now() };
   } catch (err) {
     console.warn('getLiveAboutVideoDataServer error:', err);
   }
@@ -132,6 +190,10 @@ const DEFAULT_PORTFOLIO_LOCAL = 'https://youtu.be/h9JsGCkd_4o?si=qoSHzmD3-EWjin8
 const DEFAULT_PORTFOLIO_INTL = 'https://youtu.be/6Ssyn7H3nWk?si=CGFugLZIcMiAW4oe';
 
 export async function getLivePortfolioVideosServer(): Promise<LivePortfolioData> {
+  if (cachedPortfolio && (Date.now() - cachedPortfolio.timestamp < SERVER_CACHE_TTL_MS)) {
+    return cachedPortfolio.data;
+  }
+
   const result: LivePortfolioData = {
     localVideoUrl: DEFAULT_PORTFOLIO_LOCAL,
     internationalVideoUrl: DEFAULT_PORTFOLIO_INTL
@@ -153,6 +215,8 @@ export async function getLivePortfolioVideosServer(): Promise<LivePortfolioData>
         result.internationalVideoUrl = d.internationalVideoUrl.trim();
       }
     }
+
+    cachedPortfolio = { data: result, timestamp: Date.now() };
   } catch (err) {
     console.warn('getLivePortfolioVideosServer error:', err);
   }
@@ -171,14 +235,18 @@ export interface LiveYouTubeVideoItem {
 }
 
 export async function getLiveYouTubeVideosServer(): Promise<LiveYouTubeVideoItem[]> {
+  if (cachedYouTubeVideos && (Date.now() - cachedYouTubeVideos.timestamp < SERVER_CACHE_TTL_MS)) {
+    return cachedYouTubeVideos.data;
+  }
+
   try {
-    const { data: rows, error } = await supabaseServer
-      .from('youtube_videos')
-      .select('*')
+    const { data: rows, error }: any = await (supabaseServer
+      .from('youtube_videos') as any)
+      .select('id, title, youtube_url, youtube_id, thumbnail, video_src, order_num')
       .order('order_num', { ascending: true });
 
     if (!error && Array.isArray(rows) && rows.length > 0) {
-      return rows.map(r => ({
+      const mapped = rows.map(r => ({
         id: r.id,
         title: r.title || 'ነፃ የዩቲዩብ ስልጠና',
         youtubeUrl: r.youtube_url || (r.youtube_id ? `https://www.youtube.com/watch?v=${r.youtube_id}` : ''),
@@ -187,6 +255,9 @@ export async function getLiveYouTubeVideosServer(): Promise<LiveYouTubeVideoItem
         videoSrc: r.video_src || '',
         order: r.order_num ?? 0
       }));
+
+      cachedYouTubeVideos = { data: mapped, timestamp: Date.now() };
+      return mapped;
     }
   } catch (err) {
     console.warn('getLiveYouTubeVideosServer error:', err);

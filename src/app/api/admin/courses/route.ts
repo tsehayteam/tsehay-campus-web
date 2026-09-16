@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase/client';
 import { generateCourseSlug, DEFAULT_COURSES, formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
 import { saveSinglePersistedCourse, deletePersistedCourse } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
+import { invalidateCoursesCache } from '@/app/api/courses/route';
+import { invalidateServerCoursesCache } from '@/lib/serverCourses';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -208,6 +210,11 @@ export async function POST(req: NextRequest) {
       console.warn('Supabase save course warning:', sbErr);
     }
 
+    try {
+      invalidateCoursesCache();
+      invalidateServerCoursesCache();
+    } catch (e) {}
+
     return NextResponse.json({ 
       success: true, 
       message: 'Course saved successfully', 
@@ -264,6 +271,11 @@ export async function DELETE(req: NextRequest) {
     } catch (e) {
       console.warn('Error recording deleted course in site_settings:', e);
     }
+
+    try {
+      invalidateCoursesCache();
+      invalidateServerCoursesCache();
+    } catch (e) {}
 
     return NextResponse.json({ 
       success: true, 

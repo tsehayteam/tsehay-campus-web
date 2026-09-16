@@ -556,9 +556,102 @@ export function broadcastCourseUpdate(courses: any[]) {
   } catch (e) {}
 }
 
+// Shared In-Flight Fetch Deduplicator & Client Cache Cooldown
+let sharedCoursesFetchPromise: Promise<any[]> | null = null;
+let lastClientFetchTime = 0;
+const CLIENT_FETCH_COOLDOWN_MS = 30000; // 30 seconds client-side deduplication cooldown
+
+export async function fetchLiveCoursesClient(force = false): Promise<any[]> {
+  if (typeof window === 'undefined') return [];
+  const now = Date.now();
+  if (!force && sharedCoursesFetchPromise) {
+    return sharedCoursesFetchPromise;
+  }
+  if (!force && (now - lastClientFetchTime < CLIENT_FETCH_COOLDOWN_MS)) {
+    const cached = getCachedCourses();
+    if (cached && cached.length > 0) return cached;
+  }
+
+  sharedCoursesFetchPromise = (async () => {
+    try {
+      const res = await fetch('/api/courses');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.courses)) {
+          saveCachedCourses(data.courses);
+          lastClientFetchTime = Date.now();
+          return data.courses;
+        }
+      }
+    } catch (err) {
+      console.warn('API courses fetch note:', err);
+    } finally {
+      sharedCoursesFetchPromise = null;
+    }
+    return getCachedCourses();
+  })();
+
+  return sharedCoursesFetchPromise;
+}
+
+// Single Shared Supabase Realtime Channel
+let sharedSupabaseChannel: any = null;
+let activeSubscribersCount = 0;
+const activeListeners = new Set<(courses: any[]) => void>();
+
+function ensureSharedCoursesRealtime() {
+  if (typeof window === 'undefined') return;
+  if (!sharedSupabaseChannel) {
+    try {
+      sharedSupabaseChannel = supabase
+        .channel('realtime_shared_courses_sync')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'courses' },
+          () => {
+            fetchLiveCoursesClient(true).then(list => {
+              if (list && list.length > 0) {
+                activeListeners.forEach(listener => {
+                  try { listener(list); } catch (e) {}
+                });
+              }
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'site_settings' },
+          (payload: any) => {
+            if (payload?.new && payload.new.key === 'deleted_courses') {
+              fetchLiveCoursesClient(true).then(list => {
+                if (list && list.length > 0) {
+                  activeListeners.forEach(listener => {
+                    try { listener(list); } catch (e) {}
+                  });
+                }
+              });
+            }
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime subscription skipped:', e);
+    }
+  }
+}
+
+function releaseSharedCoursesRealtime() {
+  if (activeSubscribersCount <= 0 && sharedSupabaseChannel) {
+    try {
+      supabase.removeChannel(sharedSupabaseChannel);
+    } catch (e) {}
+    sharedSupabaseChannel = null;
+  }
+}
+
 /**
  * Universal Multi-Strategy Real-Time Subscription Engine
- * 5. Immediate Server API Fetch (/api/courses)
+ * Deduplicated, cached, and single-channel optimized
  */
 export function subscribeToCourses(callback: (courses: any[]) => void): () => void {
   if (typeof window === 'undefined') return () => {};
@@ -614,41 +707,19 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     emitIfChanged(DEFAULT_COURSES, true);
   }
 
-  // 2. Immediate Server API Fail-Safe Fetch (<100ms) with cache-busting
-  fetch(`/api/courses?t=${Date.now()}`, {
-    cache: 'no-store',
-    headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (!isCleanedUp && data.courses && Array.isArray(data.courses)) {
-        const validList = data.courses.filter(isValidCourse);
-        if (validList.length > 0) {
-          emitIfChanged(validList, true);
-        }
+  // 2. Deduplicated Server API Fetch (<100ms)
+  fetchLiveCoursesClient()
+    .then(courses => {
+      if (!isCleanedUp && Array.isArray(courses) && courses.length > 0) {
+        emitIfChanged(courses, true);
       }
     })
     .catch(err => console.warn('API courses fetch note:', err));
 
-  // 3. Real-Time Supabase WebSocket Subscription on courses table
-  const supabaseChannel = supabase
-    .channel(`realtime_courses_cache_${Date.now()}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'courses' },
-      () => {
-        fetch(`/api/courses?t=${Date.now()}`)
-          .then(res => res.json())
-          .then(data => {
-            if (!isCleanedUp && data.courses && Array.isArray(data.courses)) {
-              emitIfChanged(data.courses, true);
-            }
-          })
-          .catch(() => {});
-      }
-    )
-    .subscribe();
-
+  // 3. Register listener with Shared Real-Time channel
+  activeListeners.add(emitIfChanged);
+  activeSubscribersCount++;
+  ensureSharedCoursesRealtime();
 
   // 4. Cross-Tab Broadcast Channel Listener (Nanosecond Live Sync across multiple browser tabs)
   let bc: BroadcastChannel | null = null;
@@ -685,15 +756,19 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
   // Return comprehensive cleanup function
   return () => {
     isCleanedUp = true;
-    supabase.removeChannel(supabaseChannel);
+    activeListeners.delete(emitIfChanged);
+    activeSubscribersCount = Math.max(0, activeSubscribersCount - 1);
+    if (activeSubscribersCount === 0) {
+      releaseSharedCoursesRealtime();
+    }
     if (bc) {
       bc.close();
     }
     window.removeEventListener('tsehay_courses_updated', handleCustomUpdate);
     window.removeEventListener('storage', handleStorage);
   };
-
 }
+
 
 export interface ComingSoonCourse {
   id: string;

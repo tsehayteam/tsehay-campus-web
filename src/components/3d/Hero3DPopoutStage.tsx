@@ -114,14 +114,17 @@ export default function Hero3DPopoutStage({
 
     // B. Live Fetch & Supabase Edge Sync
     const fetchLandingVideo = async () => {
+      // If videoSrc was already provided via SSR props, avoid redundant network fetching
+      if (videoSrc && typeof videoSrc === 'string' && videoSrc.trim()) {
+        return;
+      }
+
       try {
         let fetchedUrl = '';
         let fetchedThumb = '';
 
         try {
-          const res = await fetch(`/api/admin/site-settings?key=landing_video&_t=${Date.now()}`, {
-            cache: 'no-store'
-          });
+          const res = await fetch('/api/admin/site-settings?key=landing_video');
           if (res.ok) {
             const json = await res.json();
             fetchedUrl = json?.data?.url || json?.data?.videoUrl || json?.data?.youtubeUrl || '';
@@ -131,7 +134,7 @@ export default function Hero3DPopoutStage({
 
         if (!fetchedUrl) {
           try {
-            const res2 = await fetch(`/api/admin/save-landing-video?_t=${Date.now()}`, { cache: 'no-store' });
+            const res2 = await fetch('/api/admin/save-landing-video');
             if (res2.ok) {
               const json2 = await res2.json();
               fetchedUrl = json2?.videoUrl || json2?.url || '';

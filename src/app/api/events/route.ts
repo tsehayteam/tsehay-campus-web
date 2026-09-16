@@ -21,6 +21,20 @@ const NO_CACHE_HEADERS = {
   'Expires': '0',
 };
 
+const PUBLIC_CACHE_HEADERS = {
+  'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300',
+  'CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+  'Vercel-CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+};
+
+// In-Memory Events Cache (120-second TTL)
+let cachedEventsList: { data: any[]; timestamp: number } | null = null;
+const EVENTS_CACHE_TTL_MS = 120 * 1000;
+
+export function invalidateEventsCache() {
+  cachedEventsList = null;
+}
+
 function mapDbRowToEvent(row: any): TsehayEvent {
   const cap = Number(row.capacity) || 100;
   const reg = Number(row.registered_count !== undefined ? row.registered_count : row.registeredCount) || 0;
@@ -62,6 +76,10 @@ function mapDbRowToEvent(row: any): TsehayEvent {
 }
 
 async function getSupabaseEvents(): Promise<any[]> {
+  if (cachedEventsList && (Date.now() - cachedEventsList.timestamp < EVENTS_CACHE_TTL_MS)) {
+    return cachedEventsList.data;
+  }
+
   // 1. Primary: Read directly from Supabase `events` table
   try {
     const { data: dbEvents, error: dbErr } = await supabaseServer
@@ -72,6 +90,7 @@ async function getSupabaseEvents(): Promise<any[]> {
     if (!dbErr && dbEvents && Array.isArray(dbEvents) && dbEvents.length > 0) {
       const mapped = dbEvents.map(mapDbRowToEvent);
       savePersistedEvents(mapped);
+      cachedEventsList = { data: mapped, timestamp: Date.now() };
       return mapped;
     }
   } catch (e) {
@@ -89,6 +108,7 @@ async function getSupabaseEvents(): Promise<any[]> {
     if (!error && row?.data && Array.isArray(row.data) && row.data.length > 0) {
       const mapped = row.data.map(mapDbRowToEvent);
       savePersistedEvents(mapped);
+      cachedEventsList = { data: mapped, timestamp: Date.now() };
       return mapped;
     }
   } catch (e) {
@@ -105,6 +125,7 @@ async function getSupabaseEvents(): Promise<any[]> {
 
 async function saveSupabaseEvents(events: any[], singlePayload?: any) {
   savePersistedEvents(events);
+  invalidateEventsCache();
 
   // 1. Primary: Upsert single event to Supabase `events` table if provided
   if (singlePayload && singlePayload.id) {
@@ -173,7 +194,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ 
           success: true, 
           event: { ...found, image: formatDriveImageUrl(found.image) || found.image } 
-        }, { headers: NO_CACHE_HEADERS });
+        }, { headers: PUBLIC_CACHE_HEADERS });
       }
       return NextResponse.json({ error: 'Event not found' }, { status: 404, headers: NO_CACHE_HEADERS });
     }
@@ -194,7 +215,7 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ success: true, events: formattedEvents, count: formattedEvents.length }, { headers: NO_CACHE_HEADERS });
+    return NextResponse.json({ success: true, events: formattedEvents, count: formattedEvents.length }, { headers: PUBLIC_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error fetching events:', error);
     const fallback = loadPersistedEvents();

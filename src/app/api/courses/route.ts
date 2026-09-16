@@ -3,8 +3,12 @@ import { supabase } from '@/lib/supabase/client';
 import { generateCourseSlug, DEFAULT_COURSES, isValidCourse, formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const fetchCache = 'force-no-store';
+
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+  'CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+  'Vercel-CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+};
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -13,6 +17,55 @@ const NO_CACHE_HEADERS = {
   'Pragma': 'no-cache',
   'Expires': '0',
 };
+
+// In-Memory Server Cache (Node process runtime)
+interface CacheEntry<T> {
+  timestamp: number;
+  data: T;
+}
+
+const CACHE_TTL_MS = 120 * 1000; // 120 seconds TTL
+let allCoursesCache: CacheEntry<{ courses: any[]; deletedCourses: string[] }> | null = null;
+const singleCourseCache = new Map<string, CacheEntry<any>>();
+
+/**
+ * Public Cache Invalidation Hook
+ * Called by admin mutations (create, update, delete course) to clear cache immediately
+ */
+export function invalidateCoursesCache(): void {
+  allCoursesCache = null;
+  singleCourseCache.clear();
+}
+
+// Columns explicitly projected from the `courses` table (omitting the heavy duplicate `raw_data` column)
+const COURSE_COLUMNS_PROJECTION = [
+  'id',
+  'slug',
+  'title',
+  'title_en',
+  'description',
+  'desc',
+  'price',
+  'old_price',
+  'instructor',
+  'instructor_name',
+  'instructor_image',
+  'instructor_photo',
+  'image',
+  'banner',
+  'video',
+  'status',
+  'is_published',
+  'category',
+  'lessons',
+  'modules',
+  'requirements',
+  'includes',
+  'what_you_will_learn',
+  'ai_prompt',
+  'created_at',
+  'updated_at'
+].join(',');
 
 function sanitizeCourseImages(course: any) {
   if (!course || typeof course !== 'object') return course;
@@ -35,8 +88,88 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get('courseId') || searchParams.get('id');
+    const now = Date.now();
 
-    // 1. Fetch deleted courses blacklist from site_settings
+    // 1. Single Course Lookup
+    if (courseId) {
+      const cleanId = courseId.trim();
+      const cleanLower = cleanId.toLowerCase();
+
+      // Check single course cache
+      const cachedSingle = singleCourseCache.get(cleanLower) || singleCourseCache.get(cleanId);
+      if (cachedSingle && (now - cachedSingle.timestamp < CACHE_TTL_MS)) {
+        return NextResponse.json(
+          { success: true, course: cachedSingle.data },
+          { headers: CACHE_HEADERS }
+        );
+      }
+
+      // Fetch deleted courses list (check memory cache first)
+      let deletedCourses: string[] = [];
+      if (allCoursesCache && (now - allCoursesCache.timestamp < CACHE_TTL_MS)) {
+        deletedCourses = allCoursesCache.data.deletedCourses;
+      } else {
+        try {
+          const { data: delData } = await supabase
+            .from('site_settings')
+            .select('data')
+            .eq('key', 'deleted_courses')
+            .maybeSingle();
+          if (Array.isArray(delData?.data)) {
+            deletedCourses = delData.data;
+          }
+        } catch (e) {}
+      }
+
+      if (deletedCourses.includes(cleanId) || deletedCourses.includes(cleanLower)) {
+        return NextResponse.json({ success: false, error: 'Course deleted' }, { status: 404, headers: NO_CACHE_HEADERS });
+      }
+
+      // Check Supabase directly for the single course
+      try {
+        const { data: sbCourse, error: sbErr }: any = await (supabase
+          .from('courses') as any)
+          .select(COURSE_COLUMNS_PROJECTION)
+          .or(`id.eq.${cleanId},slug.eq.${cleanId},slug.eq.${cleanLower}`)
+          .maybeSingle();
+
+        if (sbCourse && !sbErr && isValidCourse(sbCourse) && sbCourse.status !== 'Deleted' && !sbCourse.isDeleted) {
+          const sanitized = sanitizeCourseImages(sbCourse);
+          singleCourseCache.set(cleanId, { timestamp: now, data: sanitized });
+          singleCourseCache.set(cleanLower, { timestamp: now, data: sanitized });
+          return NextResponse.json(
+            { success: true, course: sanitized },
+            { headers: CACHE_HEADERS }
+          );
+        }
+      } catch (sbE) {}
+
+      // Fallback to matching default course
+      const defMatch = DEFAULT_COURSES.find(c => (c.id === cleanId || c.slug === cleanLower) && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
+      if (defMatch) {
+        const sanitized = sanitizeCourseImages(defMatch);
+        return NextResponse.json(
+          { success: true, course: sanitized },
+          { headers: CACHE_HEADERS }
+        );
+      }
+
+      return NextResponse.json(
+        { success: false, error: 'Course not found' },
+        { status: 404, headers: NO_CACHE_HEADERS }
+      );
+    }
+
+    // 2. Fetch All Courses - Check In-Memory Cache
+    if (allCoursesCache && (now - allCoursesCache.timestamp < CACHE_TTL_MS)) {
+      return NextResponse.json({
+        success: true,
+        count: allCoursesCache.data.courses.length,
+        courses: allCoursesCache.data.courses
+      }, { headers: CACHE_HEADERS });
+    }
+
+    // Cache Miss: Query Supabase
     let deletedCourses: string[] = [];
     try {
       const { data: delData } = await supabase
@@ -49,50 +182,9 @@ export async function GET(req: NextRequest) {
       }
     } catch (e) {}
 
-    // 1. Single Course Lookup
-    if (courseId) {
-      const cleanId = courseId.trim();
-      const cleanLower = cleanId.toLowerCase();
-
-      if (deletedCourses.includes(cleanId) || deletedCourses.includes(cleanLower)) {
-        return NextResponse.json({ success: false, error: 'Course deleted' }, { status: 404, headers: NO_CACHE_HEADERS });
-      }
-
-      // Check Supabase directly
-      try {
-        const { data: sbCourse, error: sbErr } = await supabase
-          .from('courses')
-          .select('*')
-          .or(`id.eq.${cleanId},slug.eq.${cleanId},slug.eq.${cleanLower}`)
-          .maybeSingle();
-
-        if (sbCourse && !sbErr && isValidCourse(sbCourse) && sbCourse.status !== 'Deleted' && !sbCourse.isDeleted) {
-          return NextResponse.json(
-            { success: true, course: sanitizeCourseImages({ ...sbCourse, ...(sbCourse.raw_data || {}) }) },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
-      } catch (sbE) {}
-
-      // Fallback only to matching default course
-      const defMatch = DEFAULT_COURSES.find(c => (c.id === cleanId || c.slug === cleanLower) && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
-      if (defMatch) {
-        return NextResponse.json(
-          { success: true, course: sanitizeCourseImages(defMatch) },
-          { headers: NO_CACHE_HEADERS }
-        );
-      }
-
-      return NextResponse.json(
-        { success: false, error: 'Course not found' },
-        { status: 404, headers: NO_CACHE_HEADERS }
-      );
-    }
-
-    // 2. Fetch All Courses from Supabase
-    const { data: sbCourses, error: sbErr } = await supabase
-      .from('courses')
-      .select('*')
+    const { data: sbCourses, error: sbErr }: any = await (supabase
+      .from('courses') as any)
+      .select(COURSE_COLUMNS_PROJECTION)
       .order('created_at', { ascending: false });
 
     let activeCourses: any[] = [];
@@ -108,10 +200,7 @@ export async function GET(req: NextRequest) {
           !deletedCourses.includes(item.id) && 
           !deletedCourses.includes(item.slug)
         )
-        .map(item => sanitizeCourseImages({
-          ...item,
-          ...(item.raw_data || {})
-        }));
+        .map(sanitizeCourseImages);
     }
 
     // If Supabase table has 0 rows and no courses have been deleted, seed defaults
@@ -121,11 +210,20 @@ export async function GET(req: NextRequest) {
         .map(sanitizeCourseImages);
     }
 
+    // Update In-Memory Cache
+    allCoursesCache = {
+      timestamp: now,
+      data: {
+        courses: activeCourses,
+        deletedCourses
+      }
+    };
+
     return NextResponse.json({
       success: true,
       count: activeCourses.length,
       courses: activeCourses
-    }, { headers: NO_CACHE_HEADERS });
+    }, { headers: CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error in GET /api/courses:', error);
     return NextResponse.json(

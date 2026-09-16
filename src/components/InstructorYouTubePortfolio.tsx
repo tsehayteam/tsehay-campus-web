@@ -260,13 +260,18 @@ export default function InstructorYouTubePortfolio({ initialData }: InstructorYo
     let isMounted = true;
 
     const fetchPortfolio = async () => {
+      // If initialData was already provided via SSR props, avoid redundant network fetching
+      if (initialData?.localVideoUrl || initialData?.internationalVideoUrl) {
+        return;
+      }
+
       try {
         let fetchedLocal = '';
         let fetchedIntl = '';
 
         try {
-          let res = await fetch('/api/site-settings?settingKey=youtube_portfolio', { cache: 'no-store' });
-          if (!res.ok) res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio', { cache: 'no-store' });
+          let res = await fetch('/api/site-settings?settingKey=youtube_portfolio');
+          if (!res.ok) res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio');
           if (res.ok) {
             const j = await res.json();
             if (j?.data?.localVideoUrl && typeof j.data.localVideoUrl === 'string') {

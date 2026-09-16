@@ -1150,10 +1150,12 @@ export default function AdminDashboard() {
       });
     }
 
-    // Periodic live sync every 25 seconds for new visitor feedbacks
+    // Periodic live sync only when active tab is 'feedbacks' and document is visible
     const feedbackPollInterval = setInterval(() => {
-      fetchFeedbacksFromApi();
-    }, 25000);
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && activeTab === 'feedbacks') {
+        fetchFeedbacksFromApi();
+      }
+    }, 60000);
 
     return () => {
       unsubscribeAuth();
@@ -1166,7 +1168,7 @@ export default function AdminDashboard() {
       clearInterval(feedbackPollInterval);
       clearTimeout(safetyTimer);
     };
-  }, [fetchFeedbacksFromApi]);
+  }, [fetchFeedbacksFromApi, activeTab]);
 
   const handleCreateReferralCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1776,14 +1778,24 @@ export default function AdminDashboard() {
 
     try {
       // 3. Server-side Admin API write
-      await fetch('/api/admin/youtube-videos', {
+      const adminTok = typeof window !== 'undefined'
+        ? (sessionStorage.getItem('tc_admin_session') || sessionStorage.getItem('tsehay_admin_2fa_token') || localStorage.getItem('tc_admin_session') || '')
+        : '';
+      const res = await fetch('/api/admin/youtube-videos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-token': adminTok
+        },
         body: JSON.stringify({
           email: user?.email,
           videoData: videoPayload
         })
       });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        console.warn('Server API youtube save notice:', errJson);
+      }
 
       setCourseToast({
         type: 'success',
@@ -1832,8 +1844,12 @@ export default function AdminDashboard() {
 
       try {
         // 3. Server-side API delete
+        const adminTok = typeof window !== 'undefined'
+          ? (sessionStorage.getItem('tc_admin_session') || sessionStorage.getItem('tsehay_admin_2fa_token') || localStorage.getItem('tc_admin_session') || '')
+          : '';
         await fetch(`/api/admin/youtube-videos?id=${encodeURIComponent(id)}&email=${encodeURIComponent(user?.email || '')}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: { 'x-admin-token': adminTok }
         });
 
         setCourseToast({
@@ -2079,14 +2095,24 @@ export default function AdminDashboard() {
 
       // 2. Server Admin API Call
       try {
-        await fetch('/api/admin/courses', {
+        const adminTok = typeof window !== 'undefined'
+          ? (sessionStorage.getItem('tc_admin_session') || sessionStorage.getItem('tsehay_admin_2fa_token') || localStorage.getItem('tc_admin_session') || '')
+          : '';
+        const res = await fetch('/api/admin/courses', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-admin-token': adminTok
+          },
           body: JSON.stringify({
             courseId: docId,
             courseData: coursePayload
           })
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn('Admin save-course API call notice:', errData);
+        }
       } catch (apiErr) {
         console.warn('Admin save-course API call warning:', apiErr);
       }
@@ -2238,14 +2264,24 @@ export default function AdminDashboard() {
 
       // 🚀 3. Server Admin API Call (Sync)
       try {
-        await fetch('/api/admin/courses', {
+        const adminTok = typeof window !== 'undefined'
+          ? (sessionStorage.getItem('tc_admin_session') || sessionStorage.getItem('tsehay_admin_2fa_token') || localStorage.getItem('tc_admin_session') || '')
+          : '';
+        const res = await fetch('/api/admin/courses', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-admin-token': adminTok
+          },
           body: JSON.stringify({
             courseId: docId,
             courseData: coursePayload
           })
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn('Admin save-course API call notice:', errData);
+        }
       } catch (apiErr) {
         console.warn('Admin save-course API call warning:', apiErr);
       }
@@ -2773,11 +2809,21 @@ export default function AdminDashboard() {
 
       // 2. Server API Route Persistence (failover layer & in-memory backup)
       try {
-        await fetch('/api/events', {
+        const adminTok = typeof window !== 'undefined'
+          ? (sessionStorage.getItem('tc_admin_session') || sessionStorage.getItem('tsehay_admin_2fa_token') || localStorage.getItem('tc_admin_session') || '')
+          : '';
+        const res = await fetch('/api/events', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-admin-token': adminTok
+          },
           body: JSON.stringify({ event: payload })
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn("Server API event save warning:", errData);
+        }
       } catch (apiErr) {
         console.warn("Server API event save warning:", apiErr);
       }
@@ -2838,7 +2884,13 @@ export default function AdminDashboard() {
       } catch (e) {}
 
       try {
-        await fetch(`/api/events?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const adminTok = typeof window !== 'undefined'
+          ? (sessionStorage.getItem('tc_admin_session') || sessionStorage.getItem('tsehay_admin_2fa_token') || localStorage.getItem('tc_admin_session') || '')
+          : '';
+        await fetch(`/api/events?id=${encodeURIComponent(id)}`, { 
+          method: 'DELETE',
+          headers: { 'x-admin-token': adminTok }
+        });
       } catch (e) {}
 
       showToast('ክስተቱ ተሰርዟል!', 'success');
