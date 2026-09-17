@@ -132,6 +132,7 @@ export default function AdminDashboard() {
   });
   const [isUploadingEventBanner, setIsUploadingEventBanner] = useState(false);
   const [eventBannerError, setEventBannerError] = useState(false);
+  const [isRefreshingLive, setIsRefreshingLive] = useState(false);
   const eventBannerFileInputRef = useRef<HTMLInputElement>(null);
 
   // 🔒 Strict Admin Email OTP State & Verification Handlers (Decoupled from student session)
@@ -1154,7 +1155,11 @@ export default function AdminDashboard() {
     // 🌟 Supabase API Sync for Students and Enrollments
     const fetchSupabaseStudents = async () => {
       try {
-        const res = await fetch('/api/admin/students');
+        const authHeaders = getAdminAuthHeaders();
+        const res = await fetch('/api/admin/students', {
+          headers: authHeaders,
+          cache: 'no-store'
+        });
         if (res.ok) {
           const json = await res.json();
           if (json.profiles && Array.isArray(json.profiles)) {
@@ -1173,7 +1178,21 @@ export default function AdminDashboard() {
     // 🌟 Live Events & QR Tickets Data Loader
     const fetchEventsData = async () => {
       try {
-        const evRes = await fetch('/api/events');
+        const authHeaders = getAdminAuthHeaders();
+        const [evRes, tickRes] = await Promise.all([
+          fetch('/api/events?noCache=true', { headers: authHeaders, cache: 'no-store' }),
+          fetch('/api/events/tickets', { headers: authHeaders, cache: 'no-store' })
+        ]);
+
+        let loadedTickets: EventTicket[] = [];
+        if (tickRes.ok) {
+          const tickData = await tickRes.json();
+          if (tickData.tickets && Array.isArray(tickData.tickets)) {
+            loadedTickets = tickData.tickets;
+            setEventTickets(loadedTickets);
+          }
+        }
+
         if (evRes.ok) {
           const evData = await evRes.json();
           if (evData.events && Array.isArray(evData.events)) {
@@ -1187,26 +1206,22 @@ export default function AdminDashboard() {
 
             const freshEvents = evData.events
               .filter((apiEv: TsehayEvent) => apiEv && apiEv.id && !isDeleted(apiEv))
-              .map((apiEv: TsehayEvent) => ({
-                ...apiEv,
-                image: formatDriveImageUrl(apiEv.image) || apiEv.image || DEFAULT_EVENT_BANNER
-              }));
+              .map((apiEv: TsehayEvent) => {
+                const matchCount = loadedTickets.filter((t: any) => 
+                  t && (t.eventId === apiEv.id || t.eventId === apiEv.slug || (t.eventSlug && (t.eventSlug === apiEv.slug || t.eventSlug === apiEv.id)))
+                ).length;
+                const reg = Math.max(Number(apiEv.registeredCount) || 0, matchCount);
+                const cap = Number(apiEv.capacity) || 100;
+                return {
+                  ...apiEv,
+                  registeredCount: reg,
+                  remainingSeats: Math.max(0, cap - reg),
+                  image: formatDriveImageUrl(apiEv.image) || apiEv.image || DEFAULT_EVENT_BANNER
+                };
+              });
 
             setEvents(freshEvents);
             saveCachedEvents(freshEvents);
-          }
-        }
-        const tickRes = await fetch('/api/events/tickets');
-        if (tickRes.ok) {
-          const tickData = await tickRes.json();
-          if (tickData.tickets && Array.isArray(tickData.tickets)) {
-            setEventTickets(prev => {
-              const map = new Map<string, EventTicket>();
-              [...tickData.tickets, ...prev].forEach(p => {
-                if (p.ticketId || p.id) map.set(p.ticketId || p.id || '', p);
-              });
-              return Array.from(map.values());
-            });
           }
         }
       } catch (e) {}
@@ -1308,12 +1323,19 @@ export default function AdminDashboard() {
       })
       .subscribe();
 
-    const eventsPollInterval = setInterval(fetchEventsData, 10000);
+    const eventsPollInterval = setInterval(() => {
+      fetchEventsData();
+      fetchSupabaseStudents();
+      fetchWaitlistsData();
+    }, 5000);
 
     // 🌟 Course Waitlists Data Loader
     const fetchWaitlistsData = async () => {
       try {
-        const wlRes = await fetch('/api/admin/waitlists');
+        const wlRes = await fetch('/api/admin/waitlists', {
+          headers: getAdminAuthHeaders(),
+          cache: 'no-store'
+        });
         if (wlRes.ok) {
           const wlData = await wlRes.json();
           if (wlData.waitlists && Array.isArray(wlData.waitlists)) {
@@ -3957,6 +3979,83 @@ export default function AdminDashboard() {
               <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-[#f9b03c]"></i>
               <span>ዌብሳይቱን እይ</span>
             </a>
+
+            {/* Live Data Refresh Button */}
+            <button
+              type="button"
+              onClick={async () => {
+                setIsRefreshingLive(true);
+                try {
+                  const authHeaders = getAdminAuthHeaders();
+                  await Promise.allSettled([
+                    fetch('/api/admin/courses', { headers: authHeaders, cache: 'no-store' })
+                      .then(r => r.json())
+                      .then(d => {
+                        if (d.courses && Array.isArray(d.courses)) {
+                          let deletedList: string[] = [];
+                          try {
+                            const dStr = localStorage.getItem('tsehay_deleted_courses');
+                            if (dStr) {
+                              const parsed = JSON.parse(dStr);
+                              if (Array.isArray(parsed)) deletedList = parsed.map((x: any) => String(x).toLowerCase().trim());
+                            }
+                          } catch (e) {}
+                          let list = d.courses;
+                          if (deletedList.length > 0) {
+                            list = list.filter((c: any) => {
+                              if (!c) return false;
+                              const cid = (c.id || '').toString().toLowerCase().trim();
+                              const cslug = (c.slug || '').toString().toLowerCase().trim();
+                              return !deletedList.includes(cid) && !deletedList.includes(cslug);
+                            });
+                          }
+                          const clean = deduplicateCourses(list);
+                          setCourses(clean);
+                        }
+                      }),
+                    fetch('/api/admin/students', { headers: authHeaders, cache: 'no-store' })
+                      .then(r => r.json())
+                      .then(d => {
+                        if (d.profiles && Array.isArray(d.profiles)) setRawProfiles(d.profiles);
+                        if (d.enrollments && Array.isArray(d.enrollments)) setPayments(d.enrollments);
+                      }),
+                    Promise.all([
+                      fetch('/api/events?noCache=true', { headers: authHeaders, cache: 'no-store' }).then(r => r.json()),
+                      fetch('/api/events/tickets', { headers: authHeaders, cache: 'no-store' }).then(r => r.json())
+                    ]).then(([evData, tickData]) => {
+                      let loadedTickets: EventTicket[] = [];
+                      if (tickData.tickets && Array.isArray(tickData.tickets)) {
+                        loadedTickets = tickData.tickets;
+                        setEventTickets(loadedTickets);
+                      }
+                      if (evData.events && Array.isArray(evData.events)) {
+                        setEvents(evData.events.map((e: any) => {
+                          const matching = loadedTickets.filter((t: any) => t && (t.eventId === e.id || t.eventId === e.slug || (t.eventSlug && (t.eventSlug === e.slug || t.eventSlug === e.id))));
+                          const reg = Math.max(Number(e.registeredCount) || 0, matching.length);
+                          const cap = Number(e.capacity) || 100;
+                          return { ...e, registeredCount: reg, remainingSeats: Math.max(0, cap - reg) };
+                        }));
+                      }
+                    }),
+                    fetch('/api/admin/waitlists', { headers: authHeaders, cache: 'no-store' })
+                      .then(r => r.json())
+                      .then(d => {
+                        if (d.waitlists && Array.isArray(d.waitlists)) setWaitlists(d.waitlists);
+                      })
+                  ]);
+                } catch (e) {
+                  console.warn("Live sync error:", e);
+                } finally {
+                  setTimeout(() => setIsRefreshingLive(false), 500);
+                }
+              }}
+              disabled={isRefreshingLive}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs transition border border-amber-500/30 cursor-pointer disabled:opacity-50 shadow-sm active:scale-95"
+              title="ቀጥታ ዳታ አድስ (Live Supabase Sync)"
+            >
+              <i className={`fa-solid fa-arrows-rotate text-[11px] ${isRefreshingLive ? 'animate-spin' : ''}`}></i>
+              <span className="hidden sm:inline">{isRefreshingLive ? 'እያደሰ ነው...' : 'ቀጥታ ዳታ አድስ'}</span>
+            </button>
 
             {/* Context Action Buttons */}
             {activeTab === 'courses' && (

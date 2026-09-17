@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { EventTicket } from '@/lib/eventCache';
 import { sendTicketEmail } from '@/lib/ticketEmailService';
+import { invalidateEventsCache } from '@/app/api/events/route';
 
 async function getTickets(): Promise<EventTicket[]> {
   try {
-    const { data: row, error } = await supabaseServer
+    const { data: row, error } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'event_tickets')
@@ -21,14 +22,16 @@ async function getTickets(): Promise<EventTicket[]> {
 
 async function saveTickets(tickets: EventTicket[]) {
   try {
-    await supabaseServer
+    await supabaseAdmin
       .from('site_settings')
       .upsert({
         key: 'event_tickets',
         data: tickets,
         updated_at: new Date().toISOString()
       });
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Error saving event_tickets in webhook:', e);
+  }
 }
 
 export async function handleLakiPayWebhook(request: Request): Promise<Response> {
@@ -89,7 +92,7 @@ export async function handleLakiPayWebhook(request: Request): Promise<Response> 
 
       let pendingDoc: any = null;
       try {
-        const { data } = await supabaseServer
+        const { data } = await supabaseAdmin
           .from('pending_payments')
           .select('*')
           .eq('id', tx_ref)
@@ -152,6 +155,46 @@ export async function handleLakiPayWebhook(request: Request): Promise<Response> 
           const updatedTickets = [ticket, ...existingTickets];
           await saveTickets(updatedTickets);
 
+          // 🌟 Increment registered_count on event in DB
+          try {
+            const { data: currentEventsRow } = await supabaseAdmin
+              .from('site_settings')
+              .select('data')
+              .eq('key', 'events')
+              .maybeSingle();
+
+            if (Array.isArray(currentEventsRow?.data)) {
+              const updatedEvents = currentEventsRow.data.map((ev: any) => {
+                if (ev.id === eventId || (eventSlug && ev.slug === eventSlug)) {
+                  const reg = (Number(ev.registeredCount || ev.registered_count) || 0) + 1;
+                  const cap = Number(ev.capacity) || 100;
+                  return {
+                    ...ev,
+                    registeredCount: reg,
+                    registered_count: reg,
+                    remainingSeats: Math.max(0, cap - reg)
+                  };
+                }
+                return ev;
+              });
+
+              await supabaseAdmin.from('site_settings').upsert({
+                key: 'events',
+                data: updatedEvents,
+                updated_at: new Date().toISOString()
+              });
+            }
+
+            if (eventId && !eventId.startsWith('evt_general')) {
+              try {
+                await supabaseAdmin.rpc('increment_event_registration', { event_id: eventId });
+              } catch (rpcErr) {}
+            }
+            invalidateEventsCache();
+          } catch (cntErr) {
+            console.warn('Webhook event count increment notice:', cntErr);
+          }
+
           try {
             await sendTicketEmail(ticket);
           } catch (mailErr) {
@@ -182,7 +225,7 @@ export async function handleLakiPayWebhook(request: Request): Promise<Response> 
 
       if (userId && userId !== 'anonymous' && courseId) {
         try {
-          await supabaseServer.from('enrollments').upsert({
+          await supabaseAdmin.from('enrollments').upsert({
             id: `${userId}_${courseId}`,
             user_id: userId,
             course_id: courseId,
@@ -200,13 +243,13 @@ export async function handleLakiPayWebhook(request: Request): Promise<Response> 
             const { sendCourseEnrollmentEmail } = await import('@/lib/email');
             const { DEFAULT_COURSES } = await import('@/lib/courseCache');
 
-            const { data: profile } = await supabaseServer
+            const { data: profile } = await supabaseAdmin
               .from('profiles')
               .select('email, full_name, display_name')
               .eq('id', userId)
               .maybeSingle();
 
-            const { data: dbCourse } = await supabaseServer
+            const { data: dbCourse } = await supabaseAdmin
               .from('courses')
               .select('title, desc, description')
               .or(`id.eq.${courseId},slug.eq.${courseId}`)
