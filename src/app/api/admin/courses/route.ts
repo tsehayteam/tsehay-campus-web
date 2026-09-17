@@ -165,6 +165,39 @@ export async function GET(req: NextRequest) {
       console.warn('site_settings coming_soon_courses fetch warning:', csErr);
     }
 
+    // 🌟 3b. Merge Persistent Active Custom Courses from site_settings (key: 'custom_courses')
+    try {
+      const { data: customSettings } = await supabaseAdmin
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'custom_courses')
+        .maybeSingle();
+
+      if (Array.isArray(customSettings?.data) && customSettings.data.length > 0) {
+        customSettings.data.forEach((c: any) => {
+          if (!c) return;
+          const cId = c.id ? String(c.id).toLowerCase().trim() : '';
+          const cSlug = c.slug ? String(c.slug).toLowerCase().trim() : '';
+          if (deletedCourses.includes(cId) || (cSlug && deletedCourses.includes(cSlug))) return;
+
+          const canonicalKey = cSlug || cId;
+          if (!canonicalKey) return;
+
+          const existing = courseMap.get(canonicalKey) || {};
+          const sanitized = sanitizeCourseImages({
+            ...existing,
+            ...c,
+            id: c.id || existing.id || canonicalKey,
+            slug: c.slug || existing.slug || canonicalKey,
+            status: c.status || 'Active'
+          });
+          courseMap.set(canonicalKey, sanitized);
+        });
+      }
+    } catch (customErr) {
+      console.warn('site_settings custom_courses fetch warning:', customErr);
+    }
+
     // 🌟 4. Merge Persisted Courses from Disk / Memory Store (Ensures Zero Data Loss)
     try {
       const persistedCourses = loadPersistedCourses();
@@ -340,7 +373,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString()
     });
 
-    // 🌟 Mirror Coming Soon Courses to site_settings (key: 'coming_soon_courses')
+    // 🌟 Dual-Store in site_settings (key: 'custom_courses' for active courses, 'coming_soon_courses' for coming soon)
     let siteSettingsSaved = false;
     if (isComingSoon) {
       try {
@@ -362,12 +395,47 @@ export async function POST(req: NextRequest) {
         if (!csSaveErr) {
           siteSettingsSaved = true;
         }
+
+        // Also prune from custom_courses if it was previously active
+        const { data: currentActive } = await supabaseAdmin
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'custom_courses')
+          .maybeSingle();
+        if (Array.isArray(currentActive?.data)) {
+          const updatedActive = currentActive.data.filter((c: any) => c && c.id !== courseId && c.slug !== slug && c.id !== slug && c.slug !== courseId);
+          await supabaseAdmin.from('site_settings').upsert({
+            key: 'custom_courses',
+            data: updatedActive,
+            updated_at: new Date().toISOString()
+          });
+        }
       } catch (csSaveErr) {
         console.warn('Mirror coming soon courses warning:', csSaveErr);
       }
     } else {
-      // If course is active, ensure it is pruned from coming_soon_courses
+      // Course is Active: Dual-Store to site_settings 'custom_courses'
       try {
+        const { data: currentActive } = await supabaseAdmin
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'custom_courses')
+          .maybeSingle();
+
+        const activeList: any[] = Array.isArray(currentActive?.data) ? currentActive.data : [];
+        const filtered = activeList.filter(c => c && c.id !== courseId && c.slug !== slug && c.id !== slug && c.slug !== courseId);
+        const updatedActive = deduplicateCourses([payload, ...filtered]);
+
+        const { error: activeSaveErr } = await supabaseAdmin.from('site_settings').upsert({
+          key: 'custom_courses',
+          data: updatedActive,
+          updated_at: new Date().toISOString()
+        });
+        if (!activeSaveErr) {
+          siteSettingsSaved = true;
+        }
+
+        // Also prune from coming_soon_courses if it was previously coming soon
         const { data: currentCS } = await supabaseAdmin
           .from('site_settings')
           .select('data')
@@ -375,18 +443,26 @@ export async function POST(req: NextRequest) {
           .maybeSingle();
 
         if (Array.isArray(currentCS?.data)) {
-          const updatedCS = currentCS.data.filter(c => c && c.id !== courseId && c.slug !== slug && c.id !== slug && c.slug !== courseId);
+          const updatedCS = currentCS.data.filter((c: any) => c && c.id !== courseId && c.slug !== slug && c.id !== slug && c.slug !== courseId);
           await supabaseAdmin.from('site_settings').upsert({
             key: 'coming_soon_courses',
             data: updatedCS,
             updated_at: new Date().toISOString()
           });
         }
-      } catch (e) {}
+      } catch (activeErr) {
+        console.warn('Mirror custom_courses warning:', activeErr);
+      }
     }
 
     if (sbErr) {
-      console.warn('Supabase save course notice (persisted to disk and memory store):', sbErr.message);
+      console.warn('Supabase save course notice:', sbErr.message);
+      if (!siteSettingsSaved) {
+        return NextResponse.json({ 
+          success: false, 
+          error: `Database save error: ${sbErr.message}` 
+        }, { status: 500, headers: NO_CACHE_HEADERS });
+      }
     }
 
     try {
@@ -446,6 +522,24 @@ export async function DELETE(req: NextRequest) {
         await supabaseAdmin.from('site_settings').upsert({
           key: 'coming_soon_courses',
           data: updatedCS,
+          updated_at: new Date().toISOString()
+        });
+      }
+    } catch (e) {}
+
+    // 2b. Remove from custom_courses mirror in site_settings
+    try {
+      const { data: currentCustom } = await supabaseAdmin
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'custom_courses')
+        .maybeSingle();
+
+      if (Array.isArray(currentCustom?.data)) {
+        const updatedCustom = currentCustom.data.filter((c: any) => c.id !== courseId && c.slug !== courseId && c.id !== cleanId && c.slug !== cleanId);
+        await supabaseAdmin.from('site_settings').upsert({
+          key: 'custom_courses',
+          data: updatedCustom,
           updated_at: new Date().toISOString()
         });
       }

@@ -1,5 +1,5 @@
-import { supabaseServer } from '@/lib/supabase/server';
-import { DEFAULT_COURSES, formatCourseDesc } from '@/lib/courseCache';
+import { supabaseServer, supabaseAdmin } from '@/lib/supabase/server';
+import { DEFAULT_COURSES, formatCourseDesc, deduplicateCourses } from '@/lib/courseCache';
 import { loadPersistedCourses } from '@/lib/memoryStore';
 
 const COURSE_COLUMNS_PROJECTION = [
@@ -29,13 +29,13 @@ const COURSE_COLUMNS_PROJECTION = [
   'ai_prompt'
 ].join(', ');
 
-// Server-side in-memory caches (120-second TTL)
+// Server-side in-memory caches (15-second TTL for rapid sync)
 let cachedServerCourses: { data: any[]; timestamp: number } | null = null;
 let cachedLandingVideo: { data: LiveLandingVideoData; timestamp: number } | null = null;
 let cachedAboutVideo: { data: LiveAboutVideoData; timestamp: number } | null = null;
 let cachedPortfolio: { data: LivePortfolioData; timestamp: number } | null = null;
 let cachedYouTubeVideos: { data: LiveYouTubeVideoItem[]; timestamp: number } | null = null;
-const SERVER_CACHE_TTL_MS = 120 * 1000;
+const SERVER_CACHE_TTL_MS = 15 * 1000;
 
 export function invalidateServerCoursesCache() {
   cachedServerCourses = null;
@@ -51,23 +51,23 @@ export async function getLiveCoursesServer(): Promise<any[]> {
   }
 
   try {
-    // 1. Fetch deleted courses blacklist
+    // 1. Fetch deleted courses blacklist using supabaseAdmin
     let deletedCourses: string[] = [];
     try {
-      const { data: delData } = await supabaseServer
+      const { data: delData } = await supabaseAdmin
         .from('site_settings')
         .select('data')
         .eq('key', 'deleted_courses')
         .maybeSingle();
       if (Array.isArray(delData?.data)) {
-        deletedCourses = delData.data;
+        deletedCourses = delData.data.map((x: any) => String(x).toLowerCase().trim());
       }
     } catch (e) {}
 
     // 2. Fetch persistent coming soon courses from site_settings
     let persistentComingSoon: any[] = [];
     try {
-      const { data: csData } = await supabaseServer
+      const { data: csData } = await supabaseAdmin
         .from('site_settings')
         .select('data')
         .eq('key', 'coming_soon_courses')
@@ -77,17 +77,35 @@ export async function getLiveCoursesServer(): Promise<any[]> {
       }
     } catch (e) {}
 
-    // 3. Fetch active courses from Supabase using projected columns
+    // 2b. Fetch persistent custom active courses from site_settings (Dual-Store persistence)
+    let persistentCustomCourses: any[] = [];
+    try {
+      const { data: customData } = await supabaseAdmin
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'custom_courses')
+        .maybeSingle();
+      if (Array.isArray(customData?.data)) {
+        persistentCustomCourses = customData.data;
+      }
+    } catch (e) {}
+
+    // 3. Fetch active courses from Supabase using projected columns with supabaseAdmin
     let activeCourses: any[] = [];
     try {
-      const { data: sbCourses, error: sbErr }: any = await (supabaseServer
+      const { data: sbCourses, error: sbErr }: any = await (supabaseAdmin
         .from('courses') as any)
         .select(COURSE_COLUMNS_PROJECTION)
         .order('created_at', { ascending: false });
 
       if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
         activeCourses = sbCourses
-          .filter(c => c && c.id && c.status !== 'Deleted' && !c.isDeleted && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
+          .filter(c => {
+            if (!c || !c.id || c.status === 'Deleted' || c.isDeleted) return false;
+            const cid = String(c.id).toLowerCase().trim();
+            const cslug = c.slug ? String(c.slug).toLowerCase().trim() : '';
+            return !deletedCourses.includes(cid) && (!cslug || !deletedCourses.includes(cslug));
+          })
           .map(c => {
             const desc = formatCourseDesc(c);
             return { ...c, desc, description: desc };
@@ -99,17 +117,37 @@ export async function getLiveCoursesServer(): Promise<any[]> {
 
     const courseMap = new Map<string, any>();
     activeCourses.forEach(c => {
-      const key = c.id || c.slug;
+      const key = (c.slug || c.id).toLowerCase().trim();
       if (key) courseMap.set(key, c);
     });
 
-    // 4. Merge Persisted Courses from Disk / Memory Store
+    // 4. Merge persistent custom courses from site_settings
+    persistentCustomCourses.forEach(c => {
+      if (!c) return;
+      const cId = c.id ? String(c.id).toLowerCase().trim() : '';
+      const cSlug = c.slug ? String(c.slug).toLowerCase().trim() : '';
+      if (deletedCourses.includes(cId) || (cSlug && deletedCourses.includes(cSlug))) return;
+
+      const key = cSlug || cId;
+      if (!key) return;
+
+      if (!courseMap.has(key)) {
+        const desc = formatCourseDesc(c);
+        courseMap.set(key, { ...c, desc, description: desc });
+      }
+    });
+
+    // 5. Merge Persisted Courses from Disk / Memory Store
     try {
       const persisted = loadPersistedCourses();
       if (Array.isArray(persisted) && persisted.length > 0) {
         persisted.forEach(p => {
-          if (p && (p.id || p.slug) && !deletedCourses.includes(p.id) && !deletedCourses.includes(p.slug)) {
-            const key = p.id || p.slug;
+          if (p && (p.id || p.slug)) {
+            const pId = String(p.id).toLowerCase().trim();
+            const pSlug = p.slug ? String(p.slug).toLowerCase().trim() : '';
+            if (deletedCourses.includes(pId) || (pSlug && deletedCourses.includes(pSlug))) return;
+
+            const key = pSlug || pId;
             if (!courseMap.has(key)) {
               const desc = formatCourseDesc(p);
               courseMap.set(key, { ...p, desc, description: desc });
@@ -121,16 +159,20 @@ export async function getLiveCoursesServer(): Promise<any[]> {
 
     if (courseMap.size === 0 && deletedCourses.length === 0) {
       DEFAULT_COURSES
-        .filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
+        .filter(c => !deletedCourses.includes(c.id.toLowerCase()) && !deletedCourses.includes(c.slug.toLowerCase()))
         .forEach(c => {
-          const key = c.id || c.slug;
+          const key = (c.slug || c.id).toLowerCase().trim();
           if (key) courseMap.set(key, c);
         });
     }
 
     persistentComingSoon.forEach(cs => {
-      if (!cs || deletedCourses.includes(cs.id) || deletedCourses.includes(cs.slug)) return;
-      const key = cs.id || cs.slug;
+      if (!cs) return;
+      const csId = cs.id ? String(cs.id).toLowerCase().trim() : '';
+      const csSlug = cs.slug ? String(cs.slug).toLowerCase().trim() : '';
+      if (deletedCourses.includes(csId) || (csSlug && deletedCourses.includes(csSlug))) return;
+
+      const key = csSlug || csId;
       courseMap.set(key, {
         ...(courseMap.get(key) || {}),
         ...cs,
@@ -139,7 +181,7 @@ export async function getLiveCoursesServer(): Promise<any[]> {
       });
     });
 
-    const finalResult = Array.from(courseMap.values());
+    const finalResult = deduplicateCourses(Array.from(courseMap.values()));
     if (finalResult.length > 0) {
       cachedServerCourses = { data: finalResult, timestamp: Date.now() };
     }

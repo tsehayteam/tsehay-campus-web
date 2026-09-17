@@ -173,44 +173,75 @@ export const DEFAULT_COURSES = [
   }
 ];
 
+const AMHARIC_SLUG_MAP: Record<string, string> = {
+  'ግራፊክስ': 'graphics',
+  'ዲዛይን': 'design',
+  'ቪዲዮ': 'video',
+  'ኤዲቲንግ': 'editing',
+  'ማርኬቲንግ': 'marketing',
+  'ዲጂታል': 'digital',
+  'ስልጠና': 'course',
+  'ኮርስ': 'course',
+  'ኢምፖርት': 'import',
+  'ቢዝነስ': 'business',
+  'ንግድ': 'business',
+  'ሪል': 'real',
+  'እስቴት': 'estate',
+  'ብሮከሬጅ': 'brokerage',
+  'ክሪፕቶ': 'crypto',
+  'ትሬዲንግ': 'trading',
+  'ቴሌግራም': 'telegram',
+  'ቲክቶክ': 'tiktok',
+  'ዩቲዩብ': 'youtube',
+  'ሼን': 'shein',
+  'ኮዲንግ': 'coding',
+  'ዌብ': 'web',
+  'ዴቨሎፕመንት': 'development',
+  'ፎቶሾፕ': 'photoshop',
+  'ካንቫ': 'canva',
+  'አኒሜሽን': 'animation',
+  'ማስተርክላስ': 'masterclass',
+  'ሽያጭ': 'sales',
+  'ካሪየር': 'career',
+  'አመራር': 'leadership',
+  'አይ': 'ai'
+};
+
 /**
- * Normalizes title / category / string into a clean, human-friendly URL slug
+ * Normalizes title / category / string into a clean, human-friendly, collision-free URL slug
  */
 export function generateCourseSlug(title: string): string {
-  if (!title) return '';
-  const lower = title.toLowerCase();
-  
-  if (lower.includes('shein') || lower.includes('ኢምፖርት') || lower.includes('import')) {
-    return 'shein-import-business';
-  }
-  if (lower.includes('youtube') || lower.includes('ዩቲዩብ')) {
-    return 'youtube-secrets-masterclass';
-  }
-  if (lower.includes('ዲጂታል') || lower.includes('marketing') || lower.includes('ማርኬቲንግ')) {
-    if (lower.includes('pro') || lower.includes('ፕሮፌሽናል') || lower.includes('advanced') || lower.includes('ከፍተኛ')) {
-      return 'digital-marketing-pro';
+  if (!title || typeof title !== 'string') return '';
+  const clean = title.trim();
+
+  // 1. Check if title contains English/Latin words (e.g., "(Graphic Design Masterclass)")
+  const latinMatches = clean.match(/[a-zA-Z0-9]+/g);
+  if (latinMatches && latinMatches.join('-').length >= 3) {
+    const slug = latinMatches.join('-').toLowerCase();
+    if (slug.length >= 3) {
+      return slug;
     }
-    return 'digital-marketing';
-  }
-  if (lower.includes('crypto') || lower.includes('ክሪፕቶ')) {
-    return 'crypto-trading';
-  }
-  if (lower.includes('web') || lower.includes('ኮዲንግ') || lower.includes('coding')) {
-    return 'web-development';
   }
 
-  // Extract English words if present
-  const latinOnly = title
-    .replace(/[^\w\s-]/g, ' ')
-    .trim()
-    .replace(/\s+/g, '-')
-    .toLowerCase();
+  // 2. Look for recognizable Amharic terms and transliterate (stripping leading Amharic prepositions የ, በ, ለ, ከ)
+  const tokens = clean.split(/[\s,()\[\]{}+/\\_-]+/);
+  const mapped = tokens
+    .map(t => {
+      const trimmed = t.trim();
+      const stripped = trimmed.replace(/^[የበለከ]/, '');
+      return AMHARIC_SLUG_MAP[trimmed] || AMHARIC_SLUG_MAP[stripped];
+    })
+    .filter(Boolean);
 
-  if (latinOnly && latinOnly.length >= 3) {
-    return latinOnly;
+  if (mapped.length > 0) {
+    const combined = Array.from(new Set(mapped)).join('-');
+    if (combined.length >= 3) {
+      return `${combined}-${Date.now().toString(36).slice(-4)}`;
+    }
   }
 
-  return 'course-' + encodeURIComponent(title.slice(0, 15)).toLowerCase().replace(/%/g, '');
+  // 3. Fallback to clean URL-safe timestamped slug
+  return `course-${Date.now().toString(36)}`;
 }
 
 /**

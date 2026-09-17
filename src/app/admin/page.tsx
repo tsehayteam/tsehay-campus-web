@@ -2635,12 +2635,18 @@ export default function AdminDashboard() {
             headers: getAdminAuthHeaders(),
             body: JSON.stringify({ courseId: docId, courseData: coursePayload })
           });
-          if (fbRes.ok) savedSuccessfully = true;
+          if (fbRes.ok) {
+            const fbData = await fbRes.json().catch(() => ({}));
+            if (fbData.success) savedSuccessfully = true;
+          }
         } catch (_) {}
       }
 
-      // As long as admin is verified, preserve local persistence even if server network warned
-      savedSuccessfully = true;
+      if (!savedSuccessfully) {
+        showToast(lastErrMsg || 'ኮርሱን ማስቀመጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።', 'error');
+        setIsSavingCourse(false);
+        return;
+      }
 
       // 4. Optimistic State Update
       setCourses(prev => {
@@ -2835,13 +2841,36 @@ export default function AdminDashboard() {
             })
           });
           if (fbRes.ok) {
-            savedSuccessfully = true;
+            const fbData = await fbRes.json().catch(() => ({}));
+            if (fbData.success) {
+              savedSuccessfully = true;
+            }
           }
         } catch (_) {}
       }
 
-      // If authorized admin, ensure course is committed locally and optimistic state holds
-      savedSuccessfully = true;
+      if (!savedSuccessfully) {
+        showToast(lastErrMsg || 'ኮርሱን ማስቀመጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።', 'error');
+        setIsSavingCourse(false);
+        return;
+      }
+
+      // Remove from local deleted courses blacklist if previously deleted
+      try {
+        const delStr = localStorage.getItem('tsehay_deleted_courses');
+        if (delStr) {
+          const delList = JSON.parse(delStr);
+          if (Array.isArray(delList)) {
+            const docIdLower = String(docId).toLowerCase().trim();
+            const slugLower = String(slug).toLowerCase().trim();
+            const updatedDel = delList.filter((x: string) => {
+              const xLower = String(x).toLowerCase().trim();
+              return xLower !== docIdLower && xLower !== slugLower;
+            });
+            localStorage.setItem('tsehay_deleted_courses', JSON.stringify(updatedDel));
+          }
+        }
+      } catch (e) {}
 
       // 🚀 4. Optimistic State Update for Instant Visual Responsiveness & Nanosecond Cross-Tab Broadcast
       setCourses(prev => {

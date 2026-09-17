@@ -49,6 +49,28 @@ export async function POST(req: NextRequest) {
       }
     } catch (e) {}
 
+    // Remove from deleted_courses blacklist if present
+    try {
+      const { data: currentSettings } = await supabaseAdmin
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'deleted_courses')
+        .maybeSingle();
+
+      if (Array.isArray(currentSettings?.data)) {
+        const idLower = courseId.toLowerCase();
+        const slugLower = slug.toLowerCase();
+        if (currentSettings.data.some((x: string) => x.toLowerCase() === idLower || x.toLowerCase() === slugLower)) {
+          const updatedList = currentSettings.data.filter((x: string) => x.toLowerCase() !== idLower && x.toLowerCase() !== slugLower);
+          await supabaseAdmin.from('site_settings').upsert({
+            key: 'deleted_courses',
+            data: updatedList,
+            updated_at: new Date().toISOString()
+          });
+        }
+      }
+    } catch (e) {}
+
     // Save to Supabase courses table with supabaseAdmin
     const { error: sbErr } = await supabaseAdmin.from('courses').upsert({
       id: courseId,
@@ -79,6 +101,42 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString()
     });
 
+    // 🌟 Dual-Store to site_settings (key: 'custom_courses' or 'coming_soon_courses')
+    const isComingSoon = Boolean(payload.isComingSoon || payload.status === 'coming_soon');
+    if (isComingSoon) {
+      try {
+        const { data: currentCS } = await supabaseAdmin
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'coming_soon_courses')
+          .maybeSingle();
+
+        const csList: any[] = Array.isArray(currentCS?.data) ? currentCS.data : [];
+        const filtered = csList.filter(c => c && c.id !== courseId && c.slug !== slug && c.id !== slug && c.slug !== courseId);
+        await supabaseAdmin.from('site_settings').upsert({
+          key: 'coming_soon_courses',
+          data: [payload, ...filtered],
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
+    } else {
+      try {
+        const { data: currentActive } = await supabaseAdmin
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'custom_courses')
+          .maybeSingle();
+
+        const activeList: any[] = Array.isArray(currentActive?.data) ? currentActive.data : [];
+        const filtered = activeList.filter(c => c && c.id !== courseId && c.slug !== slug && c.id !== slug && c.slug !== courseId);
+        await supabaseAdmin.from('site_settings').upsert({
+          key: 'custom_courses',
+          data: [payload, ...filtered],
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
+    }
+
     if (sbErr) {
       console.warn('Supabase save-course warning:', sbErr);
     }
@@ -107,6 +165,40 @@ export async function DELETE(req: NextRequest) {
     if (id) {
       deletePersistedCourse(id);
       await supabaseAdmin.from('courses').delete().or(`id.eq.${id},slug.eq.${id}`);
+
+      // Prune from custom_courses and coming_soon_courses in site_settings
+      try {
+        const { data: currentCustom } = await supabaseAdmin
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'custom_courses')
+          .maybeSingle();
+        if (Array.isArray(currentCustom?.data)) {
+          const updated = currentCustom.data.filter((c: any) => c.id !== id && c.slug !== id);
+          await supabaseAdmin.from('site_settings').upsert({
+            key: 'custom_courses',
+            data: updated,
+            updated_at: new Date().toISOString()
+          });
+        }
+      } catch (e) {}
+
+      try {
+        const { data: currentCS } = await supabaseAdmin
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'coming_soon_courses')
+          .maybeSingle();
+        if (Array.isArray(currentCS?.data)) {
+          const updated = currentCS.data.filter((c: any) => c.id !== id && c.slug !== id);
+          await supabaseAdmin.from('site_settings').upsert({
+            key: 'coming_soon_courses',
+            data: updated,
+            updated_at: new Date().toISOString()
+          });
+        }
+      } catch (e) {}
+
       try {
         invalidateCoursesCache();
         invalidateServerCoursesCache();
