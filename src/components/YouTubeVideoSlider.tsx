@@ -102,14 +102,24 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   const touchStartX = useRef<number | null>(null);
 
+  // Synchronize state when SSR props update (e.g. after Next.js router.refresh())
+  useEffect(() => {
+    if (initialVideos && Array.isArray(initialVideos) && initialVideos.length > 0) {
+      setVideos(initialVideos);
+      try {
+        localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(initialVideos));
+      } catch (e) {}
+    }
+  }, [initialVideos]);
+
   // Real-time Supabase WebSockets + API sync & local storage / BroadcastChannel listener
   useEffect(() => {
     let isMounted = true;
 
     // 1. Fail-Safe Server API Fetch
-    const fetchApiVideos = async () => {
-      // If initialVideos was already provided via SSR props, avoid redundant network fetching
-      if (initialVideos && Array.isArray(initialVideos) && initialVideos.length > 0) {
+    const fetchApiVideos = async (force: boolean = false) => {
+      // If initialVideos was already provided via SSR props, avoid redundant network fetching on mount
+      if (!force && initialVideos && Array.isArray(initialVideos) && initialVideos.length > 0) {
         return;
       }
 
@@ -143,16 +153,23 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
         console.warn("API YouTube fallback error:", e);
       }
     };
-    fetchApiVideos();
+    fetchApiVideos(false);
 
-    // 2. Supabase Realtime WebSocket subscription on youtube_videos table
+    // 2. Supabase Realtime WebSocket subscription on youtube_videos table & site_settings
     const channel = supabase
       .channel('realtime_youtube_videos_table')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'youtube_videos' },
         () => {
-          fetchApiVideos();
+          fetchApiVideos(true);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        () => {
+          fetchApiVideos(true);
         }
       )
       .subscribe();
@@ -172,7 +189,7 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
       if (e.detail?.videos && Array.isArray(e.detail.videos) && isMounted) {
         setVideos(e.detail.videos);
       } else {
-        fetchApiVideos();
+        fetchApiVideos(true);
       }
     };
 
@@ -187,7 +204,7 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
             } else if (event.data?.videos && Array.isArray(event.data.videos)) {
               setVideos(event.data.videos);
             } else {
-              fetchApiVideos();
+              fetchApiVideos(true);
             }
           }
         };
@@ -196,13 +213,17 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        fetchApiVideos();
+        fetchApiVideos(true);
       }
+    };
+
+    const handleFocus = () => {
+      fetchApiVideos(true);
     };
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('tsehay_youtube_videos_updated', handleCustom);
-    window.addEventListener('focus', fetchApiVideos);
+    window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
@@ -211,10 +232,10 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
       if (bc) bc.close();
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('tsehay_youtube_videos_updated', handleCustom);
-      window.removeEventListener('focus', fetchApiVideos);
+      window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, []);
+  }, [initialVideos]);
 
   const total = videos.length || 1;
 

@@ -156,6 +156,16 @@ export default function AdminDashboard() {
     sendEmail: false
   });
 
+  // 🪑 Admin Manual Seat Adjustment / Decrement States (Option B)
+  const [isAdjustSeatsModalOpen, setIsAdjustSeatsModalOpen] = useState(false);
+  const [selectedEventForAdjustment, setSelectedEventForAdjustment] = useState<TsehayEvent | null>(null);
+  const [seatsDeductionCount, setSeatsDeductionCount] = useState<number>(1);
+  const [seatsDeductionNote, setSeatsDeductionNote] = useState<string>('');
+  const [isSubmittingSeatAdjustment, setIsSubmittingSeatAdjustment] = useState(false);
+
+  // 🚫 Attendee Cancellation Loading State (Option A)
+  const [cancellingTicketId, setCancellingTicketId] = useState<string | null>(null);
+
   // 🔒 Strict Admin Email OTP State & Verification Handlers (Decoupled from student session)
   const STRICT_ADMIN_EMAILS = [
     'eyobsahle@gmail.com'
@@ -1032,6 +1042,168 @@ export default function AdminDashboard() {
       }
     } catch (err: any) {
       showToast(err.message || 'Error deleting ticket', 'error');
+    }
+  };
+
+  // 🚫 Option A: Cancel Specific Attendee Registration (Marks status: 'cancelled' and releases 1 seat)
+  const handleCancelAttendeeRegistration = async (ticket: EventTicket) => {
+    if (ticket.status === 'cancelled') {
+      showToast('ይህ ትኬት አስቀድሞ ተሰርዟል', 'error');
+      return;
+    }
+    const attendeeLabel = ticket.attendeeName ? `${ticket.attendeeName} (${ticket.attendeeEmail || ticket.ticketId})` : ticket.ticketId;
+    if (!window.confirm(`እርግጠኛ ነዎት የ ${attendeeLabel} ን ምዝገባ መሰረዝ ይፈልጋሉ? የተጠቃሚው ሁኔታ ወደ "ተሰርዟል (cancelled)" ይቀየራል፤ የተያዘው 1 መቀመጫ ወዲያውኑ ተመልሶ ክፍት ይሆናል።`)) {
+      return;
+    }
+
+    setCancellingTicketId(ticket.ticketId);
+    try {
+      const res = await fetch('/api/events/tickets', {
+        method: 'PATCH',
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ ticketId: ticket.ticketId, action: 'cancel' })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message || 'የተሳታፊው ምዝገባ ተሰርዟል፤ 1 መቀመጫ ክፍት ሆኗል!', 'success');
+
+        // Optimistically update ticket status in state
+        setEventTickets(prev => prev.map(t => {
+          if (t.ticketId === ticket.ticketId || t.id === ticket.ticketId) {
+            return {
+              ...t,
+              status: 'cancelled',
+              cancelledAt: new Date().toISOString(),
+              cancelledBy: 'Admin',
+              isUsed: false
+            };
+          }
+          return t;
+        }));
+
+        // Restore seat count on target event in state with Floor Guard
+        const updatedEvents = events.map(ev => {
+          if (ev.id === ticket.eventId || ev.slug === ticket.eventSlug) {
+            const cap = Number(ev.capacity) || 100;
+            const newReg = Math.max(0, (Number(ev.registeredCount) || 1) - 1);
+            const newRem = Math.max(0, cap - newReg);
+            return {
+              ...ev,
+              registeredCount: newReg,
+              registered_count: newReg,
+              remainingSeats: newRem,
+              seatsLeft: newRem,
+              availableTickets: newRem
+            };
+          }
+          return ev;
+        });
+
+        setEvents(updatedEvents);
+        saveCachedEvents(updatedEvents);
+
+        try {
+          localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
+          window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents } }));
+          const bc = new BroadcastChannel('tsehay_events_sync');
+          bc.postMessage({
+            type: 'TICKET_CANCELLED',
+            ticketId: ticket.ticketId,
+            eventId: ticket.eventId,
+            events: updatedEvents,
+            event: updatedEvents.find(e => e.id === ticket.eventId || e.slug === ticket.eventSlug)
+          });
+          bc.close();
+        } catch (_) {}
+      } else {
+        showToast(data.error || 'ምዝገባውን መሰረዝ አልተቻለም', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'የኔትወርክ ችግር አጋጥሟል', 'error');
+    } finally {
+      setCancellingTicketId(null);
+    }
+  };
+
+  // 🪑 Option B: Open Adjust Seats / Bulk Deduct Modal
+  const openAdjustSeatsModal = (targetEvent?: TsehayEvent) => {
+    const defaultEv = targetEvent || (events && events.length > 0 ? events[0] : null);
+    setSelectedEventForAdjustment(defaultEv || null);
+    setSeatsDeductionCount(1);
+    setSeatsDeductionNote('Admin Manual Seat Decrement');
+    setIsAdjustSeatsModalOpen(true);
+  };
+
+  // 🪑 Option B: Save Adjust Seats / Bulk Seat Decrement
+  const handleSaveSeatAdjustment = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!selectedEventForAdjustment) {
+      showToast('እባክዎ ክስተት ይምረጡ', 'error');
+      return;
+    }
+
+    const deduction = Math.abs(Number(seatsDeductionCount) || 0);
+    if (deduction <= 0) {
+      showToast('እባክዎ ከዜሮ የሚበልጥ የሚቀነሰውን የመቀመጫ ብዛት ያስገቡ', 'error');
+      return;
+    }
+
+    setIsSubmittingSeatAdjustment(true);
+    try {
+      const res = await fetch('/api/events/adjust-seats', {
+        method: 'POST',
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          eventId: selectedEventForAdjustment.id,
+          deductCount: deduction,
+          note: seatsDeductionNote.trim() || 'Admin manual seat decrement'
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message || 'መቀመጫ በተሳካ ሁኔታ ተቀንሷል!', 'success');
+
+        // Update target event in state with Floor Guard
+        const updatedEvents = events.map(ev => {
+          if (ev.id === selectedEventForAdjustment.id || ev.slug === selectedEventForAdjustment.slug) {
+            const cap = Number(ev.capacity) || 100;
+            const newReg = data.newCount !== undefined ? data.newCount : Math.max(0, (Number(ev.registeredCount) || 0) - deduction);
+            const newRem = Math.max(0, cap - newReg);
+            return {
+              ...ev,
+              registeredCount: newReg,
+              registered_count: newReg,
+              remainingSeats: newRem,
+              seatsLeft: newRem,
+              availableTickets: newRem
+            };
+          }
+          return ev;
+        });
+
+        setEvents(updatedEvents);
+        saveCachedEvents(updatedEvents);
+        setIsAdjustSeatsModalOpen(false);
+
+        try {
+          localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
+          window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents, event: data.event } }));
+          const bc = new BroadcastChannel('tsehay_events_sync');
+          bc.postMessage({
+            type: 'SEATS_ADJUSTED',
+            eventId: selectedEventForAdjustment.id,
+            event: data.event,
+            events: updatedEvents
+          });
+          bc.close();
+        } catch (_) {}
+      } else {
+        showToast(data.error || 'መቀመጫውን ማስተካከል አልተቻለም', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'የኔትወርክ ችግር አጋጥሟል', 'error');
+    } finally {
+      setIsSubmittingSeatAdjustment(false);
     }
   };
 
@@ -2186,25 +2358,8 @@ export default function AdminDashboard() {
       updatedAt: new Date().toISOString(),
     };
 
-    // 1. Optimistic UI update & Local Cache persistence
-    setYoutubeVideos(prev => {
-      const filtered = prev.filter(v => v.id !== docId);
-      const updated = [...filtered, videoPayload].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      try {
-        localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(updated));
-        window.dispatchEvent(new Event('storage'));
-        window.dispatchEvent(new CustomEvent('tsehay_youtube_videos_updated', { detail: { videos: updated } }));
-        if (typeof BroadcastChannel !== 'undefined') {
-          const bc = new BroadcastChannel('tsehay_youtube_videos_channel');
-          bc.postMessage(updated);
-          setTimeout(() => bc.close(), 200);
-        }
-      } catch (e) {}
-      return updated;
-    });
-
     try {
-      // 3. Server-side Admin API write
+      // 1. Server-side Admin API write (Awaited BEFORE UI confirmation)
       const res = await fetch('/api/admin/youtube-videos', {
         method: 'POST',
         headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
@@ -2223,6 +2378,27 @@ export default function AdminDashboard() {
         setTimeout(() => setCourseToast(null), 4000);
         return;
       }
+
+      // 2. Verified Database Write Success: Update UI state & caches
+      const savedVideo = resData.video || videoPayload;
+      setYoutubeVideos(prev => {
+        const filtered = prev.filter(v => v.id !== docId);
+        const updated = [...filtered, savedVideo].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        try {
+          localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(updated));
+          window.dispatchEvent(new Event('storage'));
+          window.dispatchEvent(new CustomEvent('tsehay_youtube_videos_updated', { detail: { videos: updated } }));
+          if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('tsehay_youtube_videos_channel');
+            bc.postMessage(updated);
+            setTimeout(() => bc.close(), 200);
+          }
+        } catch (e) {}
+        return updated;
+      });
+
+      // 3. Purge Next.js Router Cache and refresh server components
+      router.refresh();
 
       setCourseToast({
         type: 'success',
@@ -2252,24 +2428,8 @@ export default function AdminDashboard() {
     }
 
     if (window.confirm("እርግጠኛ ነዎት ይህን የዩቲዩብ ቪዲዮ ማጥፋት ይፈልጋሉ? (Delete YouTube video?)")) {
-      // 1. Optimistic UI update
-      setYoutubeVideos(prev => {
-        const updated = prev.filter(v => v.id !== id);
-        try {
-          localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(updated));
-          window.dispatchEvent(new Event('storage'));
-          window.dispatchEvent(new CustomEvent('tsehay_youtube_videos_updated', { detail: { videos: updated } }));
-          if (typeof BroadcastChannel !== 'undefined') {
-            const bc = new BroadcastChannel('tsehay_youtube_videos_channel');
-            bc.postMessage(updated);
-            setTimeout(() => bc.close(), 200);
-          }
-        } catch (e) {}
-        return updated;
-      });
-
       try {
-        // 3. Server-side API delete
+        // 1. Server-side API delete (Awaited BEFORE UI confirmation)
         const res = await fetch(`/api/admin/youtube-videos?id=${encodeURIComponent(id)}&email=${encodeURIComponent(user?.email || '')}`, {
           method: 'DELETE',
           headers: getAdminAuthHeaders()
@@ -2284,6 +2444,25 @@ export default function AdminDashboard() {
           return;
         }
 
+        // 2. Verified Database Delete Success: Update UI state & caches
+        setYoutubeVideos(prev => {
+          const updated = prev.filter(v => v.id !== id);
+          try {
+            localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(updated));
+            window.dispatchEvent(new Event('storage'));
+            window.dispatchEvent(new CustomEvent('tsehay_youtube_videos_updated', { detail: { videos: updated } }));
+            if (typeof BroadcastChannel !== 'undefined') {
+              const bc = new BroadcastChannel('tsehay_youtube_videos_channel');
+              bc.postMessage(updated);
+              setTimeout(() => bc.close(), 200);
+            }
+          } catch (e) {}
+          return updated;
+        });
+
+        // 3. Purge Next.js Router Cache and refresh server components
+        router.refresh();
+
         setCourseToast({
           type: 'success',
           message: 'ቪዲዮው በተሳካ ሁኔታ ተሰርዟል (YouTube Video deleted)'
@@ -2291,6 +2470,11 @@ export default function AdminDashboard() {
         setTimeout(() => setCourseToast(null), 3000);
       } catch (err: any) {
         console.error("Error deleting YouTube video:", err);
+        setCourseToast({
+          type: 'error',
+          message: err.message || 'ቪዲዮውን ማጥፋት አልተቻለም'
+        });
+        setTimeout(() => setCourseToast(null), 3000);
       }
     }
   };
@@ -2313,7 +2497,7 @@ export default function AdminDashboard() {
     } catch (e) {}
 
     try {
-      await fetch('/api/admin/youtube-videos', {
+      const res = await fetch('/api/admin/youtube-videos', {
         method: 'PATCH',
         headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
@@ -2324,6 +2508,9 @@ export default function AdminDashboard() {
           ]
         })
       });
+      if (res.ok) {
+        router.refresh();
+      }
     } catch (e) {
       console.error(e);
     }
@@ -2347,7 +2534,7 @@ export default function AdminDashboard() {
     } catch (e) {}
 
     try {
-      await fetch('/api/admin/youtube-videos', {
+      const res = await fetch('/api/admin/youtube-videos', {
         method: 'PATCH',
         headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
@@ -2358,6 +2545,9 @@ export default function AdminDashboard() {
           ]
         })
       });
+      if (res.ok) {
+        router.refresh();
+      }
     } catch (e) {
       console.error(e);
     }
@@ -4891,7 +5081,17 @@ export default function AdminDashboard() {
                   </a>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => openAdjustSeatsModal()}
+                    className="bg-orange-500/15 hover:bg-orange-500 hover:text-slate-950 text-[#f9b03c] border border-orange-500/30 px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                    title="የማንኛውም ክስተት መቀመጫ በቀጥታ ቀንስ / ክፍት አድርግ (Bulk Seat Override)"
+                  >
+                    <i className="fa-solid fa-sliders"></i>
+                    <span>መቀመጫ ቀንስ (Adjust Seats)</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => openManualTicketModal()}
@@ -5033,6 +5233,14 @@ export default function AdminDashboard() {
                                 >
                                   <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
                                 </a>
+                                <button
+                                  type="button"
+                                  onClick={() => openAdjustSeatsModal(event)}
+                                  className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-500/10 text-[#f9b03c] hover:bg-[#f9b03c] hover:text-slate-950 transition flex items-center justify-center cursor-pointer"
+                                  title="የተያዙ መቀመጫዎችን ቀንስ / ክፍት አድርግ (Adjust Seats / Deduct)"
+                                >
+                                  <i className="fa-solid fa-chair text-xs"></i>
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => openManualTicketModal(event)}
@@ -5392,7 +5600,11 @@ export default function AdminDashboard() {
 
                                     {/* Attendance Status Badge */}
                                     <td className="p-4 text-xs">
-                                      {isAttended ? (
+                                      {ticket.status === 'cancelled' ? (
+                                        <span className="px-3 py-1.5 rounded-full bg-rose-500/15 text-rose-500 border border-rose-500/30 font-black flex items-center gap-1.5 w-max text-xs">
+                                          <i className="fa-solid fa-ban"></i> ተሰርዟል (Cancelled)
+                                        </span>
+                                      ) : isAttended ? (
                                         <div>
                                           <span className="px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-black flex items-center gap-1.5 w-max">
                                             <i className="fa-solid fa-circle-check"></i> ተገኝተዋል (Attended)
@@ -5410,34 +5622,61 @@ export default function AdminDashboard() {
                                       )}
                                     </td>
 
-                                    {/* Interactive Check-In / Confirmation Button & Delete */}
+                                    {/* Interactive Actions: Check-In, Cancel Registration (Option A) & Delete */}
                                     <td className="p-4 text-right">
                                       <div className="flex items-center justify-end gap-1.5">
-                                        <button
-                                          type="button"
-                                          disabled={isUpdating}
-                                          onClick={() => handleToggleTicketAttendance(ticket)}
-                                          className={`px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 ${
-                                            isAttended
-                                              ? 'bg-slate-100 hover:bg-red-500/15 dark:bg-slate-700/80 dark:hover:bg-red-500/20 text-gray-600 hover:text-red-500 dark:text-slate-300 dark:hover:text-red-400 border border-gray-200 dark:border-white/10 hover:border-red-500/30'
-                                              : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.35)]'
-                                          }`}
-                                          title={isAttended ? "መውጣቱን ወይም በስህተት መመዝገቡን ሰርዝ (Reset Status)" : "ተሳታፊው መገኘታቸውን አረጋግጥ (Confirm Attendance)"}
-                                        >
-                                          {isUpdating ? (
-                                            <i className="fa-solid fa-spinner fa-spin text-xs"></i>
-                                          ) : isAttended ? (
-                                            <>
-                                              <i className="fa-solid fa-rotate-left text-xs"></i>
-                                              <span>ሰርዝ</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <i className="fa-solid fa-user-check text-xs"></i>
-                                              <span>መገኘታቸውን አረጋግጥ</span>
-                                            </>
-                                          )}
-                                        </button>
+                                        {ticket.status === 'cancelled' ? (
+                                          <span className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-gray-400 text-xs font-bold border border-gray-200 dark:border-white/5 inline-flex items-center gap-1">
+                                            <i className="fa-solid fa-ban text-[10px]"></i>
+                                            <span>ቦታው ተለቋል</span>
+                                          </span>
+                                        ) : (
+                                          <>
+                                            <button
+                                              type="button"
+                                              disabled={isUpdating}
+                                              onClick={() => handleToggleTicketAttendance(ticket)}
+                                              className={`px-3 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 ${
+                                                isAttended
+                                                  ? 'bg-slate-100 hover:bg-red-500/15 dark:bg-slate-700/80 dark:hover:bg-red-500/20 text-gray-600 hover:text-red-500 dark:text-slate-300 dark:hover:text-red-400 border border-gray-200 dark:border-white/10 hover:border-red-500/30'
+                                                  : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.35)]'
+                                              }`}
+                                              title={isAttended ? "መውጣቱን ወይም በስህተት መመዝገቡን ሰርዝ (Reset Status)" : "ተሳታፊው መገኘታቸውን አረጋግጥ (Confirm Attendance)"}
+                                            >
+                                              {isUpdating ? (
+                                                <i className="fa-solid fa-spinner fa-spin text-xs"></i>
+                                              ) : isAttended ? (
+                                                <>
+                                                  <i className="fa-solid fa-rotate-left text-xs"></i>
+                                                  <span>ሰርዝ</span>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <i className="fa-solid fa-user-check text-xs"></i>
+                                                  <span>አረጋግጥ</span>
+                                                </>
+                                              )}
+                                            </button>
+
+                                            {/* 🚫 Option A: Cancel Specific Attendee Registration Button */}
+                                            <button
+                                              type="button"
+                                              disabled={cancellingTicketId === ticket.ticketId}
+                                              onClick={() => handleCancelAttendeeRegistration(ticket)}
+                                              className="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-500 hover:text-slate-950 dark:bg-amber-500/10 dark:hover:bg-amber-500 dark:hover:text-slate-950 text-amber-600 dark:text-[#f9b03c] border border-amber-500/30 text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+                                              title="ይህንን ምዝገባ ሰርዝ እና 1 መቀመጫ ክፍት አድርግ (Cancel Registration & Release 1 Seat)"
+                                            >
+                                              {cancellingTicketId === ticket.ticketId ? (
+                                                <i className="fa-solid fa-spinner fa-spin text-xs"></i>
+                                              ) : (
+                                                <>
+                                                  <i className="fa-solid fa-user-xmark text-xs"></i>
+                                                  <span>ምዝገባ ሰርዝ</span>
+                                                </>
+                                              )}
+                                            </button>
+                                          </>
+                                        )}
 
                                         <button
                                           type="button"
@@ -10827,6 +11066,218 @@ export default function AdminDashboard() {
 
               </form>
             )}
+
+          </div>
+        </div>
+      )}
+
+      {/* 🪑 Option B: Adjust Seats / Bulk Seat Decrement Modal */}
+      {isAdjustSeatsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-6 border border-gray-100 dark:border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200 text-dark dark:text-white">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-slate-800 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-400 text-slate-950 flex items-center justify-center text-xl shadow-lg shadow-orange-500/25 font-bold">
+                  <i className="fa-solid fa-chair"></i>
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black font-heading text-gray-900 dark:text-white flex items-center gap-2">
+                    <span>የመቀመጫ ማስተካከያ / መቀነሻ</span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30">
+                      Bulk Seat Override
+                    </span>
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    ያለምንም ተጠቃሚ መረጃ በቀጥታ የተመዘገበውን ቁጥር ዝቅ በማድረግ የመያዝ አቅሙን ክፍት ማድረግ
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsAdjustSeatsModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveSeatAdjustment} className="space-y-5">
+              {/* Event Selector Dropdown */}
+              <div>
+                <label className="block text-xs font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5">
+                  ክስተት ምረጥ (Target Event) <span className="text-danger">*</span>
+                </label>
+                <select
+                  value={selectedEventForAdjustment?.id || ''}
+                  onChange={(e) => {
+                    const match = events.find(ev => ev.id === e.target.value);
+                    if (match) setSelectedEventForAdjustment(match);
+                  }}
+                  className="w-full bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-xs font-semibold text-dark dark:text-white focus:outline-none focus:border-amber-500 transition"
+                  required
+                >
+                  {events.map((ev) => (
+                    <option key={ev.id} value={ev.id}>
+                      {ev.title} ({ev.date}) — የተመዘገበ፦ {ev.registeredCount || 0}/{ev.capacity || 100}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Current Status Metrics Card */}
+              {selectedEventForAdjustment && (() => {
+                const cap = Number(selectedEventForAdjustment.capacity) || 100;
+                const reg = Number(selectedEventForAdjustment.registeredCount) || 0;
+                const rem = Math.max(0, cap - reg);
+                const deduction = Math.abs(Number(seatsDeductionCount) || 0);
+                const nextReg = Math.max(0, reg - deduction);
+                const nextRem = Math.max(0, cap - nextReg);
+                const willFloor = deduction > reg;
+
+                return (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200/80 dark:border-white/5 space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400 font-bold">የክስተቱ ጠቅላላ አቅም (Capacity)፦</span>
+                        <span className="font-mono font-black text-gray-800 dark:text-gray-200">{cap} መቀመጫዎች</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200/50 dark:border-white/5">
+                        <div className="p-3 rounded-xl bg-white dark:bg-slate-900/60 border border-gray-100 dark:border-white/5">
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold mb-1">አሁን የተመዘገበ</p>
+                          <p className="text-lg font-black text-gray-900 dark:text-white">{reg} <span className="text-xs text-gray-400">ሰው</span></p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-white dark:bg-slate-900/60 border border-gray-100 dark:border-white/5">
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold mb-1">አሁን የቀረ ክፍት ቦታ</p>
+                          <p className="text-lg font-black text-emerald-500">{rem} <span className="text-xs text-gray-400">መቀመጫ</span></p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Deduction Quantity Input & Quick Preset Chips */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-black uppercase text-gray-700 dark:text-gray-300">
+                          የሚቀነሰው የመቀመጫ ብዛት (Seats to Deduct) <span className="text-danger">*</span>
+                        </label>
+                        <span className="text-[10px] text-amber-500 font-bold">Floor Guard: ከ 0 በታች አይወርድም</span>
+                      </div>
+
+                      {/* Quick Chips */}
+                      <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+                        <span className="text-[10px] text-gray-400 font-bold">ፈጣን ቅነሳ፦</span>
+                        {[1, 2, 3, 5, 10].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setSeatsDeductionCount(val)}
+                            className={`px-3 py-1 rounded-xl text-xs font-black transition cursor-pointer border ${
+                              Math.abs(Number(seatsDeductionCount)) === val
+                                ? 'bg-orange-500 text-slate-950 border-orange-500 shadow-sm'
+                                : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10 hover:border-orange-500/40'
+                            }`}
+                          >
+                            -{val} መቀመጫ
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="1"
+                          max={cap}
+                          value={seatsDeductionCount}
+                          onChange={(e) => setSeatsDeductionCount(Math.max(1, Math.abs(parseInt(e.target.value) || 1)))}
+                          className="w-full bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-sm font-mono font-bold text-dark dark:text-white focus:outline-none focus:border-orange-500 transition pl-11"
+                          required
+                        />
+                        <div className="absolute left-3.5 top-3.5 text-gray-400">
+                          <i className="fa-solid fa-minus text-sm"></i>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live Before & After Simulation Card */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-emerald-500/10 border border-orange-500/30">
+                      <p className="text-xs font-black uppercase text-orange-600 dark:text-orange-400 mb-2 flex items-center gap-1.5">
+                        <i className="fa-solid fa-calculator"></i>
+                        <span>የቀጥታ ለውጥ ቅድመ-ዕይታ (Live Calculation Preview)</span>
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div className="space-y-1">
+                          <p className="text-gray-500 dark:text-gray-400">የተመዘገበ (Registered)፦</p>
+                          <p className="font-mono font-black text-sm">
+                            <span className="text-gray-400 line-through mr-1.5">{reg}</span>
+                            <i className="fa-solid fa-arrow-right text-[10px] text-gray-400 mx-1"></i>
+                            <span className="text-orange-500 dark:text-orange-400 text-base">{nextReg}</span>
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-gray-500 dark:text-gray-400">የቀረ ክፍት ቦታ (Available)፦</p>
+                          <p className="font-mono font-black text-sm">
+                            <span className="text-gray-400 line-through mr-1.5">{rem}</span>
+                            <i className="fa-solid fa-arrow-right text-[10px] text-gray-400 mx-1"></i>
+                            <span className="text-emerald-500 text-base font-black">+{deduction} ({nextRem})</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {willFloor && (
+                        <div className="mt-3 p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-300 text-[11px] font-bold flex items-center gap-2">
+                          <i className="fa-solid fa-shield-halved text-xs"></i>
+                          <span>ማስጠንቀቂያ፦ የሚቀነሰው ቁጥር ({deduction}) ከተመዘገበው ({reg}) ስለሚበልጥ የተመዘገበው ወደ 0 ይስተካከላል (Floor Guard Protection)።</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Note / Reason Field */}
+                    <div>
+                      <label className="block text-xs font-black uppercase text-gray-700 dark:text-gray-300 mb-1.5">
+                        ምክንያት / ማስታወሻ (Admin Reason / Note)
+                      </label>
+                      <input
+                        type="text"
+                        value={seatsDeductionNote}
+                        onChange={(e) => setSeatsDeductionNote(e.target.value)}
+                        placeholder="ለምሳሌ: የተሰረዘ የቡድን ምዝገባ / VIP መቀመጫ መልቀቂያ"
+                        className="w-full bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-xs text-dark dark:text-white focus:outline-none focus:border-orange-500 transition"
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Form Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAdjustSeatsModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  ተመለስ (Cancel)
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingSeatAdjustment || !selectedEventForAdjustment}
+                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 hover:shadow-lg hover:shadow-orange-500/20 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isSubmittingSeatAdjustment ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      <span>በማስተካከል ላይ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-check"></i>
+                      <span>መቀመጫዎችን ቀንስና አጽድቅ (Confirm Deduction)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
 
           </div>
         </div>

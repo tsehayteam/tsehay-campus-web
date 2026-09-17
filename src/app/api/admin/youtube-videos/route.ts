@@ -3,6 +3,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 import { invalidateServerCoursesCache } from '@/lib/serverCourses';
@@ -265,6 +266,9 @@ export async function POST(req: NextRequest) {
 
     try {
       invalidateServerCoursesCache();
+      revalidatePath('/', 'page');
+      revalidatePath('/');
+      revalidatePath('/admin');
     } catch (e) {}
 
     return NextResponse.json({
@@ -324,6 +328,9 @@ export async function DELETE(req: NextRequest) {
 
     try {
       invalidateServerCoursesCache();
+      revalidatePath('/', 'page');
+      revalidatePath('/');
+      revalidatePath('/admin');
     } catch (e) {}
 
     return NextResponse.json({
@@ -391,6 +398,9 @@ export async function PATCH(req: NextRequest) {
 
     try {
       invalidateServerCoursesCache();
+      revalidatePath('/', 'page');
+      revalidatePath('/');
+      revalidatePath('/admin');
     } catch (e) {}
 
     return NextResponse.json({ success: true, message: 'Reordered successfully' }, { headers: NO_CACHE_HEADERS });

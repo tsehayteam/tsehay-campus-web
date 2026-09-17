@@ -359,9 +359,20 @@ export async function getLiveYouTubeVideosServer(): Promise<LiveYouTubeVideoItem
       cachedYouTubeVideos = { data: mapped, timestamp: Date.now() };
       return mapped;
     }
-  } catch (err) {
-    console.warn('getLiveYouTubeVideosServer error:', err);
-  }
+  } catch (err) {}
+
+  try {
+    const { data: setting } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'youtube_videos')
+      .maybeSingle();
+
+    if (setting && setting.data && Array.isArray(setting.data) && setting.data.length > 0) {
+      cachedYouTubeVideos = { data: setting.data, timestamp: Date.now() };
+      return setting.data;
+    }
+  } catch (e) {}
 
   return [];
 }

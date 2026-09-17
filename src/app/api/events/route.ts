@@ -190,9 +190,11 @@ async function getSupabaseEvents(forceFresh = false): Promise<any[]> {
       const tickets: any[] = ticketRow.data;
       mergedList = mergedList.map(ev => {
         const matchingTickets = tickets.filter((t: any) => 
-          t && (t.eventId === ev.id || t.eventId === ev.slug || (t.eventSlug && (t.eventSlug === ev.slug || t.eventSlug === ev.id)))
+          t && t.status !== 'cancelled' && (t.eventId === ev.id || t.eventId === ev.slug || (t.eventSlug && (t.eventSlug === ev.slug || t.eventSlug === ev.id)))
         );
-        const liveCount = Math.max(Number(ev.registeredCount) || 0, matchingTickets.length);
+        const rawReg = ev.registeredCount !== undefined ? ev.registeredCount : ev.registered_count;
+        const storedCount = Number(rawReg);
+        const liveCount = !isNaN(storedCount) ? Math.max(0, storedCount) : matchingTickets.length;
         const liveRemaining = Math.max(0, (Number(ev.capacity) || 100) - liveCount);
         return {
           ...ev,

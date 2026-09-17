@@ -117,11 +117,18 @@ export default function UpcomingEventsSection() {
           !deletedIds.includes((ev.id || '').toLowerCase()) && 
           !(ev.slug && deletedIds.includes(ev.slug.toLowerCase()))
         ));
+        setRegistrationsCountByEvent({});
       } else if (e.detail?.event) {
         const single = e.detail.event;
         const deletedIds = getDeletedEventIds();
         if (!deletedIds.includes((single.id || '').toLowerCase()) && !(single.slug && deletedIds.includes(single.slug.toLowerCase()))) {
-          setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
+          setEvents(prev => prev.map(p => (p.id === single.id || (p.slug && p.slug === single.slug)) ? { ...p, ...single } : p));
+          setRegistrationsCountByEvent(prev => {
+            const next = { ...prev };
+            if (single.id) delete next[single.id];
+            if (single.slug) delete next[single.slug];
+            return next;
+          });
         }
       }
     };
@@ -161,11 +168,27 @@ export default function UpcomingEventsSection() {
             !deletedIds.includes((ev.id || '').toLowerCase()) && 
             !(ev.slug && deletedIds.includes(ev.slug.toLowerCase()))
           ));
+          setRegistrationsCountByEvent({});
         } else if (msg.data?.event) {
           const single = msg.data.event;
           const deletedIds = getDeletedEventIds();
           if (!deletedIds.includes((single.id || '').toLowerCase()) && !(single.slug && deletedIds.includes(single.slug.toLowerCase()))) {
-            setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
+            setEvents(prev => prev.map(p => (p.id === single.id || (p.slug && p.slug === single.slug)) ? { ...p, ...single } : p));
+            setRegistrationsCountByEvent(prev => {
+              const next = { ...prev };
+              if (single.id) delete next[single.id];
+              if (single.slug) delete next[single.slug];
+              return next;
+            });
+          }
+        }
+        if (msg.data?.type === 'SEATS_ADJUSTED' || msg.data?.type === 'TICKET_CANCELLED') {
+          if (msg.data.eventId) {
+            setRegistrationsCountByEvent(prev => {
+              const next = { ...prev };
+              delete next[msg.data.eventId];
+              return next;
+            });
           }
         }
         if (msg.data?.type === 'ticket_registered' && msg.data?.eventId) {
