@@ -23,9 +23,10 @@ import EventBanner from '@/components/EventBanner';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
 import TypingCoursesHeadline from '@/components/TypingCoursesHeadline';
 
+import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
+import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
+
 // Dynamic Code Splitting for heavy non-critical components
-const YouTubeVideoSlider = dynamic(() => import('@/components/YouTubeVideoSlider'), { ssr: false });
-const InstructorYouTubePortfolio = dynamic(() => import('@/components/InstructorYouTubePortfolio'), { ssr: false });
 const CoursePreviewModal = dynamic(() => import('@/components/CoursePreviewModal'), { ssr: false });
 const WaitlistModal = dynamic(() => import('@/components/WaitlistModal'), { ssr: false });
 const CinematicVideoModal = dynamic(() => import('@/components/CinematicVideoModal'), { ssr: false });

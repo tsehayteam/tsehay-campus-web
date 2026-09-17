@@ -1683,18 +1683,32 @@ export default function AdminDashboard() {
     fetchWaitlistsData();
 
     // 🌟 Site Settings Loaders
-    fetch('/api/admin/site-settings?settingKey=about_video')
+    fetch('/api/admin/save-about-video')
       .then(res => res.json())
       .then(json => {
-        if (json?.data) {
-          const url = json.data.url || json.data.videoUrl || json.data.youtubeUrl;
-          const thumb = json.data.thumbnail || json.data.thumbnailUrl || json.data.thumbUrl || json.data.poster;
+        if (json) {
+          const url = json.videoUrl || json.url || json.data?.url || json.data?.videoUrl;
+          const thumb = json.thumbnail || json.thumbnailUrl || json.data?.thumbnail || json.data?.thumbnailUrl || json.data?.poster;
+          const title = json.title || json.data?.title;
           if (url) setAboutVideoUrl(url);
-          if (json.data.title) setAboutVideoTitle(json.data.title);
+          if (title) setAboutVideoTitle(title);
           if (thumb) setAboutVideoThumbnail(thumb);
         }
       })
-      .catch(e => console.warn("About video API load error:", e));
+      .catch(() => {
+        fetch('/api/admin/site-settings?settingKey=about_video')
+          .then(res => res.json())
+          .then(json => {
+            if (json?.data) {
+              const url = json.data.url || json.data.videoUrl || json.data.youtubeUrl;
+              const thumb = json.data.thumbnail || json.data.thumbnailUrl || json.data.thumbUrl || json.data.poster;
+              if (url) setAboutVideoUrl(url);
+              if (json.data.title) setAboutVideoTitle(json.data.title);
+              if (thumb) setAboutVideoThumbnail(thumb);
+            }
+          })
+          .catch(e => console.warn("About video API load error:", e));
+      });
 
     fetch('/api/admin/site-settings?settingKey=landing_video')
       .then(res => res.json())
@@ -2027,9 +2041,15 @@ export default function AdminDashboard() {
 
     try {
       // 3. Robust Server-Side Admin API write (bypasses security rules constraints)
+      await fetch('/api/admin/save-about-video', {
+        method: 'POST',
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify(videoPayload)
+      });
+
       await fetch('/api/admin/site-settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({
           settingKey: 'about_video',
           data: videoPayload
@@ -2046,6 +2066,51 @@ export default function AdminDashboard() {
     } finally {
       setIsSavingAboutVideo(false);
     }
+  };
+
+  // 📷 Handle About Us Video Thumbnail Upload (Proportional 16:9 Image with Canvas Compression)
+  const handleAboutThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 15 * 1024 * 1024) {
+      alert("የመረጡት ምስል መጠን ከ 15MB በታች መሆን አለበት።");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string;
+      if (!rawDataUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const maxWidth = 1280;
+        const maxHeight = 720;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setAboutVideoThumbnail(compressedDataUrl);
+        } else {
+          setAboutVideoThumbnail(rawDataUrl);
+        }
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveLandingVideo = async (e: React.FormEvent) => {
@@ -7963,22 +8028,29 @@ export default function AdminDashboard() {
                         <i className="fa-solid fa-image text-emerald-500"></i>
                         <span>የተምኔል ፎቶ ሊንክ (Thumbnail / Cover Image URL)</span>
                       </label>
-                      {(() => {
-                        const yId = extractYouTubeId(aboutVideoUrl);
-                        if (yId) {
-                          return (
-                            <button
-                              type="button"
-                              onClick={() => setAboutVideoThumbnail(`https://img.youtube.com/vi/${yId}/maxresdefault.jpg`)}
-                              className="text-[11px] bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-bold px-3 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <i className="fa-brands fa-youtube"></i>
-                              <span>ከዩቲዩብ ፎቶ አስመጣ</span>
-                            </button>
-                          );
-                        }
-                        return null;
-                      })()}
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold px-3 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
+                          <i className="fa-solid fa-cloud-arrow-up"></i>
+                          <span>ምስል ጫን (Upload)</span>
+                          <input type="file" accept="image/*" onChange={handleAboutThumbnailUpload} className="hidden" />
+                        </label>
+                        {(() => {
+                          const yId = extractYouTubeId(aboutVideoUrl);
+                          if (yId) {
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => setAboutVideoThumbnail(`https://img.youtube.com/vi/${yId}/maxresdefault.jpg`)}
+                                className="text-[11px] bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-bold px-3 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <i className="fa-brands fa-youtube"></i>
+                                <span>ከዩቲዩብ ፎቶ አስመጣ</span>
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
                     </div>
                     <div className="relative">
                       <input 

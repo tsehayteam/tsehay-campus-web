@@ -1,6 +1,6 @@
 import { supabaseServer, supabaseAdmin } from '@/lib/supabase/server';
 import { DEFAULT_COURSES, formatCourseDesc, deduplicateCourses } from '@/lib/courseCache';
-import { loadPersistedCourses } from '@/lib/memoryStore';
+import { loadPersistedCourses, sharedSiteSettingsCache } from '@/lib/memoryStore';
 
 const COURSE_COLUMNS_PROJECTION = [
   'id',
@@ -258,7 +258,7 @@ export async function getLiveAboutVideoDataServer(): Promise<LiveAboutVideoData>
   };
 
   try {
-    const { data: setting } = await supabaseServer
+    const { data: setting } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'about_video')
@@ -267,15 +267,30 @@ export async function getLiveAboutVideoDataServer(): Promise<LiveAboutVideoData>
     if (setting && setting.data) {
       const data = setting.data;
       const url = data.url || data.videoUrl || data.youtubeUrl;
-      const thumb = data.thumbnail || data.thumbnailUrl || data.poster;
+      const thumb = data.thumbnail || data.thumbnailUrl || data.thumbUrl || data.poster;
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
       if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
       if (data.title && typeof data.title === 'string' && data.title.trim()) result.title = data.title.trim();
+    } else if (sharedSiteSettingsCache.has('about_video')) {
+      const cached = sharedSiteSettingsCache.get('about_video');
+      const url = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
+      const thumb = cached?.thumbnail || cached?.thumbnailUrl || cached?.thumbUrl || cached?.poster;
+      if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
+      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
+      if (cached?.title && typeof cached.title === 'string' && cached.title.trim()) result.title = cached.title.trim();
     }
 
     cachedAboutVideo = { data: result, timestamp: Date.now() };
   } catch (err) {
     console.warn('getLiveAboutVideoDataServer error:', err);
+    if (sharedSiteSettingsCache.has('about_video')) {
+      const cached = sharedSiteSettingsCache.get('about_video');
+      const url = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
+      const thumb = cached?.thumbnail || cached?.thumbnailUrl || cached?.thumbUrl || cached?.poster;
+      if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
+      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
+      if (cached?.title && typeof cached.title === 'string' && cached.title.trim()) result.title = cached.title.trim();
+    }
   }
 
   return result;

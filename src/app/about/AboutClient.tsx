@@ -532,13 +532,16 @@ function AboutHeroPlayer({
 
     const fetchAboutVideo = async () => {
       try {
-        const res = await fetch('/api/admin/site-settings?settingKey=about_video', { cache: 'no-store' });
+        let res = await fetch('/api/admin/save-about-video', { cache: 'no-store' });
+        if (!res.ok) res = await fetch('/api/admin/site-settings?settingKey=about_video', { cache: 'no-store' });
+        if (!res.ok) res = await fetch('/api/site-settings?settingKey=about_video', { cache: 'no-store' });
         if (res.ok) {
           const json = await res.json();
-          if (!isCancelled && json?.data) {
-            const url = json.data.url || json.data.videoUrl || json.data.youtubeUrl;
-            const thumb = json.data.thumbnail || json.data.thumbnailUrl || json.data.thumbUrl || json.data.poster;
-            const title = json.data.title;
+          const data = json?.data || json;
+          if (!isCancelled && data) {
+            const url = data.url || data.videoUrl || data.youtubeUrl;
+            const thumb = data.thumbnail || data.thumbnailUrl || data.thumbUrl || data.poster;
+            const title = data.title;
             if (url && typeof url === 'string' && url.trim()) {
               setVideoData(prev => ({
                 videoUrl: url.trim(),
