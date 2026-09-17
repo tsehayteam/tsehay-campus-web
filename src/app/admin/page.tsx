@@ -158,6 +158,7 @@ export default function AdminDashboard() {
 
   // 🪑 Admin Manual Seat Adjustment / Decrement States (Option B)
   const [isAdjustSeatsModalOpen, setIsAdjustSeatsModalOpen] = useState(false);
+  const [seatAdjustmentMode, setSeatAdjustmentMode] = useState<'deduct' | 'release'>('deduct');
   const [selectedEventForAdjustment, setSelectedEventForAdjustment] = useState<TsehayEvent | null>(null);
   const [seatsDeductionCount, setSeatsDeductionCount] = useState<number>(1);
   const [seatsDeductionNote, setSeatsDeductionNote] = useState<string>('');
@@ -1125,12 +1126,13 @@ export default function AdminDashboard() {
     }
   };
 
-  // 🪑 Option B: Open Adjust Seats / Bulk Deduct Modal
+  // 🪑 Option B: Open Adjust Seats / Bulk Deduct Modal (Deduct Available Seats)
   const openAdjustSeatsModal = (targetEvent?: TsehayEvent) => {
     const defaultEv = targetEvent || (events && events.length > 0 ? events[0] : null);
     setSelectedEventForAdjustment(defaultEv || null);
     setSeatsDeductionCount(1);
-    setSeatsDeductionNote('Admin Manual Seat Decrement');
+    setSeatAdjustmentMode('deduct');
+    setSeatsDeductionNote('Admin Manual Offline Seat Deduction');
     setIsAdjustSeatsModalOpen(true);
   };
 
@@ -1142,9 +1144,9 @@ export default function AdminDashboard() {
       return;
     }
 
-    const deduction = Math.abs(Number(seatsDeductionCount) || 0);
-    if (deduction <= 0) {
-      showToast('እባክዎ ከዜሮ የሚበልጥ የሚቀነሰውን የመቀመጫ ብዛት ያስገቡ', 'error');
+    const count = Math.abs(Number(seatsDeductionCount) || 0);
+    if (count <= 0) {
+      showToast('እባክዎ ከዜሮ የሚበልጥ የመቀመጫ ብዛት ያስገቡ', 'error');
       return;
     }
 
@@ -1155,25 +1157,36 @@ export default function AdminDashboard() {
         headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           eventId: selectedEventForAdjustment.id,
-          deductCount: deduction,
-          note: seatsDeductionNote.trim() || 'Admin manual seat decrement'
+          countToDeduct: count,
+          deductCount: count,
+          mode: seatAdjustmentMode,
+          note: seatsDeductionNote.trim() || (seatAdjustmentMode === 'deduct' ? 'In-person offline attendees seat deduction' : 'Manual seat release')
         })
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast(data.message || 'መቀመጫ በተሳካ ሁኔታ ተቀንሷል!', 'success');
+        showToast(data.message || 'የመቀመጫ ብዛት በተሳካ ሁኔታ ተስተካክሏል!', 'success');
 
-        // Update target event in state with Floor Guard
+        // Update target event in state with Seats Math
         const updatedEvents = events.map(ev => {
           if (ev.id === selectedEventForAdjustment.id || ev.slug === selectedEventForAdjustment.slug) {
-            const cap = Number(ev.capacity) || 100;
-            const newReg = data.newCount !== undefined ? data.newCount : Math.max(0, (Number(ev.registeredCount) || 0) - deduction);
-            const newRem = Math.max(0, cap - newReg);
+            const cap = Number(ev.capacity || ev.seatCapacity) || 100;
+            const currentR = Number(ev.registeredCount ?? ev.registered_count) || 0;
+            const newReg = data.newCount !== undefined 
+              ? data.newCount 
+              : (seatAdjustmentMode === 'deduct' ? (currentR + count) : Math.max(0, currentR - count));
+            const newRem = data.availableSeats !== undefined 
+              ? data.availableSeats 
+              : Math.max(0, cap - newReg);
+
             return {
               ...ev,
               registeredCount: newReg,
               registered_count: newReg,
+              availableSeats: newRem,
+              available_seats: newRem,
               remainingSeats: newRem,
+              remaining_seats: newRem,
               seatsLeft: newRem,
               availableTickets: newRem
             };
@@ -1184,6 +1197,7 @@ export default function AdminDashboard() {
         setEvents(updatedEvents);
         saveCachedEvents(updatedEvents);
         setIsAdjustSeatsModalOpen(false);
+        router.refresh();
 
         try {
           localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
@@ -1195,7 +1209,7 @@ export default function AdminDashboard() {
             event: data.event,
             events: updatedEvents
           });
-          bc.close();
+          setTimeout(() => bc.close(), 300);
         } catch (_) {}
       } else {
         showToast(data.error || 'መቀመጫውን ማስተካከል አልተቻለም', 'error');
@@ -5195,11 +5209,19 @@ export default function AdminDashboard() {
                               </span>
                             </td>
                             <td className="p-4 text-xs">
-                              <div className="flex justify-between text-[11px] mb-1 font-bold">
-                                <span>{event.registeredCount || 0}/{event.capacity || 100}</span>
+                              {/* የቀረ ክፍት ቦታ ማሳያ */}
+                              <div className="text-xs font-medium mb-1">
+                                ክፍት ቦታ፦{" "}
+                                <span className="text-emerald-500 font-bold">
+                                  {Math.max(0, (event.seatCapacity || event.capacity || 50) - (event.registeredCount || 0))}
+                                </span>
+                                {" "}ከ {event.seatCapacity || event.capacity || 50}
+                              </div>
+                              <div className="flex justify-between text-[10px] text-gray-400 mb-1 font-bold">
+                                <span>ተመዝግቧል፦ {event.registeredCount || 0}</span>
                                 <span className="text-[#f9b03c]">{remaining} ቀርቷል</span>
                               </div>
-                              <div className="w-24 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <div className="w-28 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div className="h-full bg-[#f9b03c]" style={{ width: `${percent}%` }} />
                               </div>
                             </td>
@@ -11086,11 +11108,11 @@ export default function AdminDashboard() {
                   <h3 className="text-base sm:text-lg font-black font-heading text-gray-900 dark:text-white flex items-center gap-2">
                     <span>የመቀመጫ ማስተካከያ / መቀነሻ</span>
                     <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30">
-                      Bulk Seat Override
+                      Live Seats Sync
                     </span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    ያለምንም ተጠቃሚ መረጃ በቀጥታ የተመዘገበውን ቁጥር ዝቅ በማድረግ የመያዝ አቅሙን ክፍት ማድረግ
+                    በአካል (Offline) የመጡ ተሳታፊዎችን በመመዝገብ የቀረውን ክፍት ቦታ በቅጽበት ማስተካከል
                   </p>
                 </div>
               </div>
@@ -11127,15 +11149,45 @@ export default function AdminDashboard() {
                 </select>
               </div>
 
+              {/* Action Mode Toggle */}
+              <div className="flex items-center gap-2 p-1.5 bg-gray-100 dark:bg-slate-800/80 rounded-2xl border border-gray-200 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setSeatAdjustmentMode('deduct')}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
+                    seatAdjustmentMode === 'deduct'
+                      ? 'bg-orange-500 text-slate-950 shadow-md'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  <i className="fa-solid fa-user-plus"></i>
+                  <span>ክፍት ቦታ ቀንስ (በአካል የመጡ / Offline)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSeatAdjustmentMode('release')}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
+                    seatAdjustmentMode === 'release'
+                      ? 'bg-emerald-500 text-slate-950 shadow-md'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  <i className="fa-solid fa-rotate-left"></i>
+                  <span>መቀመጫ ልቀቅ (Release Seats)</span>
+                </button>
+              </div>
+
               {/* Current Status Metrics Card */}
               {selectedEventForAdjustment && (() => {
-                const cap = Number(selectedEventForAdjustment.capacity) || 100;
-                const reg = Number(selectedEventForAdjustment.registeredCount) || 0;
+                const cap = Number(selectedEventForAdjustment.capacity || selectedEventForAdjustment.seatCapacity) || 100;
+                const reg = Number(selectedEventForAdjustment.registeredCount ?? selectedEventForAdjustment.registered_count) || 0;
                 const rem = Math.max(0, cap - reg);
                 const deduction = Math.abs(Number(seatsDeductionCount) || 0);
-                const nextReg = Math.max(0, reg - deduction);
+
+                const isDeduct = seatAdjustmentMode === 'deduct';
+                const nextReg = isDeduct ? (reg + deduction) : Math.max(0, reg - deduction);
                 const nextRem = Math.max(0, cap - nextReg);
-                const willFloor = deduction > reg;
+                const isExceeding = isDeduct && (nextReg > cap);
 
                 return (
                   <div className="space-y-4">
@@ -11160,26 +11212,28 @@ export default function AdminDashboard() {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs font-black uppercase text-gray-700 dark:text-gray-300">
-                          የሚቀነሰው የመቀመጫ ብዛት (Seats to Deduct) <span className="text-danger">*</span>
+                          {isDeduct ? 'የሚቀነሰው የቀረ ክፍት መቀመጫ ብዛት' : 'የሚለቀቀው መቀመጫ ብዛት'} <span className="text-danger">*</span>
                         </label>
-                        <span className="text-[10px] text-amber-500 font-bold">Floor Guard: ከ 0 በታች አይወርድም</span>
+                        <span className="text-[10px] text-amber-500 font-bold">
+                          {isDeduct ? `ከቀረው ${rem} መቀመጫ ይቀነሳል` : 'ወደ ክፍት ቦታ ይመለሳል'}
+                        </span>
                       </div>
 
                       {/* Quick Chips */}
                       <div className="flex items-center gap-2 mb-2.5 flex-wrap">
-                        <span className="text-[10px] text-gray-400 font-bold">ፈጣን ቅነሳ፦</span>
-                        {[1, 2, 3, 5, 10].map((val) => (
+                        <span className="text-[10px] text-gray-400 font-bold">ፈጣን ምርጫ፦</span>
+                        {[1, 2, 5, 10, 20].map((val) => (
                           <button
                             key={val}
                             type="button"
                             onClick={() => setSeatsDeductionCount(val)}
                             className={`px-3 py-1 rounded-xl text-xs font-black transition cursor-pointer border ${
                               Math.abs(Number(seatsDeductionCount)) === val
-                                ? 'bg-orange-500 text-slate-950 border-orange-500 shadow-sm'
+                                ? (isDeduct ? 'bg-orange-500 text-slate-950 border-orange-500 shadow-sm' : 'bg-emerald-500 text-slate-950 border-emerald-500 shadow-sm')
                                 : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10 hover:border-orange-500/40'
                             }`}
                           >
-                            -{val} መቀመጫ
+                            {isDeduct ? `-${val}` : `+${val}`} መቀመጫ
                           </button>
                         ))}
                       </div>
@@ -11195,7 +11249,7 @@ export default function AdminDashboard() {
                           required
                         />
                         <div className="absolute left-3.5 top-3.5 text-gray-400">
-                          <i className="fa-solid fa-minus text-sm"></i>
+                          <i className={`fa-solid ${isDeduct ? 'fa-minus' : 'fa-plus'} text-sm`}></i>
                         </div>
                       </div>
                     </div>
@@ -11213,6 +11267,7 @@ export default function AdminDashboard() {
                             <span className="text-gray-400 line-through mr-1.5">{reg}</span>
                             <i className="fa-solid fa-arrow-right text-[10px] text-gray-400 mx-1"></i>
                             <span className="text-orange-500 dark:text-orange-400 text-base">{nextReg}</span>
+                            <span className="text-[10px] text-gray-400 ml-1">({isDeduct ? `+${deduction}` : `-${deduction}`})</span>
                           </p>
                         </div>
                         <div className="space-y-1">
@@ -11220,15 +11275,17 @@ export default function AdminDashboard() {
                           <p className="font-mono font-black text-sm">
                             <span className="text-gray-400 line-through mr-1.5">{rem}</span>
                             <i className="fa-solid fa-arrow-right text-[10px] text-gray-400 mx-1"></i>
-                            <span className="text-emerald-500 text-base font-black">+{deduction} ({nextRem})</span>
+                            <span className="text-emerald-500 text-base font-black">
+                              {isDeduct ? `-${deduction} (${nextRem})` : `+${deduction} (${nextRem})`}
+                            </span>
                           </p>
                         </div>
                       </div>
 
-                      {willFloor && (
-                        <div className="mt-3 p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-300 text-[11px] font-bold flex items-center gap-2">
-                          <i className="fa-solid fa-shield-halved text-xs"></i>
-                          <span>ማስጠንቀቂያ፦ የሚቀነሰው ቁጥር ({deduction}) ከተመዘገበው ({reg}) ስለሚበልጥ የተመዘገበው ወደ 0 ይስተካከላል (Floor Guard Protection)።</span>
+                      {isExceeding && (
+                        <div className="mt-3 p-2.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-600 dark:text-red-300 text-[11px] font-bold flex items-center gap-2">
+                          <i className="fa-solid fa-triangle-exclamation text-xs"></i>
+                          <span>የተጠየቀው የመቀመጫ ብዛት ({deduction}) ካለው ክፍት ቦታ ({rem}) በላይ ነው!</span>
                         </div>
                       )}
                     </div>
@@ -11242,7 +11299,7 @@ export default function AdminDashboard() {
                         type="text"
                         value={seatsDeductionNote}
                         onChange={(e) => setSeatsDeductionNote(e.target.value)}
-                        placeholder="ለምሳሌ: የተሰረዘ የቡድን ምዝገባ / VIP መቀመጫ መልቀቂያ"
+                        placeholder="ለምሳሌ: በአካል (Offline) የመጡ 10 ተሳታፊዎች ምዝገባ"
                         className="w-full bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 text-xs text-dark dark:text-white focus:outline-none focus:border-orange-500 transition"
                       />
                     </div>
@@ -11261,7 +11318,12 @@ export default function AdminDashboard() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingSeatAdjustment || !selectedEventForAdjustment}
+                  disabled={
+                    isSubmittingSeatAdjustment || 
+                    !selectedEventForAdjustment || 
+                    (seatAdjustmentMode === 'deduct' && selectedEventForAdjustment && ((Number(selectedEventForAdjustment.registeredCount ?? selectedEventForAdjustment.registered_count) || 0) + Math.abs(Number(seatsDeductionCount) || 0) > (Number(selectedEventForAdjustment.capacity || selectedEventForAdjustment.seatCapacity) || 100))) ||
+                    Math.abs(Number(seatsDeductionCount) || 0) <= 0
+                  }
                   className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 hover:shadow-lg hover:shadow-orange-500/20 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
                 >
                   {isSubmittingSeatAdjustment ? (
@@ -11272,7 +11334,7 @@ export default function AdminDashboard() {
                   ) : (
                     <>
                       <i className="fa-solid fa-check"></i>
-                      <span>መቀመጫዎችን ቀንስና አጽድቅ (Confirm Deduction)</span>
+                      <span>{seatAdjustmentMode === 'deduct' ? 'ክፍት መቀመጫዎችን ቀንስና አጽድቅ' : 'መቀመጫዎችን ልቀቅና አጽድቅ'}</span>
                     </>
                   )}
                 </button>

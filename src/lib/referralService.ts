@@ -23,6 +23,16 @@ export const DEFAULT_PROMO_CODES: PromoCode[] = [
     usageCount: 0,
     maxUsageLimit: 10,
     createdAt: '2026-09-11T00:00:00.000Z'
+  },
+  {
+    id: 'TSEHAY20',
+    code: 'TSEHAY20',
+    discountPercent: 20,
+    targetCourseId: 'all',
+    description: 'ልዩ የ 20% የቅናሽ ስጦታ ኩፖን (Shein / All Courses)',
+    isActive: true,
+    usageCount: 0,
+    createdAt: '2026-09-17T00:00:00.000Z'
   }
 ];
 

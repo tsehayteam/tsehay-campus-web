@@ -587,11 +587,13 @@ export default function EventsClient() {
                   {/* Card Footer Actions */}
                   <div className="p-5 pt-0">
                     <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between mb-3">
-                      <div className="text-[11px]">
-                        <span className="text-slate-400 block text-[9px] uppercase tracking-wider">የቀሩ ወንበሮች</span>
-                        <span className={`font-mono font-bold ${isSoldOut ? 'text-red-400' : 'text-emerald-400'}`}>
-                          {isSoldOut ? 'ሙሉ በሙሉ ተይዟል' : `${remaining} ወንበር ቀርቷል`}
+                      {/* የቀረ ክፍት ቦታ ማሳያ */}
+                      <div className="text-sm font-medium">
+                        ክፍት ቦታ፦{" "}
+                        <span className="text-emerald-500 font-bold">
+                          {Math.max(0, (evt.seatCapacity || evt.capacity || 50) - (evt.registeredCount || 0))}
                         </span>
+                        {" "}ከ {evt.seatCapacity || evt.capacity || 50}
                       </div>
 
                       <Link

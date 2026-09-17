@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 import { invalidateEventsCache } from '@/app/api/events/route';
@@ -26,7 +27,16 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { eventId, deductCount, newRegisteredCount: explicitCount, note } = body;
+    const { 
+      eventId, 
+      deductCount, 
+      countToDeduct, 
+      seatsToDeduct, 
+      newRegisteredCount: explicitCount, 
+      note, 
+      mode = 'deduct', 
+      action = 'deduct' 
+    } = body;
 
     if (!eventId) {
       return NextResponse.json(
@@ -50,8 +60,8 @@ export async function POST(req: NextRequest) {
 
       if (dbEvent) {
         targetEvent = dbEvent;
-        capacity = Number(dbEvent.capacity) || 100;
-        currentReg = Number(dbEvent.registered_count) || 0;
+        capacity = Number(dbEvent.capacity || dbEvent.seatCapacity) || 100;
+        currentReg = Number(dbEvent.registered_count ?? dbEvent.registeredCount) || 0;
       }
     } catch (e) {
       console.warn('Postgres events table fetch warning:', e);
@@ -69,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     if (settingsEvent) {
       if (!targetEvent) targetEvent = settingsEvent;
-      capacity = Number(settingsEvent.capacity) || capacity;
+      capacity = Number(settingsEvent.capacity || settingsEvent.seatCapacity) || capacity;
       currentReg = Number(settingsEvent.registered_count ?? settingsEvent.registeredCount) || currentReg;
     }
 
@@ -80,27 +90,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Calculate new count with Floor Guard (registeredCount >= 0)
+    // 2. Calculate new count with Seats Math:
+    // When deducting available seats (e.g. 10 offline in-person attendees arrived):
+    // registeredCount increases by +10 -> availableSeats decreases by -10!
     let finalRegCount: number;
     let deductedAmount: number = 0;
+    const isRelease = mode === 'release' || action === 'release';
 
     if (explicitCount !== undefined && typeof explicitCount === 'number') {
       finalRegCount = Math.max(0, Math.min(capacity, explicitCount));
-      deductedAmount = Math.max(0, currentReg - finalRegCount);
+      deductedAmount = Math.abs(currentReg - finalRegCount);
     } else {
-      const deduction = Math.abs(Number(deductCount) || 0);
-      if (deduction <= 0) {
+      const rawCount = Math.abs(Number(countToDeduct ?? deductCount ?? seatsToDeduct) || 0);
+      if (rawCount <= 0) {
         return NextResponse.json(
-          { success: false, error: 'የሚቀነሰው የመቀመጫ ብዛት ከዜሮ መብለጥ አለበት (Deduction must be greater than 0)' },
+          { success: false, error: 'የሚቀነሰው የመቀመጫ ብዛት ከዜሮ መብለጥ አለበት (Count must be greater than 0)' },
           { status: 400, headers: NO_CACHE_HEADERS }
         );
       }
-      deductedAmount = Math.min(deduction, currentReg);
-      // Floor guard: Never drop below 0
-      finalRegCount = Math.max(0, currentReg - deduction);
+
+      deductedAmount = rawCount;
+
+      if (isRelease) {
+        // Seat release: reduces registered count (releasing back to available seats)
+        finalRegCount = Math.max(0, currentReg - rawCount);
+      } else {
+        // Default (Deduct Available Seats): In-person/offline attendees occupy available seats
+        const newRegisteredCount = currentReg + rawCount;
+        if (newRegisteredCount > capacity) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: 'የተጠየቀው የመቀመጫ ብዛት ካለው ክፍት ቦታ በላይ ነው!' 
+            },
+            { status: 400, headers: NO_CACHE_HEADERS }
+          );
+        }
+        finalRegCount = newRegisteredCount;
+      }
     }
 
-    const newRemainingSeats = Math.max(0, capacity - finalRegCount);
+    const newAvailableSeats = Math.max(0, capacity - finalRegCount);
     const nowIso = new Date().toISOString();
 
     // 3. Atomic Database Update
@@ -128,17 +158,22 @@ export async function POST(req: NextRequest) {
             ...ev,
             registeredCount: finalRegCount,
             registered_count: finalRegCount,
-            remainingSeats: newRemainingSeats,
-            seatsLeft: newRemainingSeats,
-            availableTickets: newRemainingSeats,
+            availableSeats: newAvailableSeats,
+            available_seats: newAvailableSeats,
+            remainingSeats: newAvailableSeats,
+            remaining_seats: newAvailableSeats,
+            seatsLeft: newAvailableSeats,
+            availableTickets: newAvailableSeats,
             updatedAt: nowIso,
             lastSeatAdjustment: {
               deductedAmount,
+              mode: isRelease ? 'release' : 'deduct',
               previousCount: currentReg,
               newCount: finalRegCount,
+              availableSeats: newAvailableSeats,
               at: nowIso,
               adminEmail: auth.email || 'Admin',
-              note: note || 'Admin manual seat decrement'
+              note: note || (isRelease ? 'Admin manual seat release' : 'Admin manual offline seat deduction')
             }
           };
           return updatedEventObj;
@@ -161,25 +196,37 @@ export async function POST(req: NextRequest) {
         id: targetEvent?.id || eventId,
         registeredCount: finalRegCount,
         registered_count: finalRegCount,
-        remainingSeats: newRemainingSeats,
-        seatsLeft: newRemainingSeats,
+        availableSeats: newAvailableSeats,
+        available_seats: newAvailableSeats,
+        remainingSeats: newAvailableSeats,
+        remaining_seats: newAvailableSeats,
+        seatsLeft: newAvailableSeats,
         capacity,
         updatedAt: nowIso
       };
     }
 
-    // 4. Invalidate Cache
+    // 4. Invalidate Caches & Revalidate Next.js Paths
     invalidateEventsCache();
+    try {
+      revalidatePath('/');
+      revalidatePath('/events');
+      revalidatePath('/admin');
+    } catch (e) {}
 
     return NextResponse.json(
       {
         success: true,
-        message: `በተሳካ ሁኔታ የመቀመጫ ብዛት ተስተካክሏል! የቀድሞ የተመዘገበ፦ ${currentReg}፣ አዲስ የተመዘገበ፦ ${finalRegCount} (ክፍት ቦታ፦ ${newRemainingSeats})`,
+        message: isRelease
+          ? `በተሳካ ሁኔታ ${deductedAmount} መቀመጫዎች ተለቀዋል! የቀረ ክፍት ቦታ፦ ${newAvailableSeats} (ጠቅላላ የተመዘገበ፦ ${finalRegCount}/${capacity})`
+          : `በተሳካ ሁኔታ ${deductedAmount} መቀመጫዎች ተቀንሰዋል! የቀረ ክፍት ቦታ፦ ${newAvailableSeats} (ጠቅላላ የተመዘገበ፦ ${finalRegCount}/${capacity})`,
         event: updatedEventObj,
         events: updatedEventsList.length > 0 ? updatedEventsList : undefined,
         previousCount: currentReg,
         newCount: finalRegCount,
-        remainingSeats: newRemainingSeats,
+        newRegisteredCount: finalRegCount,
+        availableSeats: newAvailableSeats,
+        remainingSeats: newAvailableSeats,
         deductedAmount
       },
       { headers: NO_CACHE_HEADERS }

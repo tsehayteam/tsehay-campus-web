@@ -665,6 +665,17 @@ export default function EventDetailClient() {
                 {/* Action CTA & Progress Bar */}
                 <div className="pt-4 space-y-4">
                   <div>
+                    {/* የቀረ ክፍት ቦታ ማሳያ */}
+                    <div className="text-sm font-medium mb-2 flex items-center justify-between">
+                      <span className="text-slate-300">ክፍት ቦታ፦</span>
+                      <span>
+                        <span className="text-emerald-500 font-bold">
+                          {Math.max(0, (event.seatCapacity || event.capacity || 50) - (event.registeredCount || 0))}
+                        </span>
+                        {" "}ከ {event.seatCapacity || event.capacity || 50}
+                      </span>
+                    </div>
+
                     <div className="flex justify-between text-xs font-bold mb-1.5">
                       <span className="text-slate-300">የተያዙ ቦታዎች ({percentTaken}%)</span>
                       {isSoldOut ? (

@@ -13,7 +13,10 @@ export interface TsehayEvent {
   meetingLink?: string; // Google Meet URL (e.g. https://meet.google.com/tsehay-live)
   mapsUrl?: string; // Google Maps URL for in-person events
   capacity: number;
+  seatCapacity?: number;
   registeredCount: number;
+  registered_count?: number;
+  availableSeats?: number;
   remainingSeats?: number;
   seatsLeft?: number;
   availableTickets?: number;
@@ -395,5 +398,75 @@ export function clearCachedUserTickets(userId?: string | null): void {
   try {
     localStorage.removeItem(USER_TICKETS_CACHE_KEY);
   } catch (e) {}
+}
+
+/**
+ * 🪑 Deduct Available Seats (በአካል የመጡ ተሳታፊዎችን መዝግብ / ክፍት መቀመጫ ቀንስ)
+ * Deducting available seats increases registeredCount atomically:
+ * availableSeats = Math.max(0, capacity - (currentRegistered + countToDeduct))
+ */
+export async function deductAvailableSeats(
+  eventId: string, 
+  countToDeduct: number, 
+  options?: { mode?: 'deduct' | 'release'; note?: string }
+): Promise<{ success: boolean; event?: any; error?: string; availableSeats?: number; newRegisteredCount?: number }> {
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (typeof window !== 'undefined') {
+      const token = sessionStorage.getItem('tc_admin_session') ||
+                    sessionStorage.getItem('tsehay_admin_2fa_token') ||
+                    localStorage.getItem('tc_admin_session') ||
+                    '';
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['x-admin-token'] = token;
+      }
+    }
+
+    const res = await fetch('/api/events/adjust-seats', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        eventId,
+        countToDeduct,
+        mode: options?.mode || 'deduct',
+        note: options?.note || 'Admin manual offline seat deduction'
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to deduct seats');
+    }
+
+    if (typeof window !== 'undefined' && data.event) {
+      try {
+        const cached = localStorage.getItem('tsehay_events_cache');
+        if (cached) {
+          const list = JSON.parse(cached);
+          if (Array.isArray(list)) {
+            const updated = list.map((ev: any) => (ev.id === eventId || ev.slug === eventId) ? { ...ev, ...data.event } : ev);
+            localStorage.setItem('tsehay_events_cache', JSON.stringify(updated));
+          }
+        }
+        window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { event: data.event } }));
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('tsehay_events_sync');
+          bc.postMessage({ type: 'SEATS_ADJUSTED', eventId, event: data.event });
+          setTimeout(() => bc.close(), 300);
+        }
+      } catch (e) {}
+    }
+
+    return { 
+      success: true, 
+      event: data.event, 
+      availableSeats: data.availableSeats, 
+      newRegisteredCount: data.newRegisteredCount || data.newCount 
+    };
+  } catch (error: any) {
+    console.error('Failed to deduct seats:', error);
+    return { success: false, error: error.message };
+  }
 }
 

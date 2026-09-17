@@ -75,7 +75,10 @@ function mapDbRowToEvent(row: any): TsehayEvent {
     mapsUrl: row.maps_url || row.mapsUrl || '',
     capacity: cap,
     registeredCount: reg,
+    availableSeats: rem,
     remainingSeats: rem,
+    seatsLeft: rem,
+    availableTickets: rem,
     price: Number(row.price) || 0,
     isFree,
     speaker,
@@ -199,7 +202,11 @@ async function getSupabaseEvents(forceFresh = false): Promise<any[]> {
         return {
           ...ev,
           registeredCount: liveCount,
-          remainingSeats: liveRemaining
+          registered_count: liveCount,
+          availableSeats: liveRemaining,
+          remainingSeats: liveRemaining,
+          seatsLeft: liveRemaining,
+          availableTickets: liveRemaining
         };
       });
     }

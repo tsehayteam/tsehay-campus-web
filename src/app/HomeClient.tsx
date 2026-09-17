@@ -456,52 +456,24 @@ export default function HomeClient({
         {/* Hero Content Container - Cinematic Centered Hierarchy */}
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 py-16 lg:py-24 w-full my-auto flex flex-col items-center text-center">
           
-          {/* Top Slogan Badge: Glowing Golden Yellow Border */}
-          <div className="inline-flex items-center gap-2.5 sm:gap-3 px-6 sm:px-8 py-2.5 sm:py-3 rounded-full bg-[#030509]/80 border border-[#f9b03c]/60 backdrop-blur-2xl mb-5 sm:mb-6 shadow-[0_0_35px_rgba(249,176,60,0.4)] hover:shadow-[0_0_50px_rgba(249,176,60,0.65)] transition-all duration-300 hover:scale-105 group">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
-            <span className="text-sm sm:text-base md:text-lg font-black font-heading tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffe082] to-[#f9b03c] drop-shadow-[0_0_16px_rgba(249,176,60,0.5)]">
-              {lang === 'en' ? 'LEARN • APPLY • GROW' : 'ተማር ፣ ተግብር ፣ እደግ'}
-            </span>
-            <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
-          </div>
-
-          {/* Main Cinematic Typewriter Headline with Strict Max 2-Lines Constraint & Mobile Auto-Scaling (No Ellipsis) */}
-          <h1 
-            className="font-heading font-black text-[22px] xs:text-[25px] sm:text-4xl md:text-5xl lg:text-[58px] tracking-tight leading-[1.28] sm:leading-[1.15] text-white mb-5 sm:mb-6 min-h-[62px] xs:min-h-[72px] sm:min-h-[105px] md:min-h-[135px] max-w-4xl headline-glow-pulse select-none"
-          >
-            <span className="block sm:inline">{typedWhite}</span>{' '}
-            <span className="relative inline-block mt-0.5 sm:mt-0">
-              <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffe082] to-[#f9b03c] drop-shadow-[0_0_35px_rgba(249,176,60,0.45)]">
-                {typedGold}
-              </span>
-              <span className="absolute -bottom-1 sm:-bottom-2 left-0 w-full h-2.5 sm:h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
-            </span>
+          {/* Main Brand Headline */}
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white uppercase font-heading">
+            STAND <span className="text-[#f9b03c]">APART</span>
           </h1>
 
-          {/* Core Value Pillars (Glass Badges) - Strictly Tsehay Brand Palette */}
-          <div className="max-w-3xl mx-auto mb-6 sm:mb-8">
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/35 text-[#f9b03c] text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-[#f9b03c] transition-colors">
-                <i className="fa-solid fa-laptop-code text-[11px]"></i>
-                <span>100% የተግባር ስልጠና</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#3268ba]/15 border border-[#3268ba]/40 text-blue-300 text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-[#3268ba] transition-colors">
-                <i className="fa-solid fa-robot text-[11px]"></i>
-                <span>24/7 የግል AI መምህር</span>
-              </span>
-              <Link 
-                href="/verify-certificate" 
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/20 text-white hover:text-[#f9b03c] text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-[#f9b03c]/50 transition-all cursor-pointer"
-                title="እውቅና ያለው ሰርተፊኬት ያረጋግጡ"
-              >
-                <i className="fa-solid fa-award text-[11px] text-[#f9b03c]"></i>
-                <span>እውቅና ያለው ሰርተፍኬት</span>
-              </Link>
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/35 text-[#f9b03c] text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-[#f9b03c] transition-colors">
-                <i className="fa-solid fa-briefcase text-[11px]"></i>
-                <span>ቀጥታ ገቢ ማስገኛ</span>
-              </span>
-            </div>
+          {/* Clean Minimal Subtext */}
+          <p className="mt-4 max-w-xl text-lg md:text-xl text-neutral-300 font-medium leading-relaxed">
+            The right skills. The right guidance. A career that sets you apart.
+          </p>
+
+          {/* CTA Button */}
+          <div className="mt-8 mb-6">
+            <a
+              href="#courses"
+              className="rounded-xl bg-[#f9b03c] px-8 py-3.5 text-base font-bold text-neutral-950 shadow-lg hover:bg-[#e09b30] hover:scale-105 active:scale-95 transition-all inline-block cursor-pointer font-heading tracking-wide"
+            >
+              EXPLORE COURSES
+            </a>
           </div>
 
           {/*  1. HERO VIDEO ENHANCEMENT: Perfectly integrated below headline, spanning wide, central */}
