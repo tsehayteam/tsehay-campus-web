@@ -17,6 +17,7 @@ import RequireAuthModal from '@/components/RequireAuthModal';
 import SmartSearchInput from '@/components/SmartSearchInput';
 import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
+import HeroSection from '@/components/HeroSection';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import EventBanner from '@/components/EventBanner';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
@@ -389,55 +390,12 @@ export default function HomeClient({
     <main className="relative bg-[#030509] text-white min-h-screen selection:bg-[#f9b03c]/30 selection:text-[#f9b03c]">
       
       {/* =========================================================================
-          1. HERO SECTION (Premium Visual Elevation & Typography)
+          1. HERO SECTION (Restoration & Visual Upgrade: Video + Stand Apart)
          ========================================================================= */}
-      <section className="relative overflow-hidden bg-neutral-950 py-24 sm:py-32" id="home">
-        {/* የጀርባ ለስላሳ የብርሃን ድምቀት (Subtle Background Glow) */}
-        <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 -translate-x-1/2 transform-gpu blur-3xl sm:-top-80">
-          <div 
-            className="aspect-[1155/678] w-[68rem] bg-gradient-to-tr from-[#3268ba]/20 via-[#f9b03c]/15 to-transparent opacity-40"
-            style={{
-              clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
-            }}
-          />
-        </div>
-
-        <div className="mx-auto max-w-5xl px-6 text-center lg:px-8">
-          {/* ይፋዊ የልህቀት ባጅ (Elite Badge) */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/80 px-4 py-1.5 shadow-inner backdrop-blur-md">
-            <span className="h-2 w-2 rounded-full bg-[#f9b03c] animate-pulse" />
-            <span className="text-xs font-semibold tracking-widest text-neutral-300 uppercase">
-              Empowering Next-Gen Professionals
-            </span>
-          </div>
-
-          {/* ዋናው ቦልድ ስሎጋን (Iconic Stand Apart Headline) */}
-          <h1 className="mt-8 text-5xl font-black tracking-tight text-white sm:text-7xl lg:text-8xl">
-            STAND <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] to-amber-300">APART</span>
-          </h1>
-
-          {/* ግልጽ እና ውብ ንዑስ መግለጫ (Sub-headline) */}
-          <p className="mx-auto mt-6 max-w-2xl text-base sm:text-xl font-normal leading-relaxed text-neutral-400">
-            The right skills. The right guidance. A career that sets you apart.
-          </p>
-
-          {/* የተጣራ የድርጊት ጥሪ በተኖች (Action Buttons) */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <a
-              href="#courses"
-              className="rounded-xl bg-[#f9b03c] px-8 py-3.5 text-sm sm:text-base font-bold text-neutral-950 shadow-[0_0_25px_rgba(249,176,60,0.3)] transition-all hover:bg-[#e09b30] hover:scale-105 active:scale-95"
-            >
-              EXPLORE COURSES
-            </a>
-            <a
-              href="#events"
-              className="rounded-xl border border-neutral-800 bg-neutral-900/60 px-8 py-3.5 text-sm sm:text-base font-semibold text-neutral-200 backdrop-blur-sm transition-all hover:bg-neutral-800 hover:text-white"
-            >
-              UPCOMING EVENTS
-            </a>
-          </div>
-        </div>
-      </section>
+      <HeroSection 
+        videoSrc={initialLandingVideo} 
+        videoThumbnail={initialLandingVideoThumbnail} 
+      />
 
       {/* 🌟 Dynamic Public Event Banner (Auto-synced with Admin & Database) */}
       <EventBanner />
