@@ -1,5 +1,6 @@
 import { supabaseServer } from '@/lib/supabase/server';
 import { DEFAULT_COURSES, formatCourseDesc } from '@/lib/courseCache';
+import { loadPersistedCourses } from '@/lib/memoryStore';
 
 const COURSE_COLUMNS_PROJECTION = [
   'id',
@@ -77,31 +78,55 @@ export async function getLiveCoursesServer(): Promise<any[]> {
     } catch (e) {}
 
     // 3. Fetch active courses from Supabase using projected columns
-    const { data: sbCourses, error: sbErr }: any = await (supabaseServer
-      .from('courses') as any)
-      .select(COURSE_COLUMNS_PROJECTION)
-      .order('created_at', { ascending: false });
-
     let activeCourses: any[] = [];
-    if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
-      activeCourses = sbCourses
-        .filter(c => c && c.id && c.status !== 'Deleted' && !c.isDeleted && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
-        .map(c => {
-          const desc = formatCourseDesc(c);
-          return { ...c, desc, description: desc };
-        });
+    try {
+      const { data: sbCourses, error: sbErr }: any = await (supabaseServer
+        .from('courses') as any)
+        .select(COURSE_COLUMNS_PROJECTION)
+        .order('created_at', { ascending: false });
+
+      if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
+        activeCourses = sbCourses
+          .filter(c => c && c.id && c.status !== 'Deleted' && !c.isDeleted && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
+          .map(c => {
+            const desc = formatCourseDesc(c);
+            return { ...c, desc, description: desc };
+          });
+      }
+    } catch (sbErr) {
+      console.warn('getLiveCoursesServer Supabase fetch warning:', sbErr);
     }
 
-    if (activeCourses.length === 0 && deletedCourses.length === 0) {
-      activeCourses = DEFAULT_COURSES.filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
-    }
-
-    // Merge persistent coming soon courses
     const courseMap = new Map<string, any>();
     activeCourses.forEach(c => {
       const key = c.id || c.slug;
       if (key) courseMap.set(key, c);
     });
+
+    // 4. Merge Persisted Courses from Disk / Memory Store
+    try {
+      const persisted = loadPersistedCourses();
+      if (Array.isArray(persisted) && persisted.length > 0) {
+        persisted.forEach(p => {
+          if (p && (p.id || p.slug) && !deletedCourses.includes(p.id) && !deletedCourses.includes(p.slug)) {
+            const key = p.id || p.slug;
+            if (!courseMap.has(key)) {
+              const desc = formatCourseDesc(p);
+              courseMap.set(key, { ...p, desc, description: desc });
+            }
+          }
+        });
+      }
+    } catch (pErr) {}
+
+    if (courseMap.size === 0 && deletedCourses.length === 0) {
+      DEFAULT_COURSES
+        .filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
+        .forEach(c => {
+          const key = c.id || c.slug;
+          if (key) courseMap.set(key, c);
+        });
+    }
 
     persistentComingSoon.forEach(cs => {
       if (!cs || deletedCourses.includes(cs.id) || deletedCourses.includes(cs.slug)) return;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { generateCourseSlug, DEFAULT_COURSES, formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
-import { saveSinglePersistedCourse, deletePersistedCourse } from '@/lib/memoryStore';
+import { saveSinglePersistedCourse, deletePersistedCourse, loadPersistedCourses } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 import { invalidateCoursesCache } from '@/app/api/courses/route';
 import { invalidateServerCoursesCache } from '@/lib/serverCourses';
@@ -79,6 +79,17 @@ export async function GET(req: NextRequest) {
         }
       } catch (sbE) {}
 
+      // Check persisted disk / memory courses
+      const persistedSingle = loadPersistedCourses();
+      const pMatch = persistedSingle.find(c => 
+        (c.id === cleanId || c.slug === cleanLower || (c.slug && c.slug.toLowerCase() === cleanLower)) && 
+        !deletedCourses.includes(c.id) && 
+        !deletedCourses.includes(c.slug)
+      );
+      if (pMatch) {
+        return NextResponse.json({ success: true, course: sanitizeCourseImages(pMatch) }, { headers: NO_CACHE_HEADERS });
+      }
+
       // Fallback to DEFAULT_COURSES only if matching ID/slug
       const defMatch = DEFAULT_COURSES.find(c => (c.id === cleanId || c.slug === cleanLower) && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
       if (defMatch) {
@@ -89,33 +100,37 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. Fetch All Courses directly from Supabase (Source of Truth)
-    const { data: sbCourses, error: sbErr } = await supabaseServer
-      .from('courses')
-      .select('*')
-      .order('created_at', { ascending: false });
-
     const courseMap = new Map<string, any>();
 
-    if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
-      sbCourses
-        .filter(item => 
-          item && 
-          item.id && 
-          item.status !== 'Deleted' && 
-          !item.isDeleted && 
-          !deletedCourses.includes(item.id) && 
-          !deletedCourses.includes(item.slug)
-        )
-        .forEach(item => {
-          const sanitized = sanitizeCourseImages({
-            ...item,
-            ...(item.raw_data || {})
+    try {
+      const { data: sbCourses, error: sbErr } = await supabaseServer
+        .from('courses')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
+        sbCourses
+          .filter(item => 
+            item && 
+            item.id && 
+            item.status !== 'Deleted' && 
+            !item.isDeleted && 
+            !deletedCourses.includes(item.id) && 
+            !deletedCourses.includes(item.slug)
+          )
+          .forEach(item => {
+            const sanitized = sanitizeCourseImages({
+              ...item,
+              ...(item.raw_data || {})
+            });
+            const key = item.id || item.slug;
+            if (key) {
+              courseMap.set(key, sanitized);
+            }
           });
-          const key = item.id || item.slug;
-          if (key) {
-            courseMap.set(key, sanitized);
-          }
-        });
+      }
+    } catch (sbErr) {
+      console.warn('Supabase courses fetch notice:', sbErr);
     }
 
     // 🌟 3. Merge Persistent Coming Soon Courses from site_settings (Guaranteed Lifetime Persistence)
@@ -130,7 +145,6 @@ export async function GET(req: NextRequest) {
         csSettings.data.forEach((cs: any) => {
           if (cs && (cs.id || cs.slug) && !deletedCourses.includes(cs.id) && !deletedCourses.includes(cs.slug)) {
             const primaryId = cs.id || cs.slug;
-            // Find existing course key if mapped by either id or slug
             let targetKey = primaryId;
             if (!courseMap.has(primaryId)) {
               for (const [k, v] of courseMap.entries()) {
@@ -156,10 +170,33 @@ export async function GET(req: NextRequest) {
       console.warn('site_settings coming_soon_courses fetch warning:', csErr);
     }
 
+    // 🌟 4. Merge Persisted Courses from Disk / Memory Store (Ensures Zero Data Loss)
+    try {
+      const persistedCourses = loadPersistedCourses();
+      if (Array.isArray(persistedCourses) && persistedCourses.length > 0) {
+        persistedCourses.forEach(p => {
+          if (p && (p.id || p.slug) && !deletedCourses.includes(p.id) && !deletedCourses.includes(p.slug)) {
+            const key = p.id || p.slug;
+            if (!courseMap.has(key)) {
+              courseMap.set(key, sanitizeCourseImages(p));
+            } else {
+              // Merge if local disk has more complete lesson or raw data
+              const existing = courseMap.get(key);
+              if (p.lessons && p.lessons.length > (existing.lessons?.length || 0)) {
+                courseMap.set(key, sanitizeCourseImages({ ...existing, ...p }));
+              }
+            }
+          }
+        });
+      }
+    } catch (pErr) {
+      console.warn('Persisted courses merge notice:', pErr);
+    }
+
     let activeCourses = Array.from(courseMap.values());
 
-    // If Supabase table is completely empty and no courses were deleted by user, seed default courses
-    if (activeCourses.length === 0 && (!sbCourses || sbCourses.length === 0) && deletedCourses.length === 0) {
+    // If completely empty and no courses were deleted by user, seed default courses
+    if (activeCourses.length === 0 && deletedCourses.length === 0) {
       activeCourses = DEFAULT_COURSES
         .filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
         .map(sanitizeCourseImages);
@@ -324,9 +361,8 @@ export async function POST(req: NextRequest) {
       } catch (e) {}
     }
 
-    if (sbErr && !siteSettingsSaved) {
-      console.error('Supabase save course error:', sbErr);
-      return NextResponse.json({ success: false, error: 'Database save failed: ' + sbErr.message }, { status: 500, headers: NO_CACHE_HEADERS });
+    if (sbErr) {
+      console.warn('Supabase save course notice (persisted to disk and memory store):', sbErr.message);
     }
 
     try {
@@ -338,7 +374,8 @@ export async function POST(req: NextRequest) {
       success: true, 
       message: 'Course saved successfully', 
       id: courseId, 
-      course: payload 
+      course: payload,
+      dbWarning: sbErr ? sbErr.message : undefined
     }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error saving admin course:', error);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { EventTicket, DEFAULT_EVENTS } from '@/lib/eventCache';
 import { sendTicketEmail } from '@/lib/ticketEmailService';
+import { loadPersistedEvents } from '@/lib/memoryStore';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -70,6 +71,18 @@ async function getAllEvents(): Promise<any[]> {
         ...e,
         capacity: Number(e.capacity) || 100,
         registeredCount: Number(e.registered_count ?? e.registeredCount) || 0
+      }));
+    }
+  } catch (e) {}
+
+  // 3. Try persisted disk & in-memory store
+  try {
+    const inMem = loadPersistedEvents();
+    if (Array.isArray(inMem) && inMem.length > 0) {
+      return inMem.map(e => ({
+        ...e,
+        capacity: Number(e.capacity) || 100,
+        registeredCount: Number(e.registeredCount ?? e.registered_count) || 0
       }));
     }
   } catch (e) {}

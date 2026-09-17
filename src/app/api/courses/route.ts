@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { generateCourseSlug, DEFAULT_COURSES, isValidCourse, formatDriveImageUrl, getCleanCourseImage, getCleanInstructorImage } from '@/lib/courseCache';
+import { loadPersistedCourses } from '@/lib/memoryStore';
 
 export const dynamic = 'force-dynamic';
 
@@ -232,6 +233,20 @@ export async function GET(req: NextRequest) {
         }
       } catch (sbE) {}
 
+      // Check persisted disk / memory courses
+      const persistedSingle = loadPersistedCourses();
+      const pMatch = persistedSingle.find(c => 
+        (c.id === cleanId || c.slug === cleanLower || (c.slug && c.slug.toLowerCase() === cleanLower)) && 
+        !deletedCourses.includes(c.id) && 
+        !deletedCourses.includes(c.slug)
+      );
+      if (pMatch) {
+        return NextResponse.json(
+          { success: true, course: sanitizeCourseImages(pMatch) },
+          { headers: NO_CACHE_HEADERS }
+        );
+      }
+
       // Fallback only to matching default course
       const defMatch = DEFAULT_COURSES.find(c => (c.id === cleanId || c.slug === cleanLower) && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
       if (defMatch) {
@@ -248,42 +263,70 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 4. Fetch All Courses from Supabase using projected columns
-    const { data: sbCourses, error: sbErr }: any = await (supabaseServer
-      .from('courses') as any)
-      .select(COURSE_COLUMNS_PROJECTION)
-      .order('created_at', { ascending: false });
-
+    // 4. Fetch All Courses from Supabase & Persisted Storage
     let activeCourses: any[] = [];
 
-    if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
-      activeCourses = sbCourses
-        .filter(item => 
-          item && 
-          item.id && 
-          isValidCourse(item) && 
-          item.status !== 'Deleted' && 
-          !item.isDeleted && 
-          !deletedCourses.includes(item.id) && 
-          !deletedCourses.includes(item.slug)
-        )
-        .map(sanitizeCourseImages);
+    try {
+      const { data: sbCourses, error: sbErr }: any = await (supabaseServer
+        .from('courses') as any)
+        .select(COURSE_COLUMNS_PROJECTION)
+        .order('created_at', { ascending: false });
+
+      if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
+        activeCourses = sbCourses
+          .filter(item => 
+            item && 
+            item.id && 
+            isValidCourse(item) && 
+            item.status !== 'Deleted' && 
+            !item.isDeleted && 
+            !deletedCourses.includes(item.id) && 
+            !deletedCourses.includes(item.slug)
+          )
+          .map(sanitizeCourseImages);
+      }
+    } catch (sbErr) {
+      console.warn('Supabase courses fetch warning in /api/courses:', sbErr);
     }
 
-    // If Supabase table has 0 rows and no courses have been deleted, seed defaults
-    if (activeCourses.length === 0 && (!sbCourses || sbCourses.length === 0) && deletedCourses.length === 0) {
-      activeCourses = DEFAULT_COURSES
-        .filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
-        .map(sanitizeCourseImages);
-    }
-
-    // Merge persistent coming_soon courses if not already present
+    // Merge persisted courses from disk / memory
     const courseMap = new Map<string, any>();
     activeCourses.forEach(c => {
       const key = c.id || c.slug;
       if (key) courseMap.set(key, c);
     });
 
+    try {
+      const persisted = loadPersistedCourses();
+      if (Array.isArray(persisted) && persisted.length > 0) {
+        persisted.forEach(p => {
+          if (p && (p.id || p.slug) && !deletedCourses.includes(p.id) && !deletedCourses.includes(p.slug)) {
+            const key = p.id || p.slug;
+            if (!courseMap.has(key)) {
+              courseMap.set(key, sanitizeCourseImages(p));
+            } else {
+              const existing = courseMap.get(key);
+              if (p.lessons && p.lessons.length > (existing.lessons?.length || 0)) {
+                courseMap.set(key, sanitizeCourseImages({ ...existing, ...p }));
+              }
+            }
+          }
+        });
+      }
+    } catch (e) {}
+
+    // If completely empty and no courses were deleted by user, seed defaults
+    if (courseMap.size === 0 && deletedCourses.length === 0) {
+      DEFAULT_COURSES
+        .filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
+        .map(sanitizeCourseImages)
+        .forEach(c => {
+          const key = c.id || c.slug;
+          if (key) courseMap.set(key, c);
+        });
+    }
+
+    // Merge persistent coming_soon courses if not already present
     persistentComingSoon.forEach(cs => {
       if (!cs || deletedCourses.includes(cs.id) || deletedCourses.includes(cs.slug)) return;
       const primaryKey = cs.id || cs.slug;
