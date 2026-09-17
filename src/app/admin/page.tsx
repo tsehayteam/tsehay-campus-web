@@ -102,7 +102,7 @@ export default function AdminDashboard() {
   const [eventTickets, setEventTickets] = useState<EventTicket[]>([]);
   const [eventsSubTab, setEventsSubTab] = useState<'list' | 'tickets' | 'scanner'>('list');
   const [ticketSearchTerm, setTicketSearchTerm] = useState('');
-  const [ticketFilterStatus, setTicketFilterStatus] = useState<'all' | 'attended' | 'pending' | 'online' | 'in_person'>('all');
+  const [ticketFilterStatus, setTicketFilterStatus] = useState<'all' | 'attended' | 'pending' | 'online' | 'in_person' | 'manual'>('all');
   const [ticketSelectedEventId, setTicketSelectedEventId] = useState<string>('all');
   const [isUpdatingTicketStatus, setIsUpdatingTicketStatus] = useState<string | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -125,6 +125,8 @@ export default function AdminDashboard() {
     isFree: false,
     speaker: 'ኢዮብ ሳህሌ (Eyoub Sahle)',
     speakerRole: 'የፀሐይ ካምፓስ መስራች እና የዩቲዩብ ስፔሻሊስት',
+    speakerBio: '',
+    speakerImage: '',
     image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
     videoUrl: '',
     tags: 'YouTube, Workshop',
@@ -133,6 +135,25 @@ export default function AdminDashboard() {
   const [isUploadingEventBanner, setIsUploadingEventBanner] = useState(false);
   const [eventBannerError, setEventBannerError] = useState(false);
   const eventBannerFileInputRef = useRef<HTMLInputElement>(null);
+
+  // 🎙️ Speaker photo upload ref & state
+  const [isUploadingSpeakerPhoto, setIsUploadingSpeakerPhoto] = useState(false);
+  const speakerPhotoFileInputRef = useRef<HTMLInputElement>(null);
+
+  // 🎟️ Manual Ticket Reservation / Admin Override States
+  const [isManualTicketModalOpen, setIsManualTicketModalOpen] = useState(false);
+  const [isSubmittingManualTickets, setIsSubmittingManualTickets] = useState(false);
+  const [manualTicketResult, setManualTicketResult] = useState<any | null>(null);
+  const [manualTicketForm, setManualTicketForm] = useState({
+    eventId: '',
+    attendeeName: '',
+    attendeeEmail: '',
+    attendeePhone: '',
+    quantity: 1,
+    tier: 'VIP Pass (Admin Override)',
+    note: 'Admin Manual Override / Complimentary Pass',
+    sendEmail: false
+  });
 
   // 🔒 Strict Admin Email OTP State & Verification Handlers (Decoupled from student session)
   const STRICT_ADMIN_EMAILS = [
@@ -883,6 +904,133 @@ export default function AdminDashboard() {
       console.error('Error toggling ticket attendance:', err);
     } finally {
       setIsUpdatingTicketStatus(null);
+    }
+  };
+
+  // 🎟️ Open Manual Ticket Reservation Modal
+  const openManualTicketModal = (targetEvent?: TsehayEvent) => {
+    const defaultEv = targetEvent || (events && events.length > 0 ? events[0] : null);
+    setManualTicketForm({
+      eventId: defaultEv ? defaultEv.id : '',
+      attendeeName: '',
+      attendeeEmail: '',
+      attendeePhone: '',
+      quantity: 1,
+      tier: 'VIP Pass (Admin Override)',
+      note: 'Admin Manual Override / Complimentary Pass',
+      sendEmail: false
+    });
+    setManualTicketResult(null);
+    setIsManualTicketModalOpen(true);
+  };
+
+  // 🎟️ Process Admin Manual Ticket Reservation
+  const handleSaveManualTickets = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualTicketForm.eventId) {
+      showToast('እባክዎ ክስተት ይምረጡ', 'error');
+      return;
+    }
+    if (!manualTicketForm.attendeeName.trim()) {
+      showToast('እባክዎ የተሳታፊውን ስም ያስገቡ', 'error');
+      return;
+    }
+
+    setIsSubmittingManualTickets(true);
+    try {
+      const res = await fetch('/api/events/manual-ticket', {
+        method: 'POST',
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(manualTicketForm)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message || 'ማንዋል ቲኬት በተሳካ ሁኔታ ተቆርጧል!', 'success');
+        setManualTicketResult(data);
+
+        // Prepend created tickets to state
+        if (data.tickets && Array.isArray(data.tickets)) {
+          setEventTickets(prev => [...data.tickets, ...prev]);
+        }
+
+        // Update target event in events state
+        if (data.event) {
+          const updatedEvents = events.map(ev => {
+            if (ev.id === data.event.id || ev.slug === data.event.slug) {
+              return {
+                ...ev,
+                registeredCount: data.event.registeredCount,
+                remainingSeats: data.event.remainingSeats,
+                seatsLeft: data.event.remainingSeats
+              };
+            }
+            return ev;
+          });
+          setEvents(updatedEvents);
+          saveCachedEvents(updatedEvents);
+
+          try {
+            localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
+            window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents } }));
+            const bc = new BroadcastChannel('tsehay_events_sync');
+            bc.postMessage({ type: 'MANUAL_TICKETS_ISSUED', event: data.event, tickets: data.tickets });
+            bc.close();
+          } catch (_) {}
+        }
+      } else {
+        showToast(data.error || 'ማንዋል ቲኬት መቁረጥ አልተቻለም', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'የኔትወርክ ችግር አጋጥሟል', 'error');
+    } finally {
+      setIsSubmittingManualTickets(false);
+    }
+  };
+
+  // 🗑️ Delete / Revoke an Event Ticket (Restores Seat Capacity)
+  const handleDeleteTicket = async (ticket: EventTicket) => {
+    if (!window.confirm(`እርግጠኛ ነዎት ይህንን ትኬት (${ticket.ticketId} - ${ticket.attendeeName}) መሰረዝ ይፈልጋሉ? የተያዘው ቦታ ተመልሶ ክፍት ይሆናል።`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/events/tickets?ticketId=${encodeURIComponent(ticket.ticketId)}`, {
+        method: 'DELETE',
+        headers: getAdminAuthHeaders()
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('ትኬቱ በተሳካ ሁኔታ ተሰርዟል፤ የመያዝ አቅሙም ተመልሷል!', 'success');
+        setEventTickets(prev => prev.filter(t => t.ticketId !== ticket.ticketId && t.id !== ticket.ticketId));
+
+        // Restore seat count on target event in state
+        const updatedEvents = events.map(ev => {
+          if (ev.id === ticket.eventId || ev.slug === ticket.eventSlug) {
+            const cap = Number(ev.capacity) || 100;
+            const newReg = Math.max(0, (Number(ev.registeredCount) || 1) - 1);
+            return {
+              ...ev,
+              registeredCount: newReg,
+              remainingSeats: Math.max(0, cap - newReg),
+              seatsLeft: Math.max(0, cap - newReg)
+            };
+          }
+          return ev;
+        });
+        setEvents(updatedEvents);
+        saveCachedEvents(updatedEvents);
+
+        try {
+          localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
+          window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents } }));
+          const bc = new BroadcastChannel('tsehay_events_sync');
+          bc.postMessage({ type: 'TICKET_DELETED', ticketId: ticket.ticketId, eventId: ticket.eventId });
+          bc.close();
+        } catch (_) {}
+      } else {
+        showToast(data.error || 'ትኬቱን መሰረዝ አልተቻለም', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error deleting ticket', 'error');
     }
   };
 
@@ -3031,6 +3179,8 @@ export default function AdminDashboard() {
       isFree: false,
       speaker: 'ኢዮብ ሳህሌ (Eyoub Sahle)',
       speakerRole: 'የፀሐይ ካምፓስ መስራች እና የዩቲዩብ ስፔሻሊስት',
+      speakerBio: 'ኢዮብ ሳህሌ በዲጂታል ማርኬቲንግ፣ በይዘት ፈጠራ እና በኦንላይን ንግድ ዘርፍ ከ 7+ ዓመታት በላይ ልምድ ያለው ሲሆን፤ በሺዎች የሚቆጠሩ ኢትዮጵያውያን ወጣቶችንና ድርጅቶችን በዩቲዩብ እና በ AI ቴክኖሎጂ ውጤታማ እንዲሆኑ ያሰለጠነ የዘርፉ ግንባር ቀደም አሰልጣኝ ነው።',
+      speakerImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600',
       image: DEFAULT_EVENT_BANNER,
       videoUrl: '',
       tags: 'YouTube, Workshop',
@@ -3061,6 +3211,8 @@ export default function AdminDashboard() {
       isFree: event.isFree || event.price === 0,
       speaker: event.speaker || 'ኢዮብ ሳህሌ',
       speakerRole: event.speakerRole || 'Lead Mentor',
+      speakerBio: event.speakerBio || '',
+      speakerImage: event.speakerImage || '',
       image: existingImg,
       videoUrl: event.videoUrl || '',
       tags: Array.isArray(event.tags) ? event.tags.join(', ') : (event.tags || ''),
@@ -3121,6 +3273,53 @@ export default function AdminDashboard() {
     reader.readAsDataURL(file);
   };
 
+  // 🎙️ Speaker / Instructor Photo Upload with Canvas Optimization
+  const handleSpeakerPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 15 * 1024 * 1024) {
+      showToast("የመረጡት ምስል መጠን ከ 15MB በታች መሆን አለበት።", 'error');
+      return;
+    }
+    setIsUploadingSpeakerPhoto(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawData = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 800;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          const ratio = Math.min(maxDim / w, maxDim / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+          const optimized = canvas.toDataURL('image/jpeg', 0.88);
+          setEventForm(prev => ({ ...prev, speakerImage: optimized }));
+          showToast("የአሰልጣኙ ፎቶ በተሳካ ሁኔታ ተመርጧል!", 'success');
+        } else {
+          setEventForm(prev => ({ ...prev, speakerImage: rawData }));
+        }
+        setIsUploadingSpeakerPhoto(false);
+      };
+      img.onerror = () => {
+        setEventForm(prev => ({ ...prev, speakerImage: rawData }));
+        setIsUploadingSpeakerPhoto(false);
+      };
+      img.src = rawData;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventForm.title.trim()) {
@@ -3171,6 +3370,8 @@ export default function AdminDashboard() {
         isFree: Boolean(eventForm.isFree),
         speaker: (eventForm.speaker || '').trim(),
         speakerRole: (eventForm.speakerRole || '').trim(),
+        speakerBio: (eventForm.speakerBio || '').trim(),
+        speakerImage: (eventForm.speakerImage || '').trim() || undefined,
         image: cleanImage,
         videoUrl: cleanVideoUrl || undefined,
         tags: typeof eventForm.tags === 'string' ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean) : (Array.isArray(eventForm.tags) ? eventForm.tags : []),
@@ -3198,6 +3399,8 @@ export default function AdminDashboard() {
           is_free: Boolean(payload.isFree),
           speaker: payload.speaker || '',
           speaker_role: payload.speakerRole || null,
+          speaker_bio: payload.speakerBio || null,
+          speaker_image: payload.speakerImage || null,
           image: payload.image,
           tags: Array.isArray(payload.tags) ? payload.tags : [],
           status: payload.status || 'upcoming',
@@ -3223,6 +3426,8 @@ export default function AdminDashboard() {
             status: payload.status || 'upcoming',
             tags: Array.isArray(payload.tags) ? payload.tags : [],
             speakers: payload.speaker ? [payload.speaker] : [],
+            speaker_bio: payload.speakerBio || null,
+            speaker_image: payload.speakerImage || null,
             updated_at: nowIso
           };
           await supabase.from('events').upsert(baseRow);
@@ -4533,16 +4738,28 @@ export default function AdminDashboard() {
                   </a>
                 </div>
 
-                {eventsSubTab === 'list' && (
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={openAddEventModal}
-                    className="bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md hover:opacity-90 transition cursor-pointer"
+                    onClick={() => openManualTicketModal()}
+                    className="bg-purple-600 hover:bg-purple-500 text-white px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                    title="ለማንኛውም ክስተት በእጅ ማንዋል ቲኬት መዝግብ"
                   >
-                    <i className="fa-solid fa-plus"></i>
-                    <span>አዲስ ክስተት ጨምር</span>
+                    <i className="fa-solid fa-user-plus"></i>
+                    <span>ማንዋል ቲኬት ጨምር (Add Manual Attendees)</span>
                   </button>
-                )}
+
+                  {eventsSubTab === 'list' && (
+                    <button
+                      type="button"
+                      onClick={openAddEventModal}
+                      className="bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md hover:opacity-90 transition cursor-pointer"
+                    >
+                      <i className="fa-solid fa-plus"></i>
+                      <span>አዲስ ክስተት ጨምር</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Subtab 1: Events List */}
@@ -4665,6 +4882,14 @@ export default function AdminDashboard() {
                                 </a>
                                 <button
                                   type="button"
+                                  onClick={() => openManualTicketModal(event)}
+                                  className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition flex items-center justify-center cursor-pointer"
+                                  title="ለዚህ ክስተት ማንዋል ቲኬት ጨምር (Issue Manual Ticket)"
+                                >
+                                  <i className="fa-solid fa-user-plus text-xs"></i>
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => openEditEventModal(event)}
                                   className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 text-secondary dark:text-blue-400 hover:bg-secondary hover:text-white transition flex items-center justify-center cursor-pointer"
                                   title="ክንውኑን አስተካክል"
@@ -4721,10 +4946,12 @@ export default function AdminDashboard() {
 
                   // Status filter tabs
                   const isAttended = Boolean(t.isUsed || (t as any).checkedIn);
+                  const isManual = t.paymentStatus === 'admin_override' || t.paymentMethod === 'admin_manual';
                   if (ticketFilterStatus === 'attended' && !isAttended) return false;
                   if (ticketFilterStatus === 'pending' && isAttended) return false;
                   if (ticketFilterStatus === 'online' && !t.isOnline) return false;
                   if (ticketFilterStatus === 'in_person' && t.isOnline) return false;
+                  if (ticketFilterStatus === 'manual' && !isManual) return false;
 
                   return true;
                 });
@@ -4804,6 +5031,16 @@ export default function AdminDashboard() {
 
                           <button
                             type="button"
+                            onClick={() => openManualTicketModal()}
+                            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black transition flex items-center gap-2 cursor-pointer shadow-md active:scale-95"
+                            title="ለማንኛውም ክስተት ማንዋል ቲኬት ጨምር"
+                          >
+                            <i className="fa-solid fa-user-plus"></i>
+                            <span>ማንዋል ቲኬት ጨምር</span>
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={exportEventTicketsCSV}
                             className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 text-xs font-bold transition flex items-center gap-2 cursor-pointer active:scale-95"
                           >
@@ -4873,6 +5110,18 @@ export default function AdminDashboard() {
                           }`}
                         >
                           በአካል ({inPersonTickets.length})
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setTicketFilterStatus('manual')}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                            ticketFilterStatus === 'manual'
+                              ? 'bg-purple-600 text-white shadow-sm'
+                              : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          🛡️ ማንዋል ({eventTickets.filter(t => t.paymentStatus === 'admin_override' || t.paymentMethod === 'admin_manual').length})
                         </button>
                       </div>
                     </div>
@@ -4962,9 +5211,17 @@ export default function AdminDashboard() {
 
                                     {/* Tier & Price */}
                                     <td className="p-4 text-xs">
-                                      <span className="px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] font-black text-[10px] inline-block mb-1">
-                                        {ticket.tier || 'VIP Pass'}
-                                      </span>
+                                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                        <span className="px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] font-black text-[10px] inline-block">
+                                          {ticket.tier || 'VIP Pass'}
+                                        </span>
+                                        {Boolean(ticket.paymentStatus === 'admin_override' || ticket.paymentMethod === 'admin_manual' || ticket.userId === 'admin_manual_override') && (
+                                          <span className="px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 font-bold text-[9px] inline-flex items-center gap-1" title="ይህ ትኬት በአድሚን ማንዋል የተመዘገበ ነው">
+                                            <i className="fa-solid fa-shield-halved text-[8px]"></i>
+                                            <span>ማንዋል (Manual Override)</span>
+                                          </span>
+                                        )}
+                                      </div>
                                       <div className="font-bold text-gray-700 dark:text-gray-300">
                                         {ticket.pricePaid === 0 ? (
                                           <span className="text-emerald-500 font-bold">100% ነፃ</span>
@@ -5000,33 +5257,44 @@ export default function AdminDashboard() {
                                       )}
                                     </td>
 
-                                    {/* Interactive Check-In / Confirmation Button */}
+                                    {/* Interactive Check-In / Confirmation Button & Delete */}
                                     <td className="p-4 text-right">
-                                      <button
-                                        type="button"
-                                        disabled={isUpdating}
-                                        onClick={() => handleToggleTicketAttendance(ticket)}
-                                        className={`px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 ml-auto cursor-pointer active:scale-95 disabled:opacity-50 ${
-                                          isAttended
-                                            ? 'bg-slate-100 hover:bg-red-500/15 dark:bg-slate-700/80 dark:hover:bg-red-500/20 text-gray-600 hover:text-red-500 dark:text-slate-300 dark:hover:text-red-400 border border-gray-200 dark:border-white/10 hover:border-red-500/30'
-                                            : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.35)]'
-                                        }`}
-                                        title={isAttended ? "መውጣቱን ወይም በስህተት መመዝገቡን ሰርዝ (Reset Status)" : "ተሳታፊው መገኘታቸውን አረጋግጥ (Confirm Attendance)"}
-                                      >
-                                        {isUpdating ? (
-                                          <i className="fa-solid fa-spinner fa-spin text-xs"></i>
-                                        ) : isAttended ? (
-                                          <>
-                                            <i className="fa-solid fa-rotate-left text-xs"></i>
-                                            <span>ሰርዝ</span>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <i className="fa-solid fa-user-check text-xs"></i>
-                                            <span>መገኘታቸውን አረጋግጥ</span>
-                                          </>
-                                        )}
-                                      </button>
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        <button
+                                          type="button"
+                                          disabled={isUpdating}
+                                          onClick={() => handleToggleTicketAttendance(ticket)}
+                                          className={`px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 ${
+                                            isAttended
+                                              ? 'bg-slate-100 hover:bg-red-500/15 dark:bg-slate-700/80 dark:hover:bg-red-500/20 text-gray-600 hover:text-red-500 dark:text-slate-300 dark:hover:text-red-400 border border-gray-200 dark:border-white/10 hover:border-red-500/30'
+                                              : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.35)]'
+                                          }`}
+                                          title={isAttended ? "መውጣቱን ወይም በስህተት መመዝገቡን ሰርዝ (Reset Status)" : "ተሳታፊው መገኘታቸውን አረጋግጥ (Confirm Attendance)"}
+                                        >
+                                          {isUpdating ? (
+                                            <i className="fa-solid fa-spinner fa-spin text-xs"></i>
+                                          ) : isAttended ? (
+                                            <>
+                                              <i className="fa-solid fa-rotate-left text-xs"></i>
+                                              <span>ሰርዝ</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <i className="fa-solid fa-user-check text-xs"></i>
+                                              <span>መገኘታቸውን አረጋግጥ</span>
+                                            </>
+                                          )}
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteTicket(ticket)}
+                                          className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-500 hover:text-white dark:bg-red-500/10 dark:hover:bg-red-500 text-red-500 transition flex items-center justify-center cursor-pointer shadow-xs"
+                                          title="ይህንን ትኬት ሰርዝ (የተያዘውን ቦታ መልስ)"
+                                        >
+                                          <i className="fa-solid fa-trash text-xs"></i>
+                                        </button>
+                                      </div>
                                     </td>
                                   </tr>
                                 );
@@ -9501,18 +9769,164 @@ export default function AdminDashboard() {
                   </label>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold mb-1">አቅራቢ / አስተማሪ (Speaker Name)</label>
-                  <input
-                    type="text"
-                    value={eventForm.speaker}
-                    onChange={(e) => setEventForm({ ...eventForm, speaker: e.target.value })}
-                    placeholder="ኢዮብ ሳህሌ (Eyoub Sahle)"
-                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
-                  />
+                {/* 🌟 Speaker / Instructor Profile Section */}
+                <div className="sm:col-span-2 p-4 rounded-2xl bg-gray-50/80 dark:bg-slate-900/80 border border-gray-200 dark:border-slate-700/80 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-200/60 dark:border-slate-700/60">
+                    <span className="text-xs font-black flex items-center gap-2 text-amber-500">
+                      <i className="fa-solid fa-chalkboard-user"></i>
+                      <span>የአሰልጣኙ ዝርዝር መረጃ (Speaker & Instructor Profile)</span>
+                    </span>
+                    <span className="text-[10px] text-gray-400">በክስተቱ ገጽ "ስለ አሰልጣኙ" ካርድ ላይ ይታያል</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold mb-1">የአሰልጣኙ ሙሉ ስም (Speaker Full Name) *</label>
+                      <input
+                        type="text"
+                        required
+                        value={eventForm.speaker}
+                        onChange={(e) => setEventForm({ ...eventForm, speaker: e.target.value })}
+                        placeholder="ለምሳሌ፡ ኢዮብ ሳህሌ (Eyoub Sahle)"
+                        className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-1">የስራ ድርሻ / ሙያ (Speaker Role / Title)</label>
+                      <input
+                        type="text"
+                        value={eventForm.speakerRole}
+                        onChange={(e) => setEventForm({ ...eventForm, speakerRole: e.target.value })}
+                        placeholder="ለምሳሌ፡ Digital Marketer & Filmmaker"
+                        className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold mb-1">አጭር ግለ-ታሪክ (Speaker Bio)</label>
+                    <textarea
+                      rows={3}
+                      value={eventForm.speakerBio}
+                      onChange={(e) => setEventForm({ ...eventForm, speakerBio: e.target.value })}
+                      placeholder="ስለ አሰልጣኙ ልምድ፣ የሙያ ዳራ እና ስኬት የሚያስረዳ አጭር ማብራሪያ..."
+                      className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Speaker Photo URL / Upload */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
+                        <i className="fa-regular fa-user text-amber-500"></i>
+                        <span>የአሰልጣኙ ፎቶ (Speaker Photo URL / Upload)</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          ref={speakerPhotoFileInputRef}
+                          accept="image/*"
+                          onChange={handleSpeakerPhotoUpload}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => speakerPhotoFileInputRef.current?.click()}
+                          disabled={isUploadingSpeakerPhoto}
+                          className="text-[11px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 font-bold px-3 py-1 rounded-xl transition flex items-center gap-1.5 cursor-pointer border border-amber-500/20 disabled:opacity-50"
+                        >
+                          {isUploadingSpeakerPhoto ? (
+                            <>
+                              <i className="fa-solid fa-spinner fa-spin text-[10px]"></i>
+                              <span>በማዘጋጀት ላይ...</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="fa-solid fa-camera text-[10px]"></i>
+                              <span>ፎቶ ስቀል (Upload)</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {/* Avatar preview */}
+                      <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-amber-500/40 bg-slate-900 shadow-sm relative group">
+                        {eventForm.speakerImage ? (
+                          <img
+                            src={eventForm.speakerImage}
+                            alt="Speaker"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-lg">
+                            <i className="fa-solid fa-user"></i>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={eventForm.speakerImage}
+                          onChange={(e) => setEventForm({ ...eventForm, speakerImage: e.target.value })}
+                          placeholder="https://... የምስል ሊንክ ወይም ከላይ ፎቶ ስቀል"
+                          className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono"
+                        />
+                        {eventForm.speakerImage && (
+                          <button
+                            type="button"
+                            onClick={() => setEventForm({ ...eventForm, speakerImage: '' })}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 hover:text-red-500 transition"
+                            title="አጥፋ"
+                          >
+                            <i className="fa-solid fa-xmark"></i>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Preset Avatars */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[10px] text-gray-400 font-semibold mr-1">ፈጣን አምሳያዎች፡</span>
+                      <button
+                        type="button"
+                        onClick={() => setEventForm(prev => ({ ...prev, speakerImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600' }))}
+                        className="text-[10px] bg-white dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-gray-600 dark:text-gray-300 font-medium px-2 py-0.5 rounded-lg border border-gray-200 dark:border-white/5 transition cursor-pointer"
+                      >
+                        አምሳያ 1 (Tech)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEventForm(prev => ({ ...prev, speakerImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600' }))}
+                        className="text-[10px] bg-white dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-gray-600 dark:text-gray-300 font-medium px-2 py-0.5 rounded-lg border border-gray-200 dark:border-white/5 transition cursor-pointer"
+                      >
+                        አምሳያ 2 (Business)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEventForm(prev => ({ ...prev, speakerImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600' }))}
+                        className="text-[10px] bg-white dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-gray-600 dark:text-gray-300 font-medium px-2 py-0.5 rounded-lg border border-gray-200 dark:border-white/5 transition cursor-pointer"
+                      >
+                        አምሳያ 3 (Creative)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEventForm(prev => ({ ...prev, speakerImage: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=600' }))}
+                        className="text-[10px] bg-white dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-gray-600 dark:text-gray-300 font-medium px-2 py-0.5 rounded-lg border border-gray-200 dark:border-white/5 transition cursor-pointer"
+                      >
+                        አምሳያ 4 (Leadership)
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-bold mb-1 flex items-center gap-1.5">
                     <i className="fa-solid fa-tower-broadcast text-[#f9b03c]"></i>
                     <span>የክንውን ሁኔታ እና የባነር ማሳያ (Status & Banner)</span>
@@ -9904,6 +10318,362 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* 🎟️ Admin Manual Ticket Reservation Modal (Admin Override / Complimentary Pass) */}
+      {isManualTicketModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-6 border border-gray-100 dark:border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200 text-dark dark:text-white">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-slate-800 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 flex items-center justify-center text-xl shadow-lg shadow-amber-500/25 font-bold">
+                  <i className="fa-solid fa-ticket-simple"></i>
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black font-heading text-gray-900 dark:text-white flex items-center gap-2">
+                    <span>ማንዋል ቲኬት ጨምር</span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                      Admin Override
+                    </span>
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    ያለ ክፍያ ቅድመ-ሁኔታ ቲኬት መቁረጥ እና የመያዝ አቅም (Seat Capacity) ማስተካከያ
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsManualTicketModalOpen(false);
+                  setManualTicketResult(null);
+                }}
+                className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            {/* Modal Body: Success State or Form State */}
+            {manualTicketResult ? (
+              <div className="space-y-5 animate-in fade-in duration-300">
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-lg shrink-0">
+                    <i className="fa-solid fa-circle-check text-emerald-400"></i>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-emerald-300">
+                      {manualTicketResult.message || 'ማንዋል ቲኬት በተሳካ ሁኔታ ተቆርጧል!'}
+                    </h4>
+                    <p className="text-xs text-emerald-400/80">
+                      የክስተቱ የመያዝ አቅም (Capacity) በ {manualTicketResult.tickets?.length || 1} ሰው ቀንሷል።
+                    </p>
+                  </div>
+                </div>
+
+                {/* Event & Attendee Summary */}
+                <div className="bg-gray-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-gray-200/70 dark:border-slate-700/60 space-y-2 text-xs">
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200 dark:border-slate-700/50">
+                    <span className="text-gray-500">ክስተት (Event):</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{manualTicketResult.event?.title || 'Event'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200 dark:border-slate-700/50">
+                    <span className="text-gray-500">ተሳታፊ (Attendee):</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{manualTicketForm.attendeeName}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-gray-500">የቀረ ክፍት ቦታ (Remaining Seats):</span>
+                    <span className="font-black text-amber-500">{manualTicketResult.event?.remainingSeats ?? 'N/A'} Seats</span>
+                  </div>
+                </div>
+
+                {/* Issued Tickets List */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+                    የተቆረጡ ትኬቶች ({manualTicketResult.tickets?.length || 0})
+                  </label>
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {(manualTicketResult.tickets || []).map((tk: any, idx: number) => (
+                      <div 
+                        key={tk.ticketId || idx}
+                        className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 flex items-center justify-between gap-3 shadow-sm hover:border-amber-500/50 transition"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center font-bold text-xs shrink-0">
+                            #{idx + 1}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-mono text-xs font-black text-amber-500 truncate">
+                              {tk.ticketId}
+                            </div>
+                            <div className="text-[11px] text-gray-500 truncate">
+                              {tk.tier || 'VIP Pass'} • {tk.status === 'confirmed' ? '✓ የጸደቀ' : tk.status}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(tk.ticketId);
+                              showToast(`የቲኬት መለያ ኮፒ ተደርጓል: ${tk.ticketId}`, 'success');
+                            }}
+                            className="px-2.5 py-1 text-[11px] bg-gray-100 dark:bg-slate-700 hover:bg-amber-500 hover:text-slate-950 font-bold rounded-lg transition cursor-pointer flex items-center gap-1"
+                            title="የቲኬት መለያ ኮፒ አድርግ"
+                          >
+                            <i className="fa-regular fa-copy"></i>
+                            <span>ኮፒ</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Modal Footer Actions for Success State */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualTicketResult(null);
+                      setManualTicketForm(prev => ({
+                        ...prev,
+                        attendeeName: '',
+                        attendeeEmail: '',
+                        attendeePhone: '',
+                        quantity: 1
+                      }));
+                    }}
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/30 transition cursor-pointer flex items-center gap-2"
+                  >
+                    <i className="fa-solid fa-plus"></i>
+                    <span>ተጨማሪ ቲኬት ቁረጥ (Issue More)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsManualTicketModalOpen(false);
+                      setManualTicketResult(null);
+                    }}
+                    className="px-5 py-2.5 rounded-xl text-xs font-black bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:opacity-90 transition cursor-pointer shadow-lg"
+                  >
+                    አጠናቅቅ (Done)
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Modal Form */
+              <form onSubmit={handleSaveManualTickets} className="space-y-4">
+                
+                {/* Event Select */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <i className="fa-solid fa-calendar-day text-amber-500"></i>
+                      <span>የክስተት ምርጫ (Select Event) *</span>
+                    </span>
+                    {manualTicketForm.eventId && (() => {
+                      const sel = events.find(e => e.id === manualTicketForm.eventId);
+                      const rem = sel?.remainingSeats ?? sel?.seatsLeft ?? sel?.capacity ?? 0;
+                      return (
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${rem <= 5 ? 'bg-red-500/15 text-red-500' : 'bg-emerald-500/15 text-emerald-400'}`}>
+                          የቀረው ቦታ: {rem}
+                        </span>
+                      );
+                    })()}
+                  </label>
+                  <select
+                    required
+                    value={manualTicketForm.eventId}
+                    onChange={(e) => setManualTicketForm({ ...manualTicketForm, eventId: e.target.value })}
+                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-amber-500 transition"
+                  >
+                    <option value="">-- ክስተት ይምረጡ --</option>
+                    {events.map(ev => {
+                      const rem = ev.remainingSeats ?? ev.seatsLeft ?? ev.capacity ?? 0;
+                      return (
+                        <option key={ev.id} value={ev.id}>
+                          {ev.title} ({ev.date || 'ቀን አልተገለጸም'} - ክፍት ቦታ: {rem})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Attendee Full Name */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                    <i className="fa-regular fa-user text-amber-500"></i>
+                    <span>የተሳታፊው ሙሉ ስም (Attendee Full Name) *</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={manualTicketForm.attendeeName}
+                    onChange={(e) => setManualTicketForm({ ...manualTicketForm, attendeeName: e.target.value })}
+                    placeholder="ለምሳሌ፡ ዳዊት መንግስቱ"
+                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-amber-500 transition"
+                  />
+                </div>
+
+                {/* Phone & Email Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                      <i className="fa-solid fa-phone text-amber-500"></i>
+                      <span>ስልክ ቁጥር (Phone Number)</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={manualTicketForm.attendeePhone}
+                      onChange={(e) => setManualTicketForm({ ...manualTicketForm, attendeePhone: e.target.value })}
+                      placeholder="0911234567"
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-amber-500 transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                      <i className="fa-regular fa-envelope text-amber-500"></i>
+                      <span>ኢሜይል (Email - አማራጭ)</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={manualTicketForm.attendeeEmail}
+                      onChange={(e) => setManualTicketForm({ ...manualTicketForm, attendeeEmail: e.target.value })}
+                      placeholder="attendee@example.com"
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-amber-500 transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Quantity & Tier Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                      <i className="fa-solid fa-hashtag text-amber-500"></i>
+                      <span>የቲኬት ብዛት (Quantity)</span>
+                    </label>
+                    <div className="flex items-center border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-800 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setManualTicketForm(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+                        className="px-3 py-2 text-gray-500 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                      >
+                        <i className="fa-solid fa-minus text-xs"></i>
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={manualTicketForm.quantity}
+                        onChange={(e) => setManualTicketForm({ ...manualTicketForm, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                        className="w-full text-center bg-transparent py-2 text-xs font-bold text-dark dark:text-white outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setManualTicketForm(prev => ({ ...prev, quantity: Math.min(50, prev.quantity + 1) }))}
+                        className="px-3 py-2 text-gray-500 hover:text-amber-500 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                      >
+                        <i className="fa-solid fa-plus text-xs"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                      <i className="fa-solid fa-award text-amber-500"></i>
+                      <span>የቲኬት አይነት (Ticket Tier)</span>
+                    </label>
+                    <select
+                      value={manualTicketForm.tier}
+                      onChange={(e) => setManualTicketForm({ ...manualTicketForm, tier: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-amber-500 transition"
+                    >
+                      <option value="VIP Pass (Admin Override)">VIP Pass (Admin Override)</option>
+                      <option value="General Admission (Complimentary)">General Admission (Complimentary)</option>
+                      <option value="Special Guest / Speaker Invite">Special Guest / Speaker Invite</option>
+                      <option value="Offline Cash Payment">Offline Cash Payment (ጥሬ ገንዘብ)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Admin Note / Internal Reason */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                    <i className="fa-regular fa-note-sticky text-amber-500"></i>
+                    <span>የአድሚን ማስታወሻ / ምክንያት (Admin Note - Internal)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={manualTicketForm.note}
+                    onChange={(e) => setManualTicketForm({ ...manualTicketForm, note: e.target.value })}
+                    placeholder="ለምሳሌ፡ በቴሌግራም የተመዘገበ / የክብር እንግዳ"
+                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs text-dark dark:text-white outline-none focus:border-amber-500 transition"
+                  />
+                </div>
+
+                {/* Email Notification Option */}
+                {manualTicketForm.attendeeEmail && (
+                  <label className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={manualTicketForm.sendEmail}
+                      onChange={(e) => setManualTicketForm({ ...manualTicketForm, sendEmail: e.target.checked })}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 accent-amber-500 cursor-pointer"
+                    />
+                    <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">
+                      ለተሳታፊው የቲኬት ማረጋገጫ እና QR ኮድ በኢሜይል ላክ (Send Ticket confirmation email)
+                    </span>
+                  </label>
+                )}
+
+                {/* Capacity Sync Warning Alert */}
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-2.5 text-xs text-amber-600 dark:text-amber-400">
+                  <i className="fa-solid fa-triangle-exclamation text-base shrink-0 mt-0.5"></i>
+                  <div className="space-y-1">
+                    <p className="font-bold">የመያዝ አቅም ቅነሳ ማሳሰቢያ (Capacity Sync):</p>
+                    <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
+                      ይህንን ፎርም ሲያረጋግጡ <strong className="text-amber-500 font-black">{manualTicketForm.quantity}</strong> ቲኬት በቀጥታ የጸደቀ (`status: confirmed`) ሆኖ ይመዘገባል። ክስተቱ ላይ የቀረው የመቀመጫ አቅም ወዲያውኑ በ <strong className="text-amber-500 font-black">{manualTicketForm.quantity}</strong> ይቀነሳል።
+                    </p>
+                  </div>
+                </div>
+
+                {/* Form Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsManualTicketModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                  >
+                    ተመለስ (Cancel)
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingManualTickets}
+                    className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 hover:shadow-lg hover:shadow-amber-500/20 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isSubmittingManualTickets ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                        <span>በማመንጨት ላይ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-check-double"></i>
+                        <span>ቲኬት ቁረጥ (Issue {manualTicketForm.quantity} Ticket{manualTicketForm.quantity > 1 ? 's' : ''})</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+              </form>
+            )}
 
           </div>
         </div>

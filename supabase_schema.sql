@@ -72,6 +72,8 @@ CREATE TABLE IF NOT EXISTS public.events (
     is_free BOOLEAN DEFAULT true,
     speaker TEXT,
     speaker_role TEXT,
+    speaker_bio TEXT,
+    speaker_image TEXT,
     status TEXT DEFAULT 'Upcoming',
     tags JSONB DEFAULT '[]'::jsonb,
     speakers JSONB DEFAULT '[]'::jsonb,
@@ -266,6 +268,8 @@ ALTER TABLE public.events ADD COLUMN IF NOT EXISTS maps_url TEXT;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT true;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS speaker TEXT;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS speaker_role TEXT;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS speaker_bio TEXT;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS speaker_image TEXT;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS video_url TEXT;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS remaining_seats INTEGER DEFAULT 100;
 ALTER TABLE public.youtube_videos ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Active';

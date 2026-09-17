@@ -639,13 +639,26 @@ export default function EventDetailClient() {
 
                 {/* Speaker Spotlight */}
                 <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-white/[0.04] to-transparent border border-white/10">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-[#f9b03c] text-slate-950 flex items-center justify-center text-xl font-black shadow-md">
-                    <i className="fa-solid fa-microphone-lines"></i>
-                  </div>
+                  {event.speakerImage ? (
+                    <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-amber-400/50 shadow-md shrink-0 bg-slate-800">
+                      <img
+                        src={event.speakerImage}
+                        alt={event.speaker}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-[#f9b03c] text-slate-950 flex items-center justify-center text-xl font-black shadow-md shrink-0">
+                      <i className="fa-solid fa-microphone-lines"></i>
+                    </div>
+                  )}
                   <div>
                     <p className="text-[10px] text-slate-400 uppercase font-bold">ዋና አሰልጣኝ / አቅራቢ</p>
                     <h4 className="text-sm sm:text-base font-black text-white">{event.speaker}</h4>
-                    <p className="text-xs text-[#f9b03c] font-medium">{event.speakerRole || 'Lead Mentor'}</p>
+                    <p className="text-xs text-[#f9b03c] font-medium">{event.speakerRole || 'Lead Mentor & Specialist'}</p>
                   </div>
                 </div>
 
@@ -879,6 +892,150 @@ export default function EventDetailClient() {
 
             </div>
           </div>
+
+          {/* 🌟 ስለ አሰልጣኙ / Meet Your Instructor Spotlight Section */}
+          <section className="mb-16 relative">
+            <div 
+              className="rounded-[2.5rem] p-8 sm:p-12 relative overflow-hidden border border-amber-500/25 shadow-[0_25px_80px_rgba(0,0,0,0.85),0_0_50px_rgba(249,176,60,0.08)]"
+              style={{
+                background: 'linear-gradient(135deg, rgba(12, 17, 28, 0.95) 0%, rgba(5, 8, 14, 0.98) 100%)',
+                backdropFilter: 'blur(20px)'
+              }}
+            >
+              {/* Ambient Glows */}
+              <div className="absolute -top-24 -right-24 w-72 h-72 bg-[#f9b03c]/15 rounded-full blur-[90px] pointer-events-none" />
+              <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
+
+              <div className="relative z-10">
+                {/* Header Tag */}
+                <div className="flex items-center gap-2 mb-8">
+                  <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-400 text-xs font-black tracking-wider uppercase">
+                    <i className="fa-solid fa-graduation-cap text-sm"></i>
+                    <span>ስለ አሰልጣኙ • Meet Your Instructor</span>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+                  
+                  {/* Instructor Portrait & Badges (4 cols) */}
+                  <div className="lg:col-span-4 flex flex-col items-center text-center">
+                    <div className="relative group">
+                      {/* Decorative outer glow rings */}
+                      <div className="absolute -inset-2 rounded-3xl bg-gradient-to-tr from-amber-500/40 via-amber-400/20 to-transparent blur-md group-hover:blur-lg transition duration-500" />
+                      
+                      <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-3xl overflow-hidden border-2 border-amber-400/40 shadow-2xl bg-slate-900">
+                        <img
+                          src={event.speakerImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600'}
+                          alt={event.speaker}
+                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                        <div className="absolute bottom-3 left-3 right-3 text-center">
+                          <span className="px-3 py-1 rounded-full bg-amber-500/90 text-slate-950 font-black text-[10px] tracking-wider uppercase shadow-md inline-flex items-center gap-1">
+                            <i className="fa-solid fa-circle-check text-[10px]"></i>
+                            <span>የተረጋገጠ አሰልጣኝ</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <h3 className="text-xl sm:text-2xl font-black text-white font-heading">
+                        {event.speaker}
+                      </h3>
+                      <p className="text-sm font-bold text-[#f9b03c] mt-1">
+                        {event.speakerRole || 'Lead Mentor & Content Specialist'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Instructor Bio & Highlights (8 cols) */}
+                  <div className="lg:col-span-8 space-y-6">
+                    <div>
+                      <h4 className="text-lg font-black text-white mb-3 flex items-center gap-2">
+                        <i className="fa-solid fa-quote-left text-amber-500/60 text-base"></i>
+                        <span>የሙያ ዳራ እና ልምድ (Professional Background)</span>
+                      </h4>
+                      <p className="text-slate-300 text-sm sm:text-base leading-relaxed whitespace-pre-line font-normal">
+                        {event.speakerBio || 
+                          `${event.speaker} በዘርፉ የካበተ የብዙ ዓመታት ተግባራዊ ልምድ ያላቸው ሲሆን በርካታ ተማሪዎችንና የፈጠራ ሰዎችን በማሰልጠን ውጤታማ እንዲሆኑ አግዘዋል። በዚህ የቀጥታ ስልጠና ላይ ወቅታዊ ስልቶችን፣ አዳዲስ አሰራሮችን እና በቀጥታ ስራ ላይ የሚውሉ ተግባራዊ እውቀቶችን ያካፍሉዎታል።`}
+                      </p>
+                    </div>
+
+                    {/* Value Pill Badges */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex items-start gap-3 hover:border-amber-500/30 transition">
+                        <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 text-sm">
+                          <i className="fa-solid fa-laptop-code"></i>
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-xs text-white">ተግባራዊ ልምምድ (100% Practical)</h5>
+                          <p className="text-[11px] text-slate-400">ንድፈ-ሀሳብ ብቻ ሳይሆን በቀጥታ የሚሰሩ ደረጃ በደረጃ መንገዶች።</p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex items-start gap-3 hover:border-amber-500/30 transition">
+                        <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0 text-sm">
+                          <i className="fa-solid fa-comments"></i>
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-xs text-white">የቀጥታ ጥያቄ እና መልስ (Live Q&A)</h5>
+                          <p className="text-[11px] text-slate-400">ያሉዎትን ማንኛውንም ጥያቄ በቀጥታ ለአሰልጣኙ የማቅረብ እድል።</p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex items-start gap-3 hover:border-amber-500/30 transition">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 text-sm">
+                          <i className="fa-solid fa-file-shield"></i>
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-xs text-white">የማጠቃለያ ግብዓቶች (Templates & Assets)</h5>
+                          <p className="text-[11px] text-slate-400">ከስልጠናው በኋላ የሚረዱዎትን ቴምፕሌቶችና መመሪያዎች ያገኛሉ።</p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 flex items-start gap-3 hover:border-amber-500/30 transition">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0 text-sm">
+                          <i className="fa-solid fa-users"></i>
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-xs text-white">የማህበረሰብ ትስስር (VIP Community)</h5>
+                          <p className="text-[11px] text-slate-400">ከተመሳሳይ የሙያ ሰዎች ጋር የመገናኘትና ትስስር የመፍጠር አጋጣሚ።</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Book Now Quick Hook */}
+                    {!isSoldOut && (
+                      <div className="pt-2 flex items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window) {
+                              window.scrollTo({ top: 300, behavior: 'smooth' });
+                            }
+                            setIsBookingOpen(true);
+                          }}
+                          className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs tracking-wide shadow-lg shadow-amber-500/25 transition cursor-pointer flex items-center gap-2 active:scale-95"
+                        >
+                          <i className="fa-solid fa-ticket"></i>
+                          <span>አሁኑኑ ቦታ ይያዙ (Register Now)</span>
+                        </button>
+                        <span className="text-xs text-slate-400">
+                          🔥 የቀሩት ቦታዎች: <strong className="text-amber-400 font-bold">{remainingSeats}</strong> ብቻ!
+                        </span>
+                      </div>
+                    )}
+
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </section>
 
         </div>
       </main>

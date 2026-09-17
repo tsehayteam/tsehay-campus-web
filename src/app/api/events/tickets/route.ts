@@ -72,3 +72,98 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, tickets: [], error: error.message }, { headers: NO_CACHE_HEADERS });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401, headers: NO_CACHE_HEADERS });
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const ticketId = searchParams.get('ticketId') || searchParams.get('id');
+
+    if (!ticketId) {
+      return NextResponse.json({ success: false, error: 'Ticket ID required' }, { status: 400, headers: NO_CACHE_HEADERS });
+    }
+
+    const tickets = await getTickets();
+    const targetTicket = tickets.find(t => t.ticketId === ticketId || t.id === ticketId);
+
+    if (!targetTicket) {
+      return NextResponse.json({ success: false, error: 'Ticket not found' }, { status: 404, headers: NO_CACHE_HEADERS });
+    }
+
+    const remainingTickets = tickets.filter(t => t.ticketId !== ticketId && t.id !== ticketId);
+    await supabaseServer
+      .from('site_settings')
+      .upsert({
+        key: 'event_tickets',
+        data: remainingTickets,
+        updated_at: new Date().toISOString()
+      });
+
+    // Restore capacity on target event
+    const eventId = targetTicket.eventId;
+    if (eventId) {
+      try {
+        const { data: dbEvent } = await supabaseServer
+          .from('events')
+          .select('registered_count, capacity')
+          .eq('id', eventId)
+          .maybeSingle();
+
+        if (dbEvent) {
+          const newReg = Math.max(0, (Number(dbEvent.registered_count) || 1) - 1);
+          await supabaseServer
+            .from('events')
+            .update({
+              registered_count: newReg,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', eventId);
+        }
+      } catch (e) {}
+
+      try {
+        const { data: settingsRow } = await supabaseServer
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'events')
+          .maybeSingle();
+
+        if (settingsRow?.data && Array.isArray(settingsRow.data)) {
+          const updatedEvents = settingsRow.data.map((ev: any) => {
+            if (ev.id === eventId || ev.slug === targetTicket.eventSlug) {
+              const cap = Number(ev.capacity) || 100;
+              const newReg = Math.max(0, (Number(ev.registered_count ?? ev.registeredCount) || 1) - 1);
+              return {
+                ...ev,
+                registeredCount: newReg,
+                registered_count: newReg,
+                remainingSeats: Math.max(0, cap - newReg)
+              };
+            }
+            return ev;
+          });
+
+          await supabaseServer
+            .from('site_settings')
+            .upsert({
+              key: 'events',
+              data: updatedEvents,
+              updated_at: new Date().toISOString()
+            });
+        }
+      } catch (e) {}
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'ትኬቱ በተሳካ ሁኔታ ተሰርዟል! የመያዝ አቅሙም ተመልሷል። (Ticket revoked and seat restored)'
+    }, { headers: NO_CACHE_HEADERS });
+  } catch (err: any) {
+    console.error('Error deleting ticket:', err);
+    return NextResponse.json({ success: false, error: err.message || 'Failed to delete ticket' }, { status: 500, headers: NO_CACHE_HEADERS });
+  }
+}

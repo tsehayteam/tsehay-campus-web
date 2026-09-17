@@ -47,6 +47,8 @@ function mapDbRowToEvent(row: any): TsehayEvent {
     isFree: row.is_free !== undefined ? Boolean(row.is_free) : (row.isFree !== undefined ? Boolean(row.isFree) : (Number(row.price) === 0)),
     speaker: row.speaker || '',
     speakerRole: row.speaker_role || row.speakerRole || '',
+    speakerBio: row.speaker_bio || row.speakerBio || '',
+    speakerImage: formatDriveImageUrl(row.speaker_image || row.speakerImage || row.speaker_photo || row.speakerPhoto || '') || row.speaker_image || row.speakerImage || '',
     image: img,
     videoUrl: row.video_url || row.videoUrl || '',
     tags: Array.isArray(row.tags) ? row.tags : (typeof row.tags === 'string' ? row.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []),

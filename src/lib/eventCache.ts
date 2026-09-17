@@ -21,6 +21,8 @@ export interface TsehayEvent {
   isFree?: boolean;
   speaker: string; // e.g. "ኢዮብ ሳህሌ (Eyoub Sahle)"
   speakerRole?: string; // e.g. "Founder & Lead Mentor"
+  speakerBio?: string; // Short biography and career highlights
+  speakerImage?: string; // Instructor photo URL / avatar
   image: string;
   eventImage?: string;
   videoUrl?: string;
@@ -126,6 +128,8 @@ export const DEFAULT_EVENTS: TsehayEvent[] = [
     isFree: false,
     speaker: "ኢዮብ ሳህሌ (Eyoub Sahle)",
     speakerRole: "የፀሐይ ካምፓስ መስራች እና የዩቲዩብ ስፔሻሊስት",
+    speakerBio: "ኢዮብ ሳህሌ በዲጂታል ማርኬቲንግ፣ በይዘት ፈጠራ እና በኦንላይን ንግድ ዘርፍ ከ 7+ ዓመታት በላይ ልምድ ያለው ሲሆን፤ በሺዎች የሚቆጠሩ ኢትዮጵያውያን ወጣቶችንና ድርጅቶችን በዩቲዩብ እና በ AI ቴክኖሎጂ ውጤታማ እንዲሆኑ ያሰለጠነ የዘርፉ ግንባር ቀደም አሰልጣኝ ነው።",
+    speakerImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600",
     image: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200",
     tags: ["YouTube", "AI Tools", "Faceless", "Monetization"],
     isFeatured: true,
@@ -148,7 +152,9 @@ export const DEFAULT_EVENTS: TsehayEvent[] = [
     price: 1200,
     isFree: false,
     speaker: "ኢዮብ ሳህሌ & የኢምፖርት ባለሙያዎች",
-    speakerRole: "E-Commerce Consultants",
+    speakerRole: "E-Commerce & Import Consultants",
+    speakerBio: "የዓለም አቀፍ ግብይት እና የኢ-ኮሜርስ አማካሪዎች ቡድን፤ ከቻይና እና ከቱርክ በቀጥታ ወደ ኢትዮጵያ እቃዎችን በማስመጣት፣ በቴሌግራም እና በቲክቶክ ላይ በስፋት በመሸጥ ከፍተኛ የገበያ ተሞክሮ ያካበቱ ባለሙያዎች።",
+    speakerImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600",
     image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=1200",
     tags: ["Shein", "Import", "TikTok Sales", "Business"],
     isFeatured: true,
@@ -171,7 +177,9 @@ export const DEFAULT_EVENTS: TsehayEvent[] = [
     price: 0,
     isFree: true,
     speaker: "ኢዮብ ሳህሌ (Eyoub Sahle)",
-    speakerRole: "Digital Marketing Strategist",
+    speakerRole: "Digital Marketer & Strategist",
+    speakerBio: "በፌስቡክ እና ኢንስታግራም ማስታወቂያዎች (Meta Ads) ከፍተኛ ሽያጭ በማመንጨት እና ብራንዶችን በመገንባት የተካነ፤ ለተለያዩ ታዋቂ ድርጅቶች ዲጂታል ካምፔይኖችን የመራ የማርኬቲንግ ስትራቴጂስት።",
+    speakerImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600",
     image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1200",
     tags: ["Digital Marketing", "Meta Ads", "Free Webinar", "Google Meet"],
     isFeatured: true,

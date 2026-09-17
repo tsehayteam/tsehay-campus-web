@@ -564,11 +564,22 @@ export default function EventsClient() {
 
                       {/* Speaker / Host */}
                       <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-slate-300">
-                        <span className="flex items-center gap-1.5">
-                          <i className="fa-solid fa-chalkboard-user text-[#f9b03c]" />
+                        <span className="flex items-center gap-2 min-w-0">
+                          {evt.speakerImage ? (
+                            <img
+                              src={evt.speakerImage}
+                              alt={evt.speaker || 'Speaker'}
+                              className="w-5 h-5 rounded-full object-cover border border-amber-400/50 shrink-0 shadow-sm"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <i className="fa-solid fa-chalkboard-user text-[#f9b03c]" />
+                          )}
                           <span className="font-bold truncate">{evt.speaker || 'Tsehay Team'}</span>
                         </span>
-                        <span className="text-[10px] text-slate-400">{evt.speakerRole}</span>
+                        <span className="text-[10px] text-slate-400 shrink-0 max-w-[40%] truncate">{evt.speakerRole}</span>
                       </div>
                     </div>
                   </div>
