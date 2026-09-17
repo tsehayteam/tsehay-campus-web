@@ -3,7 +3,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 import { invalidateServerCoursesCache } from '@/lib/serverCourses';
 
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     // 1. Single video lookup
     if (videoId) {
-      const { data: row, error } = await supabaseServer
+      const { data: row, error } = await supabaseAdmin
         .from('youtube_videos')
         .select('*')
         .eq('id', videoId)
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. List all videos from Supabase
-    const { data: rows, error: sbErr } = await supabaseServer
+    const { data: rows, error: sbErr } = await supabaseAdmin
       .from('youtube_videos')
       .select('id, title, youtube_url, youtube_id, thumbnail, video_src, order_num, timestamp, updated_at')
       .order('order_num', { ascending: true });
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Save to Supabase youtube_videos table
-    const { error: sbErr } = await supabaseServer
+    const { error: sbErr } = await supabaseAdmin
       .from('youtube_videos')
       .upsert(formattedPayload);
 
@@ -167,7 +167,7 @@ export async function DELETE(req: NextRequest) {
 
     // Delete from Supabase
     try {
-      await supabaseServer
+      await supabaseAdmin
         .from('youtube_videos')
         .delete()
         .eq('id', videoId);
@@ -208,7 +208,7 @@ export async function PATCH(req: NextRequest) {
     // Update in Supabase
     for (const item of updates) {
       if (!item.id) continue;
-      await supabaseServer
+      await supabaseAdmin
         .from('youtube_videos')
         .update({ order_num: item.order ?? 0, updated_at: new Date().toISOString() })
         .eq('id', item.id);

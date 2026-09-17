@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
-import { generateCourseSlug, DEFAULT_COURSES, isValidCourse, formatDriveImageUrl, getCleanCourseImage, getCleanInstructorImage } from '@/lib/courseCache';
+import { generateCourseSlug, DEFAULT_COURSES, isValidCourse, formatDriveImageUrl, getCleanCourseImage, getCleanInstructorImage, deduplicateCourses } from '@/lib/courseCache';
 import { loadPersistedCourses } from '@/lib/memoryStore';
 
 export const dynamic = 'force-dynamic';
@@ -347,7 +347,7 @@ export async function GET(req: NextRequest) {
       }));
     });
 
-    const allMergedCourses = Array.from(courseMap.values());
+    const allMergedCourses = deduplicateCourses(Array.from(courseMap.values()));
 
     // Update In-Memory Cache
     allCoursesCache = {

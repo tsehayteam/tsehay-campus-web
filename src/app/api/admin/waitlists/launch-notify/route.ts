@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     let waitlistDocs: any[] = [];
 
     if (waitlistId) {
-      const { data } = await supabaseServer
+      const { data } = await supabaseAdmin
         .from('course_waitlists')
         .select('*')
         .eq('id', waitlistId)
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         waitlistDocs.push(data);
       }
     } else {
-      let query = supabaseServer.from('course_waitlists').select('*');
+      let query = supabaseAdmin.from('course_waitlists').select('*');
       if (courseId !== 'all') {
         query = query.eq('courseId', courseId);
       }
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
 
       // Mark status as notified in Supabase
       try {
-        await supabaseServer
+        await supabaseAdmin
           .from('course_waitlists')
           .update({
             status: 'notified',

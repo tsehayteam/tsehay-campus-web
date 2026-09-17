@@ -5,7 +5,7 @@ import { getMediaThumbnail, formatCloudStorageUrl, parseDropboxImageUrl } from '
 
 export const DEFAULT_COURSES = [
   {
-    id: "course_1784885060875",
+    id: "shein-import-business",
     slug: "shein-import-business",
     title: "የሼን ኢምፖርት ቢዝነስ ስልጠና (Shein Import Business Course)",
     description: "በቀላሉ በትንሽ ካፒታል ከሼን (Shein) እቃዎችን እንዴት ማስመጣት እንደሚችሉ፣ የኦንላይን ካርድ ክፍያ፣ የጉምሩክ አሰራር እና እቃዎችን በከፍተኛ ትርፍ መሸጫ ስልቶች የሚያስተምር 100% ተግባራዊ ኮርስ።",
@@ -61,7 +61,7 @@ export const DEFAULT_COURSES = [
     ]
   },
   {
-    id: "course_1784885267254",
+    id: "youtube-secrets-masterclass",
     slug: "youtube-secrets-masterclass",
     title: "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)",
     description: "የራስዎን የዩቲዩብ ቻናል ከዜሮ በመጀመር በወር በሺዎች የሚቆጠሩ ዶላሮችን የሚያስገኝ የተሳካ ቻናል ለመገንባት የሚያስችል አጠቃላይ ስልጠና።",
@@ -117,7 +117,7 @@ export const DEFAULT_COURSES = [
     ]
   },
   {
-    id: "digital_marketing_free",
+    id: "digital-marketing",
     slug: "digital-marketing",
     title: "ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Masterclass)",
     description: "ይህ የ1 ሰዓት የዲጂታል ማርኬቲንግ ቅምሻ በነፃነት በመማር ወደፊት ለሚመጣው ትልቅ የዲጂታል ማርኬቲንግ ስልጠና እራስዎን ዝግጁ የሚያደርጉበት ወሳኝ ፕሮግራም ነው።",
@@ -211,6 +211,35 @@ export function generateCourseSlug(title: string): string {
   }
 
   return 'course-' + encodeURIComponent(title.slice(0, 15)).toLowerCase().replace(/%/g, '');
+}
+
+/**
+ * Guarantees zero duplicates in any courses array by canonical slug, id, or normalized title
+ */
+export function deduplicateCourses(courses: any[]): any[] {
+  if (!Array.isArray(courses)) return [];
+  const result: any[] = [];
+  const seen = new Set<string>();
+
+  for (const c of courses) {
+    if (!c) continue;
+    const id = (c.id ? String(c.id).trim().toLowerCase() : '');
+    const slug = (c.slug ? String(c.slug).trim().toLowerCase() : '');
+
+    const canonical = slug || id;
+    if (!canonical) continue;
+
+    if (seen.has(canonical) || (id && seen.has(id)) || (slug && seen.has(slug))) {
+      continue;
+    }
+
+    seen.add(canonical);
+    if (id) seen.add(id);
+    if (slug) seen.add(slug);
+
+    result.push(c);
+  }
+  return result;
 }
 
 /**
@@ -402,7 +431,8 @@ export function getCachedCourses(): any[] {
             description: formatCourseDesc(c)
           };
         });
-        if (valid.length > 0) return valid;
+        const dedupedValid = deduplicateCourses(valid);
+        if (dedupedValid.length > 0) return dedupedValid;
       }
     }
 
@@ -431,7 +461,8 @@ export function getCachedCourses(): any[] {
             description: formatCourseDesc(c)
           };
         });
-        if (sanitized.length > 0) return sanitized;
+        const dedupedSanitized = deduplicateCourses(sanitized);
+        if (dedupedSanitized.length > 0) return dedupedSanitized;
       }
     }
   } catch (err) {
@@ -464,11 +495,12 @@ export function saveCachedCourses(courses: any[]) {
         description: formatCourseDesc(c)
       };
     });
-    if (sanitized.length > 0) {
-      localStorage.setItem('tsehay_courses_cache', JSON.stringify(sanitized));
-      localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(sanitized));
+    const deduped = deduplicateCourses(sanitized);
+    if (deduped.length > 0) {
+      localStorage.setItem('tsehay_courses_cache', JSON.stringify(deduped));
+      localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(deduped));
       localStorage.setItem('tsehay_courses_cache_version', COURSE_CACHE_VERSION);
-      const csOnly = sanitized.filter((c: any) => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
+      const csOnly = deduped.filter((c: any) => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
       if (csOnly.length > 0) {
         localStorage.setItem('tsehay_coming_soon_cache', JSON.stringify(csOnly));
       }

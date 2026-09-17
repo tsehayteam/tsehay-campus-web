@@ -3,7 +3,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 import { invalidateServerCoursesCache } from '@/lib/serverCourses';
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     // 1. Primary: Supabase site_settings table
     try {
-      const { data: sbRow, error: sbErr } = await supabaseServer
+      const { data: sbRow, error: sbErr } = await supabaseAdmin
         .from('site_settings')
         .select('*')
         .eq('key', settingKey)
@@ -105,9 +105,9 @@ export async function POST(req: NextRequest) {
           updatedAt: nowIso
         };
 
-    // 1. Primary: Save to Supabase site_settings table
+    // 1. Primary: Save to Supabase site_settings table with supabaseAdmin
     try {
-      const { error: sbErr } = await supabaseServer
+      const { error: sbErr } = await supabaseAdmin
         .from('site_settings')
         .upsert({
           key: settingKey,
