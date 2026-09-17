@@ -3,7 +3,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
   try {
     // 1. Primary: Fetch from Supabase youtube_videos table
     try {
-      const { data: rows, error: sbErr } = await supabaseServer
+      const { data: rows, error: sbErr } = await supabaseAdmin
         .from('youtube_videos')
         .select('*')
         .order('order_num', { ascending: true });
@@ -85,6 +85,23 @@ export async function GET(req: NextRequest) {
       console.warn('Supabase youtube_videos GET error in public API:', e);
     }
 
+    // 2. Secondary: Fallback to site_settings key 'youtube_videos'
+    try {
+      const { data: settingsRow } = await supabaseAdmin
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'youtube_videos')
+        .maybeSingle();
+
+      if (settingsRow?.data && Array.isArray(settingsRow.data) && settingsRow.data.length > 0) {
+        return NextResponse.json(
+          { success: true, count: settingsRow.data.length, videos: settingsRow.data },
+          { headers: NO_CACHE_HEADERS }
+        );
+      }
+    } catch (e) {}
+
+    // 3. Fallback to DEFAULT_VIDEOS
     return NextResponse.json(
       { success: true, count: DEFAULT_VIDEOS.length, videos: DEFAULT_VIDEOS },
       { headers: NO_CACHE_HEADERS }

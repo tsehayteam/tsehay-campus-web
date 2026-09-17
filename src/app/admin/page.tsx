@@ -1255,10 +1255,12 @@ export default function AdminDashboard() {
     // 2. Fail-Safe Server API Fetch for YouTube Videos
     const fetchApiYouTubeVideos = async () => {
       try {
-        const res = await fetch('/api/admin/youtube-videos');
+        const res = await fetch('/api/admin/youtube-videos', {
+          headers: getAdminAuthHeaders()
+        });
         if (res.ok) {
           const data = await res.json();
-          if (data.videos && Array.isArray(data.videos)) {
+          if (data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
             setYoutubeVideos(data.videos);
             try {
               localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(data.videos));
@@ -2203,23 +2205,23 @@ export default function AdminDashboard() {
 
     try {
       // 3. Server-side Admin API write
-      const adminTok = typeof window !== 'undefined'
-        ? (sessionStorage.getItem('tc_admin_session') || sessionStorage.getItem('tsehay_admin_2fa_token') || localStorage.getItem('tc_admin_session') || '')
-        : '';
       const res = await fetch('/api/admin/youtube-videos', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-admin-token': adminTok
-        },
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           email: user?.email,
           videoData: videoPayload
         })
       });
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        console.warn('Server API youtube save notice:', errJson);
+      const resData = await res.json().catch(() => ({}));
+      if (!res.ok || !resData.success) {
+        console.warn('Server API youtube save notice:', resData);
+        setCourseToast({
+          type: 'error',
+          message: resData.error || 'ቪዲዮውን ማስቀመጥ አልተቻለም (Failed to save YouTube video)'
+        });
+        setTimeout(() => setCourseToast(null), 4000);
+        return;
       }
 
       setCourseToast({
@@ -2234,11 +2236,10 @@ export default function AdminDashboard() {
     } catch (err: any) {
       console.error("Error saving YouTube video:", err);
       setCourseToast({
-        type: 'success',
-        message: 'የዩቲዩብ ቪዲዮው በተሳካ ሁኔታ ተቀምጧል! (YouTube Video Saved Successfully)'
+        type: 'error',
+        message: err.message || 'የኔትወርክ ችግር አጋጥሟል (Network error)'
       });
       setTimeout(() => setCourseToast(null), 4000);
-      setIsYouTubeModalOpen(false);
     } finally {
       setIsSavingYouTube(false);
     }
@@ -2269,13 +2270,19 @@ export default function AdminDashboard() {
 
       try {
         // 3. Server-side API delete
-        const adminTok = typeof window !== 'undefined'
-          ? (sessionStorage.getItem('tc_admin_session') || sessionStorage.getItem('tsehay_admin_2fa_token') || localStorage.getItem('tc_admin_session') || '')
-          : '';
-        await fetch(`/api/admin/youtube-videos?id=${encodeURIComponent(id)}&email=${encodeURIComponent(user?.email || '')}`, {
+        const res = await fetch(`/api/admin/youtube-videos?id=${encodeURIComponent(id)}&email=${encodeURIComponent(user?.email || '')}`, {
           method: 'DELETE',
-          headers: { 'x-admin-token': adminTok }
+          headers: getAdminAuthHeaders()
         });
+        const resData = await res.json().catch(() => ({}));
+        if (!res.ok || !resData.success) {
+          setCourseToast({
+            type: 'error',
+            message: resData.error || 'ቪዲዮውን ማጥፋት አልተቻለም'
+          });
+          setTimeout(() => setCourseToast(null), 3000);
+          return;
+        }
 
         setCourseToast({
           type: 'success',
@@ -2308,7 +2315,7 @@ export default function AdminDashboard() {
     try {
       await fetch('/api/admin/youtube-videos', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           email: user?.email,
           reorderUpdates: [
@@ -2342,7 +2349,7 @@ export default function AdminDashboard() {
     try {
       await fetch('/api/admin/youtube-videos', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           email: user?.email,
           reorderUpdates: [
