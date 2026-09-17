@@ -35,20 +35,32 @@ export function extractVimeoId(url: string): string {
 
 /**
  * Extracts 11-character YouTube ID from any YouTube URL format
- * (watch?v=, youtu.be/, shorts/, embed/, live/, v/, or raw ID).
+ * (watch?v=, youtu.be/, shorts/, embed/, live/, v/, or raw 11-char ID).
+ * Never matches random 11-char segments in non-YouTube URLs (e.g. Bunny, Vimeo, Supabase).
  */
 export function extractYouTubeId(urlOrId: string): string {
   if (!urlOrId) return '';
   const trimmed = urlOrId.trim();
+
+  // 1. Direct raw 11-character YouTube ID (when user provides ONLY the ID)
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+
+  // 2. Must be a YouTube domain or path to prevent false positives on other CDN/storage URLs
+  const isYouTubeDomain = /(?:youtube\.com|youtu\.be|youtube-nocookie\.com)/i.test(trimmed);
+  if (!isYouTubeDomain) return '';
+
   const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
   if (matchWatch && matchWatch[1]) return matchWatch[1];
+
   const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
   if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
+
   const matchEmbed = trimmed.match(/(?:embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/i);
   if (matchEmbed && matchEmbed[1]) return matchEmbed[1];
+
   const matchAny11 = trimmed.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
   if (matchAny11 && matchAny11[1]) return matchAny11[1];
+
   return '';
 }
 
@@ -375,7 +387,7 @@ export function parseVideoUrl(rawUrl: string, autoplay: boolean = false): Parsed
     };
   }
 
-  // 6. Direct video files (.mp4, .webm, .mov, .ogg, .m4v, blob:, /assets/videos/)
+  // 6. Direct video files (.mp4, .webm, .mov, .ogg, .m4v, .m3u8, Supabase Storage, blob:, /assets/videos/)
   const lower = trimmed.toLowerCase();
   if (
     lower.endsWith('.mp4') || 
@@ -383,16 +395,22 @@ export function parseVideoUrl(rawUrl: string, autoplay: boolean = false): Parsed
     lower.endsWith('.mov') || 
     lower.endsWith('.ogg') ||
     lower.endsWith('.m4v') ||
+    lower.endsWith('.m3u8') ||
     lower.includes('.mp4?') ||
+    lower.includes('.mp4#') ||
     lower.includes('.mov?') ||
     lower.includes('.webm?') ||
+    lower.includes('.m3u8?') ||
+    lower.includes('.m3u8#') ||
+    lower.includes('/storage/v1/object/public/videos') ||
+    lower.includes('/storage/v1/object/public/video') ||
     lower.includes('/assets/videos/') ||
     lower.startsWith('blob:')
   ) {
     return { 
       type: 'video', 
       src: trimmed, 
-      isDirectVideo: true,
+      isDirectVideo: true, 
       isYouTube: false, 
       isGoogleDrive: false, 
       isDropbox: false, 

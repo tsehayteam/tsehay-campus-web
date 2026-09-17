@@ -2151,7 +2151,7 @@ export default function AdminDashboard() {
       // 3. Robust Server-Side Admin API writes (dual endpoints to guarantee persistence)
       await fetch('/api/admin/site-settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({
           settingKey: 'landing_video',
           data: {
@@ -2169,7 +2169,7 @@ export default function AdminDashboard() {
 
       await fetch('/api/admin/save-landing-video', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({
           url: cleanUrl,
           videoUrl: cleanUrl,

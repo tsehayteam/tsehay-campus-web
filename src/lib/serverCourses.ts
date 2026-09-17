@@ -211,7 +211,7 @@ export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoD
   };
 
   try {
-    const { data: setting } = await supabaseServer
+    const { data: setting } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'landing_video')
@@ -223,11 +223,24 @@ export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoD
       const thumb = data.landingVideoThumbnail || data.thumbnail || data.thumbnailUrl || data.poster;
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
       if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
+    } else if (sharedSiteSettingsCache.has('landing_video')) {
+      const cached = sharedSiteSettingsCache.get('landing_video');
+      const url = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
+      const thumb = cached?.landingVideoThumbnail || cached?.thumbnail || cached?.thumbnailUrl || cached?.poster;
+      if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
+      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
     }
 
     cachedLandingVideo = { data: result, timestamp: Date.now() };
   } catch (err) {
     console.warn('getLiveLandingVideoDataServer error:', err);
+    if (sharedSiteSettingsCache.has('landing_video')) {
+      const cached = sharedSiteSettingsCache.get('landing_video');
+      const url = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
+      const thumb = cached?.landingVideoThumbnail || cached?.thumbnail || cached?.thumbnailUrl || cached?.poster;
+      if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
+      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
+    }
   }
 
   return result;

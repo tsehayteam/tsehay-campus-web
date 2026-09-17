@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
+import { invalidateServerCoursesCache } from '@/lib/serverCourses';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,6 +92,11 @@ export async function POST(req: NextRequest) {
     } catch (sbErr) {
       console.warn('Supabase landing video save warning:', sbErr);
     }
+
+    try {
+      invalidateServerCoursesCache();
+      revalidatePath('/');
+    } catch (cacheErr) {}
 
     return NextResponse.json({
       success: true,

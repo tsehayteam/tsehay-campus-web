@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { parseVideoUrl, extractYouTubeId } from "@/lib/videoParser";
+import { parseVideoUrl, extractYouTubeId, parseDropboxUrl } from "@/lib/videoParser";
 
 interface HeroSectionProps {
   videoSrc?: string;
@@ -46,20 +46,197 @@ export default function HeroSection({
     return () => clearTimeout(timer);
   }, [displayText, isDeleting, loopNum, typingSpeed]);
 
-  // Video resolution
-  const effectiveVideo = videoSrc || "https://www.youtube.com/watch?v=mgdOMtW6J8k";
+  // Video State with multi-channel live sync & cache fallback
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string>(() => {
+    if (videoSrc && typeof videoSrc === 'string' && videoSrc.trim()) {
+      return videoSrc.trim();
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_landing_video_cache');
+        if (cached && typeof cached === 'string' && cached.trim()) {
+          return cached.trim();
+        }
+      } catch (e) {}
+    }
+    return "https://www.youtube.com/watch?v=mgdOMtW6J8k";
+  });
 
-  const parsed = useMemo(() => {
-    return parseVideoUrl(effectiveVideo, false);
-  }, [effectiveVideo]);
+  const [activeThumbnail, setActiveThumbnail] = useState<string>(() => {
+    if (videoThumbnail && typeof videoThumbnail === 'string' && videoThumbnail.trim()) {
+      return videoThumbnail.trim();
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_landing_video_thumb');
+        if (cached && typeof cached === 'string' && cached.trim()) {
+          return cached.trim();
+        }
+      } catch (e) {}
+    }
+    return "/assets/hero-bg-new.jpg";
+  });
 
-  const ytId = useMemo(() => {
-    return extractYouTubeId(effectiveVideo) || "mgdOMtW6J8k";
-  }, [effectiveVideo]);
+  // Sync prop changes into state
+  useEffect(() => {
+    if (videoSrc && typeof videoSrc === 'string' && videoSrc.trim()) {
+      setActiveVideoUrl(videoSrc.trim());
+    }
+  }, [videoSrc]);
 
-  const embedSrc = parsed.isYouTube || ytId
-    ? `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`
-    : (parsed.src || "https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1");
+  useEffect(() => {
+    if (videoThumbnail && typeof videoThumbnail === 'string' && videoThumbnail.trim()) {
+      setActiveThumbnail(videoThumbnail.trim());
+    }
+  }, [videoThumbnail]);
+
+  // Live Admin Sync (BroadcastChannel, CustomEvent, Storage & fail-safe API fetch)
+  useEffect(() => {
+    let isCancelled = false;
+
+    // 1. Initial fail-safe API check
+    const fetchLandingVideo = async () => {
+      try {
+        let res = await fetch('/api/admin/save-landing-video', { cache: 'no-store' });
+        if (!res.ok) res = await fetch('/api/admin/site-settings?settingKey=landing_video', { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          const d = json?.data || json;
+          const url = d?.url || d?.videoUrl || d?.youtubeUrl;
+          const thumb = d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl;
+          if (!isCancelled && url && typeof url === 'string' && url.trim()) {
+            setActiveVideoUrl(url.trim());
+            if (thumb && typeof thumb === 'string' && thumb.trim()) {
+              setActiveThumbnail(thumb.trim());
+            }
+          }
+        }
+      } catch (e) {}
+    };
+
+    fetchLandingVideo();
+
+    // 2. Custom Event from Admin save
+    const handleUpdate = (e: any) => {
+      if (e.detail?.videoUrl && !isCancelled) {
+        setActiveVideoUrl(e.detail.videoUrl.trim());
+        if (e.detail.thumbnail) {
+          setActiveThumbnail(e.detail.thumbnail.trim());
+        }
+      }
+    };
+    window.addEventListener('tsehay_landing_video_updated', handleUpdate);
+
+    // 3. Broadcast Channel for instant cross-tab sync
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('tsehay_landing_video_channel');
+        bc.onmessage = (ev) => {
+          if (ev.data?.videoUrl && !isCancelled) {
+            setActiveVideoUrl(ev.data.videoUrl.trim());
+            if (ev.data.thumbnail) {
+              setActiveThumbnail(ev.data.thumbnail.trim());
+            }
+          }
+        };
+      } catch (e) {}
+    }
+
+    // 4. Storage event
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'tsehay_landing_video_cache' && e.newValue && !isCancelled) {
+        setActiveVideoUrl(e.newValue.trim());
+      }
+      if (e.key === 'tsehay_landing_video_thumb' && e.newValue && !isCancelled) {
+        setActiveThumbnail(e.newValue.trim());
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      isCancelled = true;
+      window.removeEventListener('tsehay_landing_video_updated', handleUpdate);
+      window.removeEventListener('storage', handleStorage);
+      if (bc) bc.close();
+    };
+  }, []);
+
+  // 2. Dynamic Video Player Resolution (YouTube, Direct Video HTML5, or 3rd-Party Embed)
+  const videoConfig = useMemo(() => {
+    const raw = (activeVideoUrl || '').trim();
+    if (!raw) {
+      return {
+        type: 'youtube' as const,
+        src: 'https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1',
+        raw
+      };
+    }
+
+    // A. YouTube Check (Only true YouTube URLs or pure 11-char IDs)
+    const ytId = extractYouTubeId(raw);
+    if (ytId) {
+      return {
+        type: 'youtube' as const,
+        src: `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`,
+        raw
+      };
+    }
+
+    // B. Direct Video File (.mp4, .webm, .mov, .ogg, .m4v, .m3u8, Supabase storage, blob:, /assets/videos/)
+    const lower = raw.toLowerCase();
+    const isDirect = 
+      lower.endsWith('.mp4') || 
+      lower.endsWith('.webm') || 
+      lower.endsWith('.mov') || 
+      lower.endsWith('.ogg') ||
+      lower.endsWith('.m4v') ||
+      lower.endsWith('.m3u8') ||
+      lower.includes('.mp4?') ||
+      lower.includes('.mp4#') ||
+      lower.includes('.mov?') ||
+      lower.includes('.webm?') ||
+      lower.includes('.m3u8?') ||
+      lower.includes('.m3u8#') ||
+      lower.includes('/storage/v1/object/public/videos') ||
+      lower.includes('/storage/v1/object/public/video') ||
+      lower.includes('/assets/videos/') ||
+      lower.startsWith('blob:');
+
+    if (isDirect) {
+      return {
+        type: 'direct_video' as const,
+        src: raw,
+        raw
+      };
+    }
+
+    // C. Dropbox streaming link
+    if (raw.includes('dropbox.com') || raw.includes('dropboxusercontent.com')) {
+      const { streamUrl } = parseDropboxUrl(raw);
+      return {
+        type: 'direct_video' as const,
+        src: streamUrl || raw,
+        raw
+      };
+    }
+
+    // D. Third-Party Player Embed (Vimeo, BunnyCDN, Cloudflare Stream, Google Drive, or Custom Player iframe)
+    const parsed = parseVideoUrl(raw, false);
+    if (parsed.isDirectVideo) {
+      return {
+        type: 'direct_video' as const,
+        src: parsed.src || raw,
+        raw
+      };
+    }
+
+    return {
+      type: 'embed' as const,
+      src: parsed.src || raw,
+      raw
+    };
+  }, [activeVideoUrl]);
 
   return (
     <section className="relative overflow-hidden bg-neutral-950 pt-10 sm:pt-14 pb-14 sm:pb-20" id="home">
@@ -106,20 +283,23 @@ export default function HeroSection({
           {/* የቪዲዮ ፍሬም */}
           <div className="relative rounded-2xl border border-neutral-800/80 bg-neutral-900/50 p-2 shadow-2xl backdrop-blur-xl sm:p-4 transition-transform duration-500 ease-out hover:-translate-y-1">
             <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950">
-              {parsed.isDirectVideo ? (
+              {videoConfig.type === 'direct_video' ? (
                 <video
+                  key={videoConfig.src}
                   className="h-full w-full object-cover"
-                  src={parsed.src}
-                  poster={videoThumbnail || "/assets/hero-bg-new.jpg"}
+                  src={videoConfig.src}
+                  poster={activeThumbnail || "/assets/hero-bg-new.jpg"}
                   controls
                   playsInline
+                  preload="metadata"
                 />
               ) : (
                 <iframe
+                  key={videoConfig.src}
                   className="h-full w-full object-cover"
-                  src={embedSrc}
+                  src={videoConfig.src}
                   title="Tsehay Campus Introduction"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen
                 />
               )}
