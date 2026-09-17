@@ -1,6 +1,6 @@
 [
   {
-    "id": "digital_marketing_free",
+    "id": "digital-marketing",
     "slug": "digital-marketing",
     "title": "ዲጂታል ማርኬቲንግ ለጀማሪዎች: ቢዝነስዎን በቀላሉ የሚያሳድጉበት መመሪያ",
     "description": "ይህ የ1 ሰዓት የዲጂታል ማርኬቲንግ ቅምሻ በነፃነት በመማር ወደፊት ለሚመጣው ትልቅ የዲጂታል ማርኬቲንግ ስልጠና እራስዎን ዝግጁ የሚያደርጉበት ወሳኝ ፕሮግራም ነው።",
@@ -15,10 +15,10 @@
     "duration": "00:40:00",
     "image": "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
     "banner": "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
-    "video": "https://www.youtube.com/embed/B-s71n0dHUk",
+    "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     "instructor": "Eyoub Sahle",
     "instructorTitle": "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    "instructorImage": "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    "instructorImage": "/assets/eyob_white.jpg",
     "instructorTelegram": "@EyoubSahle",
     "instructorBio": "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     "students": 580,
@@ -51,35 +51,35 @@
       {
         "title": "የኮርስ ማስታወቂያ (Course Intro)",
         "duration": "02:30",
-        "video": "https://www.youtube.com/embed/B-s71n0dHUk",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
         "desc": "የዲጂታል ማርኬቲንግ መግቢያ",
         "points": 10
       },
       {
         "title": "ባህላዊ vs ዲጂታል ማርኬቲንግ",
         "duration": "05:15",
-        "video": "https://www.youtube.com/embed/B-s71n0dHUk",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
         "desc": "የሁለቱ የግብይት አይነቶች ልዩነት",
         "points": 50
       },
       {
         "title": "የዲጂታል ማርኬቲንግ አይነቶች ክፍል 1",
         "duration": "10:00",
-        "video": "https://www.youtube.com/embed/B-s71n0dHUk",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
         "desc": "ዋና ዋና የዲጂታል ማርኬቲንግ መንገዶች",
         "points": 100
       },
       {
         "title": "በተግባር የተደገፈ የፌስቡክ ማስታወቂያ",
         "duration": "15:20",
-        "video": "https://www.youtube.com/embed/B-s71n0dHUk",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
         "desc": "የፌስቡክ ማስታወቂያ አሰራር በተግባር",
         "points": 100
       }
     ]
   },
   {
-    "id": "course_1784885060875",
+    "id": "shein-import-business",
     "slug": "shein-import-business",
     "title": "የሼን ኢምፖርት ቢዝነስ ስልጠና (Shein Import Business Course)",
     "description": "በቀላሉ በትንሽ ካፒታል ከሼን (Shein) እቃዎችን እንዴት ማስመጣት እንደሚችሉ፣ የኦንላይን ካርድ ክፍያ፣ የጉምሩክ አሰራር እና እቃዎችን በከፍተኛ ትርፍ መሸጫ ስልቶች የሚያስተምር 100% ተግባራዊ ኮርስ።",
@@ -97,7 +97,7 @@
     "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     "instructor": "Eyoub Sahle",
     "instructorTitle": "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    "instructorImage": "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    "instructorImage": "/assets/eyob_white.jpg",
     "instructorTelegram": "@EyoubSahle",
     "instructorBio": "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     "students": 340,
@@ -167,7 +167,7 @@
     ]
   },
   {
-    "id": "course_1784885267254",
+    "id": "youtube-secrets-masterclass",
     "slug": "youtube-secrets-masterclass",
     "title": "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)",
     "description": "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
@@ -185,7 +185,7 @@
     "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     "instructor": "Eyoub Sahle",
     "instructorTitle": "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    "instructorImage": "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    "instructorImage": "/assets/eyob_white.jpg",
     "instructorTelegram": "@EyoubSahle",
     "instructorBio": "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     "students": 420,

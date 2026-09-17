@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get('courseId');
 
-    let query = supabaseServer
+    let query = supabaseAdmin
       .from('waitlists')
       .select('*')
       .order('created_at', { ascending: false });
@@ -61,7 +61,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     try {
-      await supabaseServer
+      await supabaseAdmin
         .from('waitlists')
         .delete()
         .eq('id', id);

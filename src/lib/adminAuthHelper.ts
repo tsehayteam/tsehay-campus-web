@@ -1,4 +1,4 @@
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 
 export const AUTHORIZED_ADMIN_EMAILS = [
   'eyobsahle@gmail.com',
@@ -19,7 +19,7 @@ export function isAuthorizedAdminEmail(email?: string | null): boolean {
 export async function registerAdminSession(token: string, email: string): Promise<void> {
   try {
     const sessionKey = `admin_session_${token}`;
-    await supabaseServer.from('site_settings').upsert({
+    await supabaseAdmin.from('site_settings').upsert({
       key: sessionKey,
       data: {
         token,
@@ -39,7 +39,7 @@ export async function registerAdminSession(token: string, email: string): Promis
  */
 export async function revokeAdminSession(token: string): Promise<void> {
   try {
-    await supabaseServer.from('site_settings').delete().eq('key', `admin_session_${token}`);
+    await supabaseAdmin.from('site_settings').delete().eq('key', `admin_session_${token}`);
   } catch (e) {
     console.warn('Error revoking admin session:', e);
   }
@@ -62,7 +62,7 @@ export async function verifyAdminRequest(req: Request): Promise<{
       const token = authHeader.split('Bearer ')[1].trim();
       if (token) {
         try {
-          const { data: { user }, error: authErr } = await supabaseServer.auth.getUser(token);
+          const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
           if (!authErr && user && user.email) {
             const cleanEmail = user.email.trim().toLowerCase();
             if (isAuthorizedAdminEmail(cleanEmail) || user.app_metadata?.role === 'admin') {
@@ -73,7 +73,7 @@ export async function verifyAdminRequest(req: Request): Promise<{
 
         // Also check if Bearer token itself is an admin session token
         if (token) {
-          const { data: sessionRow } = await supabaseServer
+          const { data: sessionRow } = await supabaseAdmin
             .from('site_settings')
             .select('data')
             .eq('key', `admin_session_${token}`)
@@ -104,7 +104,7 @@ export async function verifyAdminRequest(req: Request): Promise<{
         return { authorized: true, email: 'eyobsahle@gmail.com' };
       }
 
-      const { data: sessionRow } = await supabaseServer
+      const { data: sessionRow } = await supabaseAdmin
         .from('site_settings')
         .select('data')
         .eq('key', `admin_session_${customHeader}`)
@@ -135,7 +135,7 @@ export async function verifyAdminRequest(req: Request): Promise<{
           return { authorized: true, email: 'eyobsahle@gmail.com' };
         }
 
-        const { data: sessionRow } = await supabaseServer
+        const { data: sessionRow } = await supabaseAdmin
           .from('site_settings')
           .select('data')
           .eq('key', `admin_session_${cookieToken}`)

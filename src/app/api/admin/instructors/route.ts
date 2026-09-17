@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
     let instructorsList: InstructorData[] = [];
     try {
-      const { data: row } = await supabaseServer
+      const { data: row } = await supabaseAdmin
         .from('site_settings')
         .select('data')
         .eq('key', 'instructors')
@@ -136,7 +136,7 @@ async function handleSaveInstructor(req: NextRequest) {
 
     // Save to Supabase site_settings under key='instructors'
     try {
-      const { data: existingRow } = await supabaseServer
+      const { data: existingRow } = await supabaseAdmin
         .from('site_settings')
         .select('data')
         .eq('key', 'instructors')
@@ -150,14 +150,14 @@ async function handleSaveInstructor(req: NextRequest) {
         list.push(payload);
       }
 
-      await supabaseServer.from('site_settings').upsert({
+      await supabaseAdmin.from('site_settings').upsert({
         key: 'instructors',
         data: list,
         updated_at: new Date().toISOString()
       });
 
       // Cascade update instructor name on courses table
-      await supabaseServer
+      await supabaseAdmin
         .from('courses')
         .update({ instructor: payload.name, updated_at: new Date().toISOString() })
         .not('id', 'is', null);

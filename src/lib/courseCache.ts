@@ -5,7 +5,7 @@ import { getMediaThumbnail, formatCloudStorageUrl, parseDropboxImageUrl } from '
 
 export const DEFAULT_COURSES = [
   {
-    id: "course_1784885060875",
+    id: "shein-import-business",
     slug: "shein-import-business",
     title: "የሼን ኢምፖርት ቢዝነስ ስልጠና (Shein Import Business Course)",
     description: "በቀላሉ በትንሽ ካፒታል ከሼን (Shein) እቃዎችን እንዴት ማስመጣት እንደሚችሉ፣ የኦንላይን ካርድ ክፍያ፣ የጉምሩክ አሰራር እና እቃዎችን በከፍተኛ ትርፍ መሸጫ ስልቶች የሚያስተምር 100% ተግባራዊ ኮርስ።",
@@ -23,7 +23,7 @@ export const DEFAULT_COURSES = [
     video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    instructorImage: "/assets/eyob_new.png",
+    instructorImage: "/assets/eyob_white.jpg",
     instructorTelegram: "@EyoubSahle",
     instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     students: 340,
@@ -39,79 +39,74 @@ export const DEFAULT_COURSES = [
       "ከሼን (SHEIN) ተፈላጊ እና ፈጣን ሽያጭ ያላቸውን ምርጥ እቃዎች የመምረጫ ስልቶች",
       "በኢትዮጵያ ውስጥ ሆነው በቀላሉ በዶላር እና በኦንላይን ካርዶች ክፍያ የመፈጸሚያ መንገዶች",
       "የካርጎ፣ የትራንስፖርት እና የጉምሩክ ወጪዎችን በከፍተኛ ደረጃ መቀነሻ ዘዴዎች",
-      "በ TikTok እና Telegram ቻናሎች እቃዎችን በከፍተኛ ትርፍ እና ፍጥነት መሸጫ ስልቶች",
-      "የደንበኞች አያያዝ እና የረጅም ጊዜ የኢ-ኮሜርስ ቢዝነስ ግንባታ"
+      "በ TikTok፣ Instagram እና Telegram ቻናሎች ከፍተኛ ደንበኞችን እና ሽያጭ የማግኛ ስልቶች"
     ],
     requirements: [
-      "ስማርት ስልክ ወይም ላፕቶፕ",
-      "የኢንተርኔት ኮኔክሽን",
-      "የመማር እና በተግባር የመስራት ፍላጎት"
+      "ምንም ዓይነት የኢምፖርት ወይም የንግድ ልምድ አይጠይቅም",
+      "ስማርት ስልክ ወይም ኮምፒውተር",
+      "ለመጀመር የሚያስችል አነስተኛ መነሻ ካፒታል"
     ],
     includes: [
-      "የተሟሉ የተግባር የቪዲዮ ትምህርቶች (Video Lessons)",
-      "የቀጥታ የአሰልጣኝ ድጋፍ (Mentor Support)",
-      "የአቅራቢዎች እና የካርጎ አድራሻዎች (Supplier & Cargo Contacts)",
-      "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate of Completion)",
-      "የሁልጊዜ መዳረሻ (Lifetime Access)"
+      "በቪዲዮ የተደገፈ የተሟላ ስልጠና (On-demand video)",
+      "የቴሌግራም የቪአይፒ (VIP) የአጋርነት ማህበረሰብ መዳረሻ",
+      "የታመኑ ካርጎዎች እና የክፍያ መንገዶች ዝርዝር",
+      "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate)"
     ],
     lessons: [
-      { title: "ክፍል 1: የሼን ኢምፖርት ቢዝነስ መግቢያና መሰረታዊ እውነታዎች", duration: "08:30", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የኢ-ኮሜርስ እድሎች እና የኮርሱ አጠቃላይ ገለጻ", points: 20 },
-      { title: "ክፍል 2: አዋጭ ምርቶችን መምረጥ (Winning Product Research)", duration: "14:15", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "በኢትዮጵያ ገበያ ተፈላጊ እቃዎችን የመለያ ስልቶች", points: 30 },
-      { title: "ክፍል 3: የዶላር እና የኦንላይን ካርድ ክፍያ አፈጻጸም", duration: "16:40", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ከኢትዮጵያ ሆነው በካርድ ክፍያ መፈጸሚያ መንገዶች", points: 50 },
-      { title: "ክፍል 4: ካርጎ፣ ማጓጓዣ እና የጉምሩክ አሰራር", duration: "15:20", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "እቃዎችን በሰላም እና በትንሽ ወጪ ማስገባት", points: 40 },
-      { title: "ክፍል 5: በ TikTok እና Telegram ከፍተኛ ሽያጭ መፍጠር", duration: "18:00", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የማርኬቲንግ እና የሽያጭ ስልቶች", points: 60 }
+      { title: "ክፍል 1: የሼን ኢምፖርት ቢዝነስ መግቢያና መሰረታዊ እውነታዎች", duration: "08:30", video: "https://youtu.be/zK-I7GQNvyw", desc: "የኢ-ኮሜርስ እድሎች እና የኮርሱ አጠቃላይ ገለጻ", points: 20 },
+      { title: "ክፍል 2: አዋጭ ምርቶችን መምረጥ (Winning Product Research)", duration: "14:15", video: "https://youtu.be/zK-I7GQNvyw", desc: "በኢትዮጵያ ገበያ ተፈላጊ እቃዎችን የመለያ ስልቶች", points: 30 },
+      { title: "ክፍል 3: የዶላር እና የኦንላይን ካርድ ክፍያ አፈጻጸም", duration: "16:40", video: "https://youtu.be/zK-I7GQNvyw", desc: "ከኢትዮጵያ ሆነው በካርድ ክፍያ መፈጸሚያ መንገዶች", points: 50 },
+      { title: "ክፍል 4: ካርጎ፣ ማጓጓዣ እና የጉምሩክ አሰራር", duration: "15:20", video: "https://youtu.be/zK-I7GQNvyw", desc: "እቃዎችን በሰላም እና በትንሽ ወጪ ማስገባት", points: 40 },
+      { title: "ክፍል 5: በ TikTok እና Telegram ከፍተኛ ሽያጭ መፍጠር", duration: "18:00", video: "https://youtu.be/zK-I7GQNvyw", desc: "የማርኬቲንግ እና የሽያጭ ስልቶች", points: 60 }
     ]
   },
   {
-    id: "course_1784885267254",
+    id: "youtube-secrets-masterclass",
     slug: "youtube-secrets-masterclass",
     title: "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)",
-    description: "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
-    desc: "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
-    price: 900,
-    oldPrice: 1500,
+    description: "የራስዎን የዩቲዩብ ቻናል ከዜሮ በመጀመር በወር በሺዎች የሚቆጠሩ ዶላሮችን የሚያስገኝ የተሳካ ቻናል ለመገንባት የሚያስችል አጠቃላይ ስልጠና።",
+    desc: "የራስዎን የዩቲዩብ ቻናል ከዜሮ በመጀመር በወር በሺዎች የሚቆጠሩ ዶላሮችን የሚያስገኝ የተሳካ ቻናል ለመገንባት የሚያስችል አጠቃላይ ስልጠና።",
+    price: 3500,
+    oldPrice: 5000,
     status: "Active",
     isFree: false,
     category: "YouTube & Content Creation",
     tag: "YouTube & Content Creation",
-    level: "ጀማሪ (Beginner)",
-    duration: "04:00:00",
+    level: "ጀማሪ እስከ ከፍተኛ (All Levels)",
+    duration: "01:08:45",
     image: "/assets/course_youtube_secrets.jpg",
     banner: "/assets/course_youtube_secrets.jpg",
     video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     instructor: "Eyoub Sahle",
-    instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    instructorImage: "/assets/eyob_new.png",
+    instructorTitle: "የዩቲዩብ እና ዲጂታል ሚዲያ ባለሙያ (Lead Instructor)",
+    instructorImage: "/assets/eyob_white.jpg",
     instructorTelegram: "@EyoubSahle",
     instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     students: 420,
     studentsCount: 420,
     rating: 4.9,
     ratingAvg: 4.9,
-    ratingCount: 38,
-    instructorRatingAvg: 5.0,
+    ratingCount: 39,
+    instructorRatingAvg: 4.9,
     modulesCount: 5,
     isPopular: true,
     aiPrompt: "You are Tsehay AI, the dedicated and universal mentor for the YouTube Secrets Masterclass by Eyoub Sahle. Answer all questions about YouTube channel building, monetization, SEO, video editing, script writing, algorithms, audience growth, and digital content creation with rich, actionable guidance.",
     whatYouWillLearn: [
-      "ከዜሮ ተነስቶ ስኬታማ የዩቲዩብ ቻናል አከፋፈት እና ሴቲንግ",
-      "ያለ ፊት ገጽታ (Faceless) ቪዲዮዎችን በ AI የማዘጋጀት ጥበብ",
-      "ከፍተኛ ተመልካች የሚስብ Thumbnail እና Title አሰራር",
-      "የዩቲዩብ አልጎሪዝም እና SEO ሚስጥሮች",
-      "የገቢ ማግኛ (Monetization) እና ክፍያ አወሳሰድ በኢትዮጵያ"
+      "ተፈላጊ እና አዋጭ የሆኑ የዩቲዩብ ኒቾችን (Profitable Niches) መምረጥ",
+      "ያለ ፊት ማሳየት (Faceless Channel) በ AI ቪዲዮዎችን መስራት",
+      "ተመልካችን የሚስብ ፕሮፌሽናል Thumbnail እና Title ዲዛይን",
+      "የዩቲዩብ አልጎሪዝምን ተጠቅሞ በፍጥነት ሰብስክራይበር እና እይታዎችን ማሳደግ"
     ],
     requirements: [
-      "መሰረታዊ የኮምፒውተር ወይም የስልክ እውቀት",
-      "ስማርት ስልክ ወይም ላፕቶፕ",
-      "የኢንተርኔት ኮኔክሽን",
-      "የመማር ፍላጎት እና ትጋት"
+      "ምንም አይነት የቀደመ የቪዲዮ ኤዲቲንግ እውቀት አይጠይቅም",
+      "ኮምፒውተር ወይም ስማርት ስልክ",
+      "የኢንተርኔት ኮኔክሽን"
     ],
     includes: [
-      "በቪዲዮ የተደገፈ ትምህርት (On-demand video)",
-      "የተግባር አሳይመንቶች እና ፕሮጀክቶች (Assignments & Projects)",
-      "በስልክ እና በቲቪ መጠቀም የሚያስችል (Access on mobile and TV)",
-      "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate of completion)",
-      "የሁልጊዜ መዳረሻ (Full lifetime access)"
+      "በቪዲዮ የተደገፈ ተግባራዊ ትምህርት (HD Video Lessons)",
+      "የ AI ስክሪፕት እና ቮይስ ኦቨር ማዘጋጃ መመሪያዎች",
+      "የዩቲዩብ ቪአይፒ ማህበረሰብ መዳረሻ (Community Support)",
+      "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate)"
     ],
     lessons: [
       { title: "ክፍል 1: መግቢያ እና የዩቲዩብ መሰረታዊ እውነታዎች", duration: "08:30", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የዩቲዩብ እድሎችና የኮርሱ አጠቃላይ ገለጻ", points: 20 },
@@ -122,7 +117,7 @@ export const DEFAULT_COURSES = [
     ]
   },
   {
-    id: "digital_marketing_free",
+    id: "digital-marketing",
     slug: "digital-marketing",
     title: "ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Masterclass)",
     description: "ይህ የ1 ሰዓት የዲጂታል ማርኬቲንግ ቅምሻ በነፃነት በመማር ወደፊት ለሚመጣው ትልቅ የዲጂታል ማርኬቲንግ ስልጠና እራስዎን ዝግጁ የሚያደርጉበት ወሳኝ ፕሮግራም ነው።",
@@ -137,10 +132,10 @@ export const DEFAULT_COURSES = [
     duration: "00:40:00",
     image: "/assets/course_digital_marketing.jpg",
     banner: "/assets/course_digital_marketing.jpg",
-    video: "https://www.youtube.com/embed/B-s71n0dHUk",
+    video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    instructorImage: "/assets/eyob_new.png",
+    instructorImage: "/assets/eyob_white.jpg",
     instructorTelegram: "@EyoubSahle",
     instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     students: 580,
@@ -170,10 +165,10 @@ export const DEFAULT_COURSES = [
       "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate)"
     ],
     lessons: [
-      { title: "የኮርስ ማስታወቂያ (Course Intro)", duration: "02:30", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የዲጂታል ማርኬቲንግ መግቢያ", points: 10 },
-      { title: "ባህላዊ vs ዲጂታል ማርኬቲንግ", duration: "05:15", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የሁለቱ የግብይት አይነቶች ልዩነት", points: 50 },
-      { title: "የዲጂታል ማርኬቲንግ አይነቶች ክፍል 1", duration: "10:00", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "ዋና ዋና የዲጂታል ማርኬቲንግ መንገዶች", points: 100 },
-      { title: "በተግባር የተደገፈ የፌስቡክ ማስታወቂያ", duration: "15:20", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የፌስቡክ ማስታወቂያ አሰራር በተግባር", points: 100 }
+      { title: "የኮርስ ማስታወቂያ (Course Intro)", duration: "02:30", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የዲጂታል ማርኬቲንግ መግቢያ", points: 10 },
+      { title: "ባህላዊ vs ዲጂታል ማርኬቲንግ", duration: "05:15", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የሁለቱ የግብይት አይነቶች ልዩነት", points: 50 },
+      { title: "የዲጂታል ማርኬቲንግ አይነቶች ክፍል 1", duration: "10:00", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ዋና ዋና የዲጂታል ማርኬቲንግ መንገዶች", points: 100 },
+      { title: "በተግባር የተደገፈ የፌስቡክ ማስታወቂያ", duration: "15:20", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የፌስቡክ ማስታወቂያ አሰራር በተግባር", points: 100 }
     ]
   }
 ];
@@ -216,6 +211,35 @@ export function generateCourseSlug(title: string): string {
   }
 
   return 'course-' + encodeURIComponent(title.slice(0, 15)).toLowerCase().replace(/%/g, '');
+}
+
+/**
+ * Guarantees zero duplicates in any courses array by canonical slug, id, or normalized title
+ */
+export function deduplicateCourses(courses: any[]): any[] {
+  if (!Array.isArray(courses)) return [];
+  const result: any[] = [];
+  const seen = new Set<string>();
+
+  for (const c of courses) {
+    if (!c) continue;
+    const id = (c.id ? String(c.id).trim().toLowerCase() : '');
+    const slug = (c.slug ? String(c.slug).trim().toLowerCase() : '');
+
+    const canonical = slug || id;
+    if (!canonical) continue;
+
+    if (seen.has(canonical) || (id && seen.has(id)) || (slug && seen.has(slug))) {
+      continue;
+    }
+
+    seen.add(canonical);
+    if (id) seen.add(id);
+    if (slug) seen.add(slug);
+
+    result.push(c);
+  }
+  return result;
 }
 
 /**
@@ -401,13 +425,14 @@ export function getCachedCourses(): any[] {
             price,
             image: getCleanCourseImage(c),
             banner: getCleanCourseImage({ ...c, image: c.banner || c.image }),
-            instructorImage: formatDriveImageUrl(c.instructorImage || c.instructorPhoto) || c.instructorImage || c.instructorPhoto || '/assets/eyob_new.png',
-            instructorPhoto: formatDriveImageUrl(c.instructorPhoto || c.instructorImage) || c.instructorPhoto || c.instructorImage || '/assets/eyob_new.png',
+            instructorImage: getCleanInstructorImage(c),
+            instructorPhoto: getCleanInstructorImage(c),
             desc: formatCourseDesc(c),
             description: formatCourseDesc(c)
           };
         });
-        if (valid.length > 0) return valid;
+        const dedupedValid = deduplicateCourses(valid);
+        if (dedupedValid.length > 0) return dedupedValid;
       }
     }
 
@@ -430,13 +455,14 @@ export function getCachedCourses(): any[] {
             price,
             image: getCleanCourseImage({ ...c, title }),
             banner: getCleanCourseImage({ ...c, title, image: c.banner || c.image }),
-            instructorImage: formatDriveImageUrl(c.instructorImage || c.instructorPhoto) || c.instructorImage || c.instructorPhoto || '/assets/eyob_new.png',
-            instructorPhoto: formatDriveImageUrl(c.instructorPhoto || c.instructorImage) || c.instructorPhoto || c.instructorImage || '/assets/eyob_new.png',
+            instructorImage: getCleanInstructorImage(c),
+            instructorPhoto: getCleanInstructorImage(c),
             desc: formatCourseDesc(c),
             description: formatCourseDesc(c)
           };
         });
-        if (sanitized.length > 0) return sanitized;
+        const dedupedSanitized = deduplicateCourses(sanitized);
+        if (dedupedSanitized.length > 0) return dedupedSanitized;
       }
     }
   } catch (err) {
@@ -463,17 +489,18 @@ export function saveCachedCourses(courses: any[]) {
         price,
         image: getCleanCourseImage({ ...c, title }),
         banner: getCleanCourseImage({ ...c, title, image: c.banner || c.image }),
-        instructorImage: formatDriveImageUrl(c.instructorImage || c.instructorPhoto) || c.instructorImage || c.instructorPhoto || '/assets/eyob_new.png',
-        instructorPhoto: formatDriveImageUrl(c.instructorPhoto || c.instructorImage) || c.instructorPhoto || c.instructorImage || '/assets/eyob_new.png',
+        instructorImage: getCleanInstructorImage(c),
+        instructorPhoto: getCleanInstructorImage(c),
         desc: formatCourseDesc(c),
         description: formatCourseDesc(c)
       };
     });
-    if (sanitized.length > 0) {
-      localStorage.setItem('tsehay_courses_cache', JSON.stringify(sanitized));
-      localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(sanitized));
+    const deduped = deduplicateCourses(sanitized);
+    if (deduped.length > 0) {
+      localStorage.setItem('tsehay_courses_cache', JSON.stringify(deduped));
+      localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(deduped));
       localStorage.setItem('tsehay_courses_cache_version', COURSE_CACHE_VERSION);
-      const csOnly = sanitized.filter((c: any) => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
+      const csOnly = deduped.filter((c: any) => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
       if (csOnly.length > 0) {
         localStorage.setItem('tsehay_coming_soon_cache', JSON.stringify(csOnly));
       }
@@ -531,6 +558,34 @@ export function getCleanCourseImage(c: any): string {
 
   if (rawImage) return formatDriveImageUrl(rawImage);
   return '/assets/course_shein_business.jpg';
+}
+
+/**
+ * Resolves the genuine instructor photo (Eyoub Sahle).
+ * Safeguards against accidentally displaying course thumbnails as instructor photos.
+ */
+export function getCleanInstructorImage(c?: any): string {
+  if (!c || typeof c !== 'object') return '/assets/eyob_white.jpg';
+  const raw = (c.instructorImage || c.instructorPhoto || c.instructor_image || c.instructor_photo || '').toString().trim();
+
+  if (
+    !raw ||
+    raw.includes('1rdjkUc6') ||
+    raw.includes('1HZf1jV5') ||
+    raw.includes('course_shein') ||
+    raw.includes('course_marketing') ||
+    raw.includes('course_digital') ||
+    raw.includes('course_youtube') ||
+    raw.includes('hero-bg') ||
+    raw.includes('for_landing_page') ||
+    raw.includes('about_video_cover') ||
+    raw.includes('placehold.co')
+  ) {
+    return '/assets/eyob_white.jpg';
+  }
+
+  const formatted = formatDriveImageUrl(raw);
+  return formatted || raw || '/assets/eyob_white.jpg';
 }
 
 /**
@@ -683,7 +738,7 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
       const slug = getCourseSlug(c);
       const cleanImg = getCleanCourseImage(c);
       const cleanBanner = getCleanCourseImage({ ...c, image: c.banner || c.image });
-      const cleanInstructorImg = formatDriveImageUrl(c.instructorImage || c.instructorPhoto) || c.instructorImage || c.instructorPhoto || '/assets/eyob_new.png';
+      const cleanInstructorImg = getCleanInstructorImage(c);
       unifiedMap.set(c.id, {
         ...c,
         slug: slug || c.slug || '',

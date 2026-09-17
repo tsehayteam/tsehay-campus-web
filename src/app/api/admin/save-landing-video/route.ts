@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     try {
-      const { data: row } = await supabaseServer
+      const { data: row } = await supabaseAdmin
         .from('site_settings')
         .select('data')
         .eq('key', 'landing_video')
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     savePersistedSetting('landing_video', payload);
 
     try {
-      await supabaseServer.from('site_settings').upsert({
+      await supabaseAdmin.from('site_settings').upsert({
         key: 'landing_video',
         data: payload,
         updated_at: new Date().toISOString()

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ export interface PromoCodeItem {
 
 export async function GET() {
   try {
-    const { data: row } = await supabaseServer
+    const { data: row } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'referral_codes')
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date().toISOString()
     };
 
-    const { data: existingRow } = await supabaseServer
+    const { data: existingRow } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'referral_codes')
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       list.push(codeData);
     }
 
-    await supabaseServer.from('site_settings').upsert({
+    await supabaseAdmin.from('site_settings').upsert({
       key: 'referral_codes',
       data: list,
       updated_at: new Date().toISOString()
@@ -110,7 +110,7 @@ export async function DELETE(req: NextRequest) {
 
     const cleanCode = codeId.trim().toUpperCase();
 
-    const { data: existingRow } = await supabaseServer
+    const { data: existingRow } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'referral_codes')
@@ -118,7 +118,7 @@ export async function DELETE(req: NextRequest) {
 
     if (existingRow?.data && Array.isArray(existingRow.data)) {
       const list = existingRow.data.filter((c: PromoCodeItem) => c.id !== cleanCode && c.code !== cleanCode);
-      await supabaseServer.from('site_settings').upsert({
+      await supabaseAdmin.from('site_settings').upsert({
         key: 'referral_codes',
         data: list,
         updated_at: new Date().toISOString()
@@ -148,7 +148,7 @@ export async function PATCH(req: NextRequest) {
 
     const cleanCode = codeId.trim().toUpperCase();
 
-    const { data: existingRow } = await supabaseServer
+    const { data: existingRow } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'referral_codes')
@@ -167,7 +167,7 @@ export async function PATCH(req: NextRequest) {
         return c;
       });
 
-      await supabaseServer.from('site_settings').upsert({
+      await supabaseAdmin.from('site_settings').upsert({
         key: 'referral_codes',
         data: list,
         updated_at: new Date().toISOString()

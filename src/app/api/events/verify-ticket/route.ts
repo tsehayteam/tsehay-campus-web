@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { EventTicket } from '@/lib/eventCache';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ const NO_CACHE_HEADERS = {
 
 async function getTickets(): Promise<EventTicket[]> {
   try {
-    const { data: row, error } = await supabaseServer
+    const { data: row, error } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'event_tickets')
@@ -31,7 +31,7 @@ async function getTickets(): Promise<EventTicket[]> {
 
 async function saveTickets(tickets: EventTicket[]) {
   try {
-    await supabaseServer
+    await supabaseAdmin
       .from('site_settings')
       .upsert({
         key: 'event_tickets',

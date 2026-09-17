@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { EventTicket } from '@/lib/eventCache';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
+import { invalidateEventsCache } from '@/app/api/events/route';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,7 +18,7 @@ const NO_CACHE_HEADERS = {
 
 async function getTickets(): Promise<EventTicket[]> {
   try {
-    const { data: row, error } = await supabaseServer
+    const { data: row, error } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'event_tickets')
@@ -28,6 +29,18 @@ async function getTickets(): Promise<EventTicket[]> {
     }
   } catch (e) {}
   return [];
+}
+
+async function saveTickets(tickets: EventTicket[]) {
+  try {
+    await supabaseAdmin
+      .from('site_settings')
+      .upsert({
+        key: 'event_tickets',
+        data: tickets,
+        updated_at: new Date().toISOString()
+      });
+  } catch (e) {}
 }
 
 export async function GET(req: NextRequest) {
@@ -49,7 +62,7 @@ export async function GET(req: NextRequest) {
     let tickets = await getTickets();
 
     if (ticketId) {
-      const match = tickets.find(t => t.ticketId === ticketId);
+      const match = tickets.find(t => t.ticketId === ticketId || t.id === ticketId);
       if (match) {
         return NextResponse.json({ success: true, ticket: match }, { headers: NO_CACHE_HEADERS });
       }
@@ -60,10 +73,10 @@ export async function GET(req: NextRequest) {
       tickets = tickets.filter(t => t.userId === userId);
     }
     if (eventId) {
-      tickets = tickets.filter(t => t.eventId === eventId);
+      tickets = tickets.filter(t => t.eventId === eventId || (t.eventSlug && t.eventSlug === eventId));
     }
     if (email) {
-      tickets = tickets.filter(t => t.attendeeEmail.toLowerCase() === email.trim().toLowerCase());
+      tickets = tickets.filter(t => (t.attendeeEmail || t.email || '').toLowerCase() === email.trim().toLowerCase());
     }
 
     return NextResponse.json({ success: true, count: tickets.length, tickets }, { headers: NO_CACHE_HEADERS });
@@ -74,12 +87,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const auth = await verifyAdminRequest(req);
-  if (!auth.authorized) {
-    return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401, headers: NO_CACHE_HEADERS });
-  }
-
   try {
+    const auth = await verifyAdminRequest(req);
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error || 'Unauthorized: Admin privileges required.' }, { status: 401, headers: NO_CACHE_HEADERS });
+    }
+
     const { searchParams } = new URL(req.url);
     const ticketId = searchParams.get('ticketId') || searchParams.get('id');
 
@@ -95,19 +108,13 @@ export async function DELETE(req: NextRequest) {
     }
 
     const remainingTickets = tickets.filter(t => t.ticketId !== ticketId && t.id !== ticketId);
-    await supabaseServer
-      .from('site_settings')
-      .upsert({
-        key: 'event_tickets',
-        data: remainingTickets,
-        updated_at: new Date().toISOString()
-      });
+    await saveTickets(remainingTickets);
 
     // Restore capacity on target event
     const eventId = targetTicket.eventId;
     if (eventId) {
       try {
-        const { data: dbEvent } = await supabaseServer
+        const { data: dbEvent } = await supabaseAdmin
           .from('events')
           .select('registered_count, capacity')
           .eq('id', eventId)
@@ -115,7 +122,7 @@ export async function DELETE(req: NextRequest) {
 
         if (dbEvent) {
           const newReg = Math.max(0, (Number(dbEvent.registered_count) || 1) - 1);
-          await supabaseServer
+          await supabaseAdmin
             .from('events')
             .update({
               registered_count: newReg,
@@ -126,7 +133,7 @@ export async function DELETE(req: NextRequest) {
       } catch (e) {}
 
       try {
-        const { data: settingsRow } = await supabaseServer
+        const { data: settingsRow } = await supabaseAdmin
           .from('site_settings')
           .select('data')
           .eq('key', 'events')
@@ -134,7 +141,7 @@ export async function DELETE(req: NextRequest) {
 
         if (settingsRow?.data && Array.isArray(settingsRow.data)) {
           const updatedEvents = settingsRow.data.map((ev: any) => {
-            if (ev.id === eventId || ev.slug === targetTicket.eventSlug) {
+            if (ev.id === eventId || (targetTicket.eventSlug && ev.slug === targetTicket.eventSlug)) {
               const cap = Number(ev.capacity) || 100;
               const newReg = Math.max(0, (Number(ev.registered_count ?? ev.registeredCount) || 1) - 1);
               return {
@@ -147,7 +154,7 @@ export async function DELETE(req: NextRequest) {
             return ev;
           });
 
-          await supabaseServer
+          await supabaseAdmin
             .from('site_settings')
             .upsert({
               key: 'events',
@@ -155,12 +162,14 @@ export async function DELETE(req: NextRequest) {
               updated_at: new Date().toISOString()
             });
         }
+        invalidateEventsCache();
       } catch (e) {}
     }
 
     return NextResponse.json({
       success: true,
-      message: 'ትኬቱ በተሳካ ሁኔታ ተሰርዟል! የመያዝ አቅሙም ተመልሷል። (Ticket revoked and seat restored)'
+      message: 'ትኬቱ በተሳካ ሁኔታ ተሰርዟል! የመያዝ አቅሙም ተመልሷል። (Ticket revoked and seat restored)',
+      deletedTicketId: ticketId
     }, { headers: NO_CACHE_HEADERS });
   } catch (err: any) {
     console.error('Error deleting ticket:', err);

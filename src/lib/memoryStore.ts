@@ -1,6 +1,40 @@
+import fs from 'fs';
+import path from 'path';
 import defaultLiveCourses from '@/data/live_courses.json';
 import defaultLiveSettings from '@/data/live_settings.json';
 import { DEFAULT_EVENTS } from '@/lib/eventCache';
+
+function getLiveCoursesFilePath(): string {
+  return path.join(process.cwd(), 'src', 'data', 'live_courses.json');
+}
+
+function getLiveEventsFilePath(): string {
+  return path.join(process.cwd(), 'src', 'data', 'live_events.json');
+}
+
+function writeJsonFileSafely(filePath: string, data: any) {
+  try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.warn(`[memoryStore] File write warning for ${filePath}:`, err);
+  }
+}
+
+function readJsonFileSafely(filePath: string): any {
+  try {
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf8');
+      return JSON.parse(content);
+    }
+  } catch (err) {
+    console.warn(`[memoryStore] File read warning for ${filePath}:`, err);
+  }
+  return null;
+}
 
 // Global in-memory cache shared across API routes in Node runtime
 interface TsehayGlobalStore {
@@ -26,10 +60,13 @@ if (!globalStore.__tsehay_site_settings_cache) {
 if (!globalStore.__tsehay_courses_cache) {
   globalStore.__tsehay_courses_cache = new Map<string, any>();
   try {
-    if (Array.isArray(defaultLiveCourses)) {
-      defaultLiveCourses.forEach(c => {
-        if (c && c.id) {
-          globalStore.__tsehay_courses_cache?.set(c.id, c);
+    // Attempt reading from disk first
+    const diskCourses = readJsonFileSafely(getLiveCoursesFilePath());
+    const sourceCourses = Array.isArray(diskCourses) && diskCourses.length > 0 ? diskCourses : defaultLiveCourses;
+    if (Array.isArray(sourceCourses)) {
+      sourceCourses.forEach(c => {
+        if (c && (c.id || c.slug)) {
+          globalStore.__tsehay_courses_cache?.set(c.id || c.slug, c);
         }
       });
     }
@@ -43,12 +80,19 @@ if (!globalStore.__tsehay_events_deleted_cache) {
 if (!globalStore.__tsehay_events_cache) {
   globalStore.__tsehay_events_cache = new Map<string, any>();
   try {
-    if (Array.isArray(DEFAULT_EVENTS)) {
-      DEFAULT_EVENTS.forEach(ev => {
+    // Attempt reading from disk first
+    const diskEvents = readJsonFileSafely(getLiveEventsFilePath());
+    const sourceEvents = Array.isArray(diskEvents) && diskEvents.length > 0 ? diskEvents : DEFAULT_EVENTS;
+    if (Array.isArray(sourceEvents)) {
+      sourceEvents.forEach(ev => {
         if (ev && ev.id) {
           globalStore.__tsehay_events_cache?.set(ev.id, ev);
         }
       });
+    }
+    // If disk file doesn't exist yet, write defaults so it exists
+    if (!diskEvents && Array.isArray(DEFAULT_EVENTS)) {
+      writeJsonFileSafely(getLiveEventsFilePath(), DEFAULT_EVENTS);
     }
   } catch (e) {}
 }
@@ -59,12 +103,24 @@ export const sharedCoursesCache: Map<string, any> = globalStore.__tsehay_courses
 // 📂 Load persisted courses
 export function loadPersistedCourses(): any[] {
   try {
+    const diskCourses = readJsonFileSafely(getLiveCoursesFilePath());
+    if (Array.isArray(diskCourses) && diskCourses.length > 0) {
+      diskCourses.forEach(c => {
+        if (c && (c.id || c.slug)) {
+          sharedCoursesCache.set(c.id || c.slug, c);
+        }
+      });
+      return diskCourses;
+    }
+
     const list = Array.from(sharedCoursesCache.values());
     if (list.length > 0) return list;
+
     if (Array.isArray(defaultLiveCourses)) {
       defaultLiveCourses.forEach(c => {
-        if (c && c.id) sharedCoursesCache.set(c.id, c);
+        if (c && (c.id || c.slug)) sharedCoursesCache.set(c.id || c.slug, c);
       });
+      writeJsonFileSafely(getLiveCoursesFilePath(), defaultLiveCourses);
       return defaultLiveCourses;
     }
   } catch (e) {
@@ -78,8 +134,9 @@ export function savePersistedCourses(courses: any[]): void {
   try {
     if (Array.isArray(courses)) {
       courses.forEach(c => {
-        if (c && c.id) sharedCoursesCache.set(c.id, c);
+        if (c && (c.id || c.slug)) sharedCoursesCache.set(c.id || c.slug, c);
       });
+      writeJsonFileSafely(getLiveCoursesFilePath(), Array.from(sharedCoursesCache.values()));
     }
   } catch (e) {
     console.warn('savePersistedCourses warning:', e);
@@ -89,8 +146,16 @@ export function savePersistedCourses(courses: any[]): void {
 // 💾 Save a single course
 export function saveSinglePersistedCourse(course: any): void {
   try {
-    if (course && course.id) {
-      sharedCoursesCache.set(course.id, course);
+    if (course && (course.id || course.slug)) {
+      const key = course.id || course.slug;
+      sharedCoursesCache.set(key, course);
+      // Also update any matching course by slug/id
+      for (const [k, v] of sharedCoursesCache.entries()) {
+        if (k !== key && (v.id === course.id || (course.slug && v.slug === course.slug))) {
+          sharedCoursesCache.set(k, course);
+        }
+      }
+      writeJsonFileSafely(getLiveCoursesFilePath(), Array.from(sharedCoursesCache.values()));
     }
   } catch (e) {
     console.warn('saveSinglePersistedCourse warning:', e);
@@ -101,7 +166,14 @@ export function saveSinglePersistedCourse(course: any): void {
 export function deletePersistedCourse(courseId: string): void {
   try {
     if (courseId) {
+      const clean = courseId.trim().toLowerCase();
+      for (const [key, val] of Array.from(sharedCoursesCache.entries())) {
+        if (key.toLowerCase() === clean || (val?.slug && val.slug.toLowerCase() === clean) || (val?.id && val.id.toLowerCase() === clean)) {
+          sharedCoursesCache.delete(key);
+        }
+      }
       sharedCoursesCache.delete(courseId);
+      writeJsonFileSafely(getLiveCoursesFilePath(), Array.from(sharedCoursesCache.values()));
     }
   } catch (e) {
     console.warn('deletePersistedCourse warning:', e);
@@ -136,6 +208,20 @@ export const sharedEventsDeletedCache: Set<string> = globalStore.__tsehay_events
 // 📅 Load persisted events
 export function loadPersistedEvents(): any[] {
   try {
+    // 1. Check disk file first
+    const diskEvents = readJsonFileSafely(getLiveEventsFilePath());
+    if (Array.isArray(diskEvents) && diskEvents.length > 0) {
+      diskEvents.forEach(ev => {
+        if (ev && ev.id) {
+          const cId = (ev.id || '').trim().toLowerCase();
+          const cSlug = (ev.slug || '').trim().toLowerCase();
+          if (!sharedEventsDeletedCache.has(cId) && !sharedEventsDeletedCache.has(cSlug)) {
+            sharedEventsCache.set(ev.id, ev);
+          }
+        }
+      });
+    }
+
     const list = Array.from(sharedEventsCache.values()).filter(ev => {
       if (!ev) return false;
       const cId = (ev.id || '').trim().toLowerCase();
@@ -155,6 +241,7 @@ export function loadPersistedEvents(): any[] {
       filteredDefaults.forEach(ev => {
         if (ev && ev.id) sharedEventsCache.set(ev.id, ev);
       });
+      writeJsonFileSafely(getLiveEventsFilePath(), filteredDefaults);
       return filteredDefaults;
     }
   } catch (e) {
@@ -177,6 +264,7 @@ export function savePersistedEvents(events: any[]): void {
           }
         }
       });
+      writeJsonFileSafely(getLiveEventsFilePath(), Array.from(sharedEventsCache.values()));
     }
   } catch (e) {
     console.warn('savePersistedEvents warning:', e);
@@ -192,6 +280,15 @@ export function saveSinglePersistedEvent(event: any): void {
       sharedEventsDeletedCache.delete(cId);
       if (cSlug) sharedEventsDeletedCache.delete(cSlug);
       sharedEventsCache.set(event.id, event);
+      // Also update any matching event by slug
+      if (event.slug) {
+        for (const [key, val] of sharedEventsCache.entries()) {
+          if (key !== event.id && val?.slug === event.slug) {
+            sharedEventsCache.set(key, event);
+          }
+        }
+      }
+      writeJsonFileSafely(getLiveEventsFilePath(), Array.from(sharedEventsCache.values()));
     }
   } catch (e) {
     console.warn('saveSinglePersistedEvent warning:', e);
@@ -205,7 +302,6 @@ export function deletePersistedEvent(eventId: string, eventSlug?: string): void 
       const cId = eventId.trim().toLowerCase();
       sharedEventsDeletedCache.add(cId);
       sharedEventsCache.delete(eventId);
-      // Also check if any key in map has this id in lowercase
       for (const [key, val] of Array.from(sharedEventsCache.entries())) {
         if (key.toLowerCase() === cId || (val?.slug && val.slug.toLowerCase() === cId)) {
           sharedEventsCache.delete(key);
@@ -221,6 +317,7 @@ export function deletePersistedEvent(eventId: string, eventSlug?: string): void 
         }
       }
     }
+    writeJsonFileSafely(getLiveEventsFilePath(), Array.from(sharedEventsCache.values()));
   } catch (e) {
     console.warn('deletePersistedEvent warning:', e);
   }

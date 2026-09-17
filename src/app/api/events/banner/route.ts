@@ -3,7 +3,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin, supabaseServer } from '@/lib/supabase/server';
 import { DEFAULT_EVENTS, TsehayEvent, formatDriveImageUrl, formatEventBannerUrl } from '@/lib/eventCache';
 import { loadPersistedEvents } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
@@ -221,7 +221,7 @@ export async function POST(req: NextRequest) {
 
     // 1. Update Supabase site_settings table
     try {
-      await supabaseServer
+      await supabaseAdmin
         .from('site_settings')
         .upsert({
           key: 'event_banner',
@@ -235,7 +235,7 @@ export async function POST(req: NextRequest) {
     // 2. If eventId provided, update its status in `events` table
     if (eventId) {
       try {
-        await supabaseServer
+        await supabaseAdmin
           .from('events')
           .update({ status: status, updated_at: new Date().toISOString() })
           .eq('id', eventId);

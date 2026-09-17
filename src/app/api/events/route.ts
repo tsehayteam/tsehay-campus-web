@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin, supabaseServer } from '@/lib/supabase/server';
 import { DEFAULT_EVENTS, TsehayEvent, formatDriveImageUrl } from '@/lib/eventCache';
 import { 
   loadPersistedEvents, 
@@ -22,14 +22,14 @@ const NO_CACHE_HEADERS = {
 };
 
 const PUBLIC_CACHE_HEADERS = {
-  'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300',
-  'CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-  'Vercel-CDN-Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+  'Cache-Control': 'public, max-age=10, s-maxage=10, stale-while-revalidate=60',
+  'CDN-Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60',
+  'Vercel-CDN-Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60',
 };
 
-// In-Memory Events Cache (120-second TTL)
+// In-Memory Events Cache (10-second fast TTL for rapid live updates)
 let cachedEventsList: { data: any[]; timestamp: number } | null = null;
-const EVENTS_CACHE_TTL_MS = 120 * 1000;
+const EVENTS_CACHE_TTL_MS = 10 * 1000;
 
 export function invalidateEventsCache() {
   cachedEventsList = null;
@@ -93,7 +93,7 @@ function mapDbRowToEvent(row: any): TsehayEvent {
 
 async function getDeletedEventIdsFromServer(): Promise<string[]> {
   try {
-    const { data: row } = await supabaseServer
+    const { data: row } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'events_deleted_ids')
@@ -106,8 +106,8 @@ async function getDeletedEventIdsFromServer(): Promise<string[]> {
   return [];
 }
 
-async function getSupabaseEvents(): Promise<any[]> {
-  if (cachedEventsList && (Date.now() - cachedEventsList.timestamp < EVENTS_CACHE_TTL_MS)) {
+async function getSupabaseEvents(forceFresh = false): Promise<any[]> {
+  if (!forceFresh && cachedEventsList && (Date.now() - cachedEventsList.timestamp < EVENTS_CACHE_TTL_MS)) {
     return cachedEventsList.data;
   }
 
@@ -125,9 +125,9 @@ async function getSupabaseEvents(): Promise<any[]> {
 
   const eventMap = new Map<string, any>();
 
-  // 1. Read from site_settings (key: 'events') - preserves all rich metadata like custom slug, meetingLink, etc.
+  // 1. Read from site_settings (key: 'events') using supabaseAdmin
   try {
-    const { data: row, error } = await supabaseServer
+    const { data: row, error } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'events')
@@ -145,9 +145,9 @@ async function getSupabaseEvents(): Promise<any[]> {
     console.warn('Supabase site_settings events fetch warning:', e);
   }
 
-  // 2. Read directly from Supabase `events` table and overlay
+  // 2. Read directly from Supabase `events` table and overlay using supabaseAdmin
   try {
-    const { data: dbEvents, error: dbErr } = await supabaseServer
+    const { data: dbEvents, error: dbErr } = await supabaseAdmin
       .from('events')
       .select('*')
       .order('created_at', { ascending: false });
@@ -177,6 +177,34 @@ async function getSupabaseEvents(): Promise<any[]> {
     }
   }
 
+  // 🌟 4. Dynamic Live Ticket Count Synchronization:
+  // Cross-reference with confirmed issued tickets in site_settings ('event_tickets')
+  try {
+    const { data: ticketRow } = await supabaseAdmin
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'event_tickets')
+      .maybeSingle();
+
+    if (Array.isArray(ticketRow?.data)) {
+      const tickets: any[] = ticketRow.data;
+      mergedList = mergedList.map(ev => {
+        const matchingTickets = tickets.filter((t: any) => 
+          t && (t.eventId === ev.id || t.eventId === ev.slug || (t.eventSlug && (t.eventSlug === ev.slug || t.eventSlug === ev.id)))
+        );
+        const liveCount = Math.max(Number(ev.registeredCount) || 0, matchingTickets.length);
+        const liveRemaining = Math.max(0, (Number(ev.capacity) || 100) - liveCount);
+        return {
+          ...ev,
+          registeredCount: liveCount,
+          remainingSeats: liveRemaining
+        };
+      });
+    }
+  } catch (syncErr) {
+    console.warn('Dynamic live ticket count sync notice:', syncErr);
+  }
+
   savePersistedEvents(mergedList);
   cachedEventsList = { data: mergedList, timestamp: Date.now() };
   return mergedList;
@@ -186,7 +214,7 @@ async function saveSupabaseEvents(events: any[], singlePayload?: any) {
   savePersistedEvents(events);
   invalidateEventsCache();
 
-  // 1. Primary: Upsert single event to Supabase `events` table if provided
+  // 1. Primary: Upsert single event to Supabase `events` table using supabaseAdmin
   if (singlePayload && singlePayload.id) {
     try {
       const fullRow: Record<string, any> = {
@@ -215,7 +243,7 @@ async function saveSupabaseEvents(events: any[], singlePayload?: any) {
         updated_at: new Date().toISOString()
       };
 
-      const { error: upsertErr } = await supabaseServer
+      const { error: upsertErr } = await supabaseAdmin
         .from('events')
         .upsert(fullRow);
 
@@ -241,19 +269,16 @@ async function saveSupabaseEvents(events: any[], singlePayload?: any) {
           speakers: singlePayload.speaker ? [singlePayload.speaker] : [],
           updated_at: new Date().toISOString()
         };
-        const { error: baseErr } = await supabaseServer.from('events').upsert(baseRow);
-        if (baseErr) {
-          console.warn('Supabase base events table upsert warning:', baseErr.message);
-        }
+        await supabaseAdmin.from('events').upsert(baseRow);
       }
     } catch (e) {
       console.warn('Supabase events table upsert error:', e);
     }
   }
 
-  // 2. Secondary: Mirror complete rich objects to site_settings (key: 'events')
+  // 2. Secondary: Mirror complete rich objects to site_settings (key: 'events') using supabaseAdmin
   try {
-    await supabaseServer
+    await supabaseAdmin
       .from('site_settings')
       .upsert({
         key: 'events',
@@ -269,8 +294,9 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get('id') || searchParams.get('eventId');
+    const forceFresh = searchParams.get('noCache') === 'true' || Boolean(req.headers.get('x-admin-token')) || req.headers.get('cache-control')?.includes('no-cache');
 
-    let eventsList = await getSupabaseEvents();
+    let eventsList = await getSupabaseEvents(forceFresh);
 
     if (eventId) {
       const cleanKey = eventId.trim().toLowerCase();
@@ -282,60 +308,40 @@ export async function GET(req: NextRequest) {
       const found = eventsList.find(e => 
         (e.id && e.id.toLowerCase() === cleanKey) || 
         (e.slug && e.slug.toLowerCase() === cleanKey)
-      ) || DEFAULT_EVENTS.find(e => 
-        !deletedIds.includes(e.id.toLowerCase()) && 
-        !(e.slug && deletedIds.includes(e.slug.toLowerCase())) && 
-        (e.id.toLowerCase() === cleanKey || (e.slug && e.slug.toLowerCase() === cleanKey))
       );
 
       if (found) {
-        return NextResponse.json({ 
-          success: true, 
-          event: { ...found, image: formatDriveImageUrl(found.image) || found.image } 
-        }, { headers: PUBLIC_CACHE_HEADERS });
+        return NextResponse.json({ success: true, event: found }, { headers: forceFresh ? NO_CACHE_HEADERS : PUBLIC_CACHE_HEADERS });
       }
+
       return NextResponse.json({ error: 'Event not found' }, { status: 404, headers: NO_CACHE_HEADERS });
     }
 
-    const formattedEvents = eventsList.map(e => {
-      const cap = Number(e.capacity) || 100;
-      const reg = Number(e.registeredCount) || 0;
-      const rem = e.remainingSeats !== undefined && typeof e.remainingSeats === 'number'
-        ? Math.max(0, e.remainingSeats)
-        : Math.max(0, cap - reg);
-
-      return {
-        ...e,
-        capacity: cap,
-        registeredCount: reg,
-        remainingSeats: rem,
-        image: formatDriveImageUrl(e.image) || e.image
-      };
-    });
-
-    const deletedIds = await getDeletedEventIdsFromServer();
     return NextResponse.json({ 
       success: true, 
-      events: formattedEvents, 
-      count: formattedEvents.length,
-      deletedIds 
-    }, { headers: PUBLIC_CACHE_HEADERS });
+      count: eventsList.length, 
+      events: eventsList 
+    }, { headers: forceFresh ? NO_CACHE_HEADERS : PUBLIC_CACHE_HEADERS });
   } catch (error: any) {
-    console.error('Error fetching events:', error);
-    const fallback = loadPersistedEvents();
-    return NextResponse.json({ success: true, events: fallback, count: fallback.length, error: error.message }, { headers: NO_CACHE_HEADERS });
+    console.error('Error in /api/events GET:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || 'Failed to fetch events', 
+      events: DEFAULT_EVENTS 
+    }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await verifyAdminRequest(req);
-  if (!auth.authorized) {
-    return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401, headers: NO_CACHE_HEADERS });
-  }
-
   try {
+    const auth = await verifyAdminRequest(req);
+    if (!auth.authorized) {
+      return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401, headers: NO_CACHE_HEADERS });
+    }
+
     const body = await req.json();
-    const eventData = body.event || body;
+    const eventData = body.eventData || body;
+
     const eventId = eventData.id || `evt_${Date.now()}`;
     const rawImage = (eventData.image || '').trim();
     const formattedImage = formatDriveImageUrl(rawImage) || rawImage || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
@@ -357,7 +363,7 @@ export async function POST(req: NextRequest) {
       remainingSeats: rem
     };
 
-    const currentEvents = await getSupabaseEvents();
+    const currentEvents = await getSupabaseEvents(true);
     const updatedEvents = [payload, ...currentEvents.filter(e => e.id !== eventId)];
     await saveSupabaseEvents(updatedEvents, payload);
     saveSinglePersistedEvent(payload);
@@ -387,20 +393,19 @@ export async function DELETE(req: NextRequest) {
     const cleanId = eventId.trim();
     const cleanSlug = eventSlug.trim();
 
-    // 1. Delete and soft-delete from Supabase events table by ID and slug
+    // 1. Delete and soft-delete from Supabase events table using supabaseAdmin
     try {
       if (cleanId) {
-        // Try soft-delete first in case of foreign keys, then hard delete
         try {
-          await supabaseServer.from('events').update({ status: 'deleted', is_active: false, is_deleted: true }).eq('id', cleanId);
+          await supabaseAdmin.from('events').update({ status: 'deleted', is_active: false, is_deleted: true }).eq('id', cleanId);
         } catch (_) {}
-        await supabaseServer.from('events').delete().eq('id', cleanId);
+        await supabaseAdmin.from('events').delete().eq('id', cleanId);
       }
       if (cleanSlug) {
         try {
-          await supabaseServer.from('events').update({ status: 'deleted', is_active: false, is_deleted: true }).eq('slug', cleanSlug);
+          await supabaseAdmin.from('events').update({ status: 'deleted', is_active: false, is_deleted: true }).eq('slug', cleanSlug);
         } catch (_) {}
-        await supabaseServer.from('events').delete().eq('slug', cleanSlug);
+        await supabaseAdmin.from('events').delete().eq('slug', cleanSlug);
       }
     } catch (e) {
       console.warn('Supabase events delete warning:', e);
@@ -415,7 +420,7 @@ export async function DELETE(req: NextRequest) {
         ...(cleanSlug ? [cleanSlug.toLowerCase()] : [])
       ]));
 
-      await supabaseServer.from('site_settings').upsert({
+      await supabaseAdmin.from('site_settings').upsert({
         key: 'events_deleted_ids',
         data: updatedDeleted,
         updated_at: new Date().toISOString()
@@ -426,7 +431,7 @@ export async function DELETE(req: NextRequest) {
 
     // 3. Update site_settings 'events' array to remove this event
     try {
-      const { data: row } = await supabaseServer
+      const { data: row } = await supabaseAdmin
         .from('site_settings')
         .select('data')
         .eq('key', 'events')
@@ -440,7 +445,7 @@ export async function DELETE(req: NextRequest) {
           const matchSlug = cleanSlug && (eId === cleanSlug.toLowerCase() || eSlug === cleanSlug.toLowerCase());
           return !matchId && !matchSlug;
         });
-        await supabaseServer.from('site_settings').upsert({
+        await supabaseAdmin.from('site_settings').upsert({
           key: 'events',
           data: filtered,
           updated_at: new Date().toISOString()

@@ -11,7 +11,7 @@ import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
 import TypingCourseTitle from '@/components/TypingCourseTitle';
 import FormattedAiText from '@/components/FormattedAiText';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses, formatCleanCategory, fetchLiveCoursesClient } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCleanInstructorImage, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses, formatCleanCategory, fetchLiveCoursesClient } from '@/lib/courseCache';
 import { parseVideoEmbedUrl } from '@/lib/videoParser';
 import { Crown, Sparkles } from 'lucide-react';
 
@@ -309,33 +309,63 @@ function CoursePreviewContent() {
     if (isFree) {
       setIsEnrolling(true);
       try {
+        const cId = course.id || course.slug;
+        const cSlug = course.slug || course.id;
+
         try {
           localStorage.setItem('tsehay_user_active_course', JSON.stringify(course));
+          if (user?.uid) {
+            localStorage.setItem(`tsehay_user_active_course_${user.uid}`, JSON.stringify(course));
+
+            const enrCache = JSON.parse(localStorage.getItem(`tsehay_enrolled_courses_${user.uid}`) || '[]');
+            if (!enrCache.includes(cId)) enrCache.push(cId);
+            if (cSlug && !enrCache.includes(cSlug)) enrCache.push(cSlug);
+            localStorage.setItem(`tsehay_enrolled_courses_${user.uid}`, JSON.stringify(enrCache));
+
+            const coursesCache = JSON.parse(localStorage.getItem(`tsehay_user_courses_${user.uid}`) || '[]');
+            if (!coursesCache.some((c: any) => c.id === cId || c.slug === cSlug)) {
+              coursesCache.push(course);
+              localStorage.setItem(`tsehay_user_courses_${user.uid}`, JSON.stringify(coursesCache));
+              localStorage.setItem('tsehay_user_courses_cache', JSON.stringify(coursesCache));
+            }
+          }
+
           if (course.lessons && course.lessons.length > 0) {
             localStorage.setItem('tsehay_user_active_lesson', JSON.stringify({ ...course.lessons[0], moduleIndex: 0, lessonIndex: 0 }));
           }
         } catch (e) {}
 
         try {
-          const idToken = await user.getIdToken();
-          fetch('/api/enroll-free', {
+          let idToken = '';
+          if (typeof user?.getIdToken === 'function') {
+            idToken = await user.getIdToken().catch(() => '');
+          }
+          await fetch('/api/enroll-free', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${idToken}`
+              ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
             },
-            body: JSON.stringify({ courseId: course.id })
-          }).catch(() => {});
-        } catch (authErr) {}
+            body: JSON.stringify({
+              courseId: cId,
+              slug: cSlug,
+              userId: user?.uid,
+              userEmail: user?.email,
+              userName: user?.displayName
+            })
+          });
+        } catch (authErr) {
+          console.warn('Enrollment API error:', authErr);
+        }
 
-        const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
+        const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(cSlug || cId)}&lesson=0`;
         if (typeof window !== 'undefined') {
           window.location.href = targetUrl;
         } else {
           router.push(targetUrl);
         }
       } catch (err: any) {
-         const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
+         const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.slug || course.id)}&lesson=0`;
          if (typeof window !== 'undefined') {
            window.location.href = targetUrl;
          } else {
@@ -448,7 +478,7 @@ function CoursePreviewContent() {
               {/* Instructor Capsule */}
               <div className="flex items-center gap-3.5 bg-slate-900/80 border border-white/10 rounded-2xl p-4 max-w-md backdrop-blur-xl shadow-lg">
                 <img 
-                  src={formatDriveImageUrl(course.instructorImage || course.instructorPhoto) || 'https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000'} 
+                  src={getCleanInstructorImage(course)} 
                   alt={course.instructor || 'Instructor'} 
                   className="w-12 h-12 rounded-xl object-cover border-2 border-[#f9b03c]/40 shadow-md"
                 />

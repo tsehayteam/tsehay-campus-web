@@ -14,7 +14,7 @@ const ReactPlayer: any = nextDynamic(() => import('react-player'), { ssr: false 
 import CourseRatingModal from '@/components/CourseRatingModal';
 import CourseQuiz from '@/components/CourseQuiz';
 import CourseCertificate from '@/components/CourseCertificate';
-import { formatDriveImageUrl, getCleanCourseImage, DEFAULT_COURSES, getCachedCourses, fetchLiveCoursesClient } from '@/lib/courseCache';
+import { formatDriveImageUrl, getCleanCourseImage, getCleanInstructorImage, DEFAULT_COURSES, getCachedCourses, fetchLiveCoursesClient } from '@/lib/courseCache';
 import FormattedAiText from '@/components/FormattedAiText';
 import StudentReferralSection from '@/components/StudentReferralSection';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
@@ -138,7 +138,14 @@ function StudentDashboardContent() {
     const cachedPhone = (typeof window !== 'undefined' && (localStorage.getItem('tsehay_user_phone') || (user as any).phone)) || '';
     const cleanDigits = String(cachedPhone).replace(/[^0-9]/g, '');
 
-    if (cleanDigits.length < 7) {
+    // Check if user has active learning context
+    const hasActiveContext = Boolean(urlCourseId) || (typeof window !== 'undefined' && (
+      Boolean(localStorage.getItem('tsehay_user_active_course')) ||
+      Boolean(localStorage.getItem(`tsehay_user_active_course_${user.uid}`)) ||
+      (JSON.parse(localStorage.getItem(`tsehay_enrolled_courses_${user.uid}`) || '[]').length > 0)
+    ));
+
+    if (cleanDigits.length < 7 && !hasActiveContext) {
       // Check server if they are a registered student or an incomplete visitor
       fetch('/api/auth/check-registration', {
         method: 'POST',
@@ -148,13 +155,11 @@ function StudentDashboardContent() {
         .then(res => res.json())
         .then(data => {
           if (data && !data.isStudent && !data.hasEnrollments && !data.hasValidPhone) {
-            console.warn('[Dashboard Guard] Incomplete onboarding detected. Rolling back ghost session.');
-            supabase.auth.signOut().catch(() => {});
-            clearUserSessionData();
+            console.warn('[Dashboard Guard] Incomplete onboarding detected. Directing to onboarding.');
             if (typeof window !== 'undefined') {
-              window.location.replace('/');
+              window.location.replace('/auth/callback');
             } else {
-              router.replace('/');
+              router.replace('/auth/callback');
             }
           }
         })
@@ -963,7 +968,11 @@ function StudentDashboardContent() {
 
           if (enrollments && Array.isArray(enrollments) && enrollments.length > 0) {
             const enrolledIds = enrollments.map((enr: any) => enr.course_id);
-            userCourses = allCatalogCourses.filter(c => enrolledIds.includes(c.id) || enrolledIds.includes(c.slug));
+            userCourses = allCatalogCourses.filter(c => 
+              enrolledIds.includes(c.id) || 
+              enrolledIds.includes(c.slug) ||
+              enrolledIds.some((id: string) => id && (id.includes(c.slug) || (c.id && id.includes(c.id))))
+            );
 
             // User is Pro Member ONLY if they purchased a paid course
             hasPaid = enrollments.some((enr: any) => {
@@ -982,7 +991,11 @@ function StudentDashboardContent() {
             if (cachedEnr) {
               const enrolledIds = JSON.parse(cachedEnr);
               if (Array.isArray(enrolledIds)) {
-                userCourses = allCatalogCourses.filter(c => enrolledIds.includes(c.id) || enrolledIds.includes(c.slug));
+                userCourses = allCatalogCourses.filter(c => 
+                  enrolledIds.includes(c.id) || 
+                  enrolledIds.includes(c.slug) ||
+                  enrolledIds.some((id: string) => id && (id.includes(c.slug) || (c.id && id.includes(c.id))))
+                );
               }
             }
           } catch (e) {}
@@ -990,8 +1003,13 @@ function StudentDashboardContent() {
 
         // Resilient fallback for URL courseId
         if (urlCourseId) {
-          const urlMatch = allCatalogCourses.find(c => c.id === urlCourseId || c.slug === urlCourseId);
-          if (urlMatch && !userCourses.some(c => c.id === urlMatch.id)) {
+          const urlMatch = allCatalogCourses.find(c => 
+            c.id === urlCourseId || 
+            c.slug === urlCourseId ||
+            c.id?.toLowerCase() === urlCourseId.toLowerCase() ||
+            c.slug?.toLowerCase() === urlCourseId.toLowerCase()
+          );
+          if (urlMatch && !userCourses.some(c => c.id === urlMatch.id || c.slug === urlMatch.slug)) {
             userCourses = [urlMatch, ...userCourses];
           }
         }
@@ -1008,7 +1026,12 @@ function StudentDashboardContent() {
           setActiveCourse((prev: any) => {
             // 1. Priority: URL courseId parameter
             if (urlCourseId) {
-              const matchedFromUrl = userCourses.find((c: any) => c.id === urlCourseId);
+              const matchedFromUrl = userCourses.find((c: any) => 
+                c.id === urlCourseId || 
+                c.slug === urlCourseId ||
+                c.id?.toLowerCase() === urlCourseId.toLowerCase() ||
+                c.slug?.toLowerCase() === urlCourseId.toLowerCase()
+              );
               if (matchedFromUrl) {
                 try { 
                   localStorage.setItem(`tsehay_user_active_course_${user.uid}`, JSON.stringify(matchedFromUrl));
@@ -2849,7 +2872,10 @@ function StudentDashboardContent() {
                             }
 
                             // 3. Direct video (MP4, WebM, Dropbox direct stream) or player-compatible URL (YouTube, Vimeo)
-                            const playerUrl = (parsed.isDropbox || parsed.isDirectVideo) ? parsed.src : rawUrl.trim();
+                            let playerUrl = (parsed.isDropbox || parsed.isDirectVideo) ? parsed.src : rawUrl.trim();
+                            if (parsed.isYouTube && parsed.youtubeId) {
+                                playerUrl = `https://www.youtube.com/watch?v=${parsed.youtubeId}`;
+                            }
 
                             return (
                                 <ReactPlayer
@@ -3253,29 +3279,17 @@ function StudentDashboardContent() {
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 pb-8 border-b border-gray-100 dark:border-slate-700">
                                         <div className="flex items-center gap-4">
                                             <div className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-slate-600 shadow-md bg-blue-50 flex items-center justify-center text-secondary text-2xl overflow-hidden shrink-0">
-                                                {activeCourse?.instructorImage ? (
-                                                    <img 
-                                                        src={(() => {
-                                                            const url = activeCourse.instructorImage;
-                                                            if (!url) return url;
-                                                            const match = url.match(/(?:file\/d\/|id=|thumbnail\?id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
-                                                            if (match && match[1]) {
-                                                              return `https://lh3.googleusercontent.com/d/${match[1]}`;
-                                                            }
-                                                            return url;
-                                                        })()} 
-                                                        onError={(e) => { 
-                                                          const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(activeCourse?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`;
-                                                          if (e.currentTarget.src !== fallback) {
-                                                            e.currentTarget.src = fallback;
-                                                          }
-                                                        }}
-                                                        alt="Instructor" 
-                                                        className="w-full h-full object-cover" 
-                                                    />
-                                                ) : (
-                                                    <i className="fa-solid fa-user-tie"></i>
-                                                )}
+                                                <img 
+                                                    src={getCleanInstructorImage(activeCourse)} 
+                                                    onError={(e) => { 
+                                                      const fallback = '/assets/eyob_white.jpg';
+                                                      if (e.currentTarget.src !== fallback) {
+                                                        e.currentTarget.src = fallback;
+                                                      }
+                                                    }}
+                                                    alt={activeCourse?.instructor || "Instructor"} 
+                                                    className="w-full h-full object-cover" 
+                                                />
                                             </div>
                                             <div>
                                                 <p className="font-black text-dark dark:text-white text-lg font-heading">{activeCourse?.instructor || 'Eyoub Sahle'}</p>

@@ -352,26 +352,48 @@ export default function HomeClient({
           if (course.lessons && course.lessons.length > 0) {
             localStorage.setItem('tsehay_user_active_lesson', JSON.stringify({ ...course.lessons[0], moduleIndex: 0, lessonIndex: 0 }));
           }
+          if (user?.uid) {
+            const enrCache = JSON.parse(localStorage.getItem(`tsehay_enrolled_courses_${user.uid}`) || '[]');
+            if (!enrCache.includes(course.id)) enrCache.push(course.id);
+            if (course.slug && !enrCache.includes(course.slug)) enrCache.push(course.slug);
+            localStorage.setItem(`tsehay_enrolled_courses_${user.uid}`, JSON.stringify(enrCache));
+
+            const coursesCache = JSON.parse(localStorage.getItem(`tsehay_user_courses_${user.uid}`) || '[]');
+            if (!coursesCache.some((c: any) => c.id === course.id || c.slug === course.slug)) {
+              coursesCache.push(course);
+              localStorage.setItem(`tsehay_user_courses_${user.uid}`, JSON.stringify(coursesCache));
+              localStorage.setItem('tsehay_user_courses_cache', JSON.stringify(coursesCache));
+            }
+          }
         } catch (e) {}
 
-        // Notify backend API in background
+        // Notify backend API
         try {
-          const idToken = await user.getIdToken();
-          fetch('/api/enroll-free', {
+          let idToken = '';
+          if (typeof user?.getIdToken === 'function') {
+            idToken = await user.getIdToken().catch(() => '');
+          }
+          await fetch('/api/enroll-free', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${idToken}`
+              ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
             },
-            body: JSON.stringify({ courseId: course.id })
-          }).catch(() => {});
+            body: JSON.stringify({ 
+              courseId: course.id || course.slug,
+              slug: course.slug || course.id,
+              userId: user?.uid,
+              userEmail: user?.email,
+              userName: user?.displayName
+            })
+          });
         } catch (authErr) {}
 
-        const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
+        const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.slug || course.id)}&lesson=0`;
         router.push(targetUrl);
       } catch (err: any) {
          console.error("Free enrollment failed:", err);
-         const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
+         const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.slug || course.id)}&lesson=0`;
          router.push(targetUrl);
       } finally {
          setIsEnrolling(false);

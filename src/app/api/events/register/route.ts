@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { EventTicket, DEFAULT_EVENTS } from '@/lib/eventCache';
 import { sendTicketEmail } from '@/lib/ticketEmailService';
+import { loadPersistedEvents } from '@/lib/memoryStore';
+import { invalidateEventsCache } from '@/app/api/events/route';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,7 +19,7 @@ const NO_CACHE_HEADERS = {
 
 async function getTickets(): Promise<EventTicket[]> {
   try {
-    const { data: row, error } = await supabaseServer
+    const { data: row, error } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'event_tickets')
@@ -32,20 +34,22 @@ async function getTickets(): Promise<EventTicket[]> {
 
 async function saveTickets(tickets: EventTicket[]) {
   try {
-    await supabaseServer
+    await supabaseAdmin
       .from('site_settings')
       .upsert({
         key: 'event_tickets',
         data: tickets,
         updated_at: new Date().toISOString()
       });
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Error saving event_tickets:', e);
+  }
 }
 
 async function getAllEvents(): Promise<any[]> {
-  // 1. Try Supabase events table
+  // 1. Try Supabase events table using supabaseAdmin
   try {
-    const { data: dbEvents, error } = await supabaseServer
+    const { data: dbEvents, error } = await supabaseAdmin
       .from('events')
       .select('*')
       .order('created_at', { ascending: false });
@@ -60,7 +64,7 @@ async function getAllEvents(): Promise<any[]> {
 
   // 2. Try site_settings 'events'
   try {
-    const { data: row, error } = await supabaseServer
+    const { data: row, error } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'events')
@@ -70,6 +74,18 @@ async function getAllEvents(): Promise<any[]> {
         ...e,
         capacity: Number(e.capacity) || 100,
         registeredCount: Number(e.registered_count ?? e.registeredCount) || 0
+      }));
+    }
+  } catch (e) {}
+
+  // 3. Try persisted disk & in-memory store
+  try {
+    const inMem = loadPersistedEvents();
+    if (Array.isArray(inMem) && inMem.length > 0) {
+      return inMem.map(e => ({
+        ...e,
+        capacity: Number(e.capacity) || 100,
+        registeredCount: Number(e.registeredCount ?? e.registered_count) || 0
       }));
     }
   } catch (e) {}
@@ -221,7 +237,7 @@ export async function POST(req: NextRequest) {
 
     try {
       if (matchedEvent?.id) {
-        await supabaseServer
+        await supabaseAdmin
           .from('events')
           .update({
             registered_count: newRegisteredCount,
@@ -239,12 +255,13 @@ export async function POST(req: NextRequest) {
           return {
             ...ev,
             registeredCount: newRegisteredCount,
-            registered_count: newRegisteredCount
+            registered_count: newRegisteredCount,
+            remainingSeats: newRemainingSeats
           };
         }
         return ev;
       });
-      await supabaseServer
+      await supabaseAdmin
         .from('site_settings')
         .upsert({
           key: 'events',
@@ -254,6 +271,10 @@ export async function POST(req: NextRequest) {
     } catch (setErr) {
       console.warn('site_settings events mirror update warning:', setErr);
     }
+
+    try {
+      invalidateEventsCache();
+    } catch (e) {}
 
     let emailResult = { success: false };
     try {
