@@ -281,22 +281,20 @@ export default function Footer() {
                                 </button>
                             </li>
                             <li>
-                                <button 
-                                    type="button" 
-                                    onClick={() => { window.dispatchEvent(new Event('open-terms-modal')); }} 
+                                <Link 
+                                    href="/terms" 
                                     className="hover:text-[#f9b03c] hover:translate-x-1 transition-all duration-200 flex items-center gap-2 group cursor-pointer text-left"
                                 >
-                                    <span>የአጠቃቀም ህግ (Terms)</span>
-                                </button>
+                                    <span>{lang === 'am' ? 'የአጠቃቀም ህግ (Terms)' : 'Terms of Service'}</span>
+                                </Link>
                             </li>
                             <li>
-                                <button 
-                                    type="button" 
-                                    onClick={() => { window.dispatchEvent(new Event('open-terms-modal')); }} 
+                                <Link 
+                                    href="/privacy" 
                                     className="hover:text-[#f9b03c] hover:translate-x-1 transition-all duration-200 flex items-center gap-2 group cursor-pointer text-left"
                                 >
-                                    <span>የግላዊነት ፖሊሲ (Privacy)</span>
-                                </button>
+                                    <span>{lang === 'am' ? 'የግላዊነት ፖሊሲ (Privacy)' : 'Privacy Policy'}</span>
+                                </Link>
                             </li>
                             <li>
                                 <button 
