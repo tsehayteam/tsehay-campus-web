@@ -8,6 +8,7 @@ import { validateEmailForSignup } from "@/lib/disposableEmailBlocker";
 import { recordReferralUsage } from "@/lib/referralService";
 import { getStoredReferrerUid, clearStoredReferrerUid } from "@/lib/referralTrackingService";
 import { generateOtpCode, saveOtpForEmail, verifyOtpForEmail } from "@/lib/otpService";
+import GoogleAuthButton from "@/components/GoogleAuthButton";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -1691,15 +1692,16 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
               {/* Top Quick Google Sign-In / Sign-Up Button */}
               {!pendingGoogleAuth && !isResetMode && (!isSignupMode || signupStep === 1) && (
                 <>
-                  <button 
-                    type="button" 
-                    onClick={handleGoogleAuth} 
-                    disabled={loading}
-                    className="w-full bg-white dark:bg-[#0d1222] border border-gray-200 dark:border-white/[0.1] text-gray-900 dark:text-white font-bold py-3.5 px-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/[0.05] transition shadow-sm flex items-center justify-center gap-3 mb-4 group cursor-pointer hover:border-primary/50"
-                  >
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    <span>{isSignupMode ? 'በ Google (Gmail) በፍጥነት ይመዝገቡ' : 'በ Google (Gmail) ይግቡ'}</span>
-                  </button>
+                  <div className="w-full mb-4">
+                    <GoogleAuthButton 
+                      isSignup={isSignupMode} 
+                      onSuccess={() => {
+                        onClose();
+                        window.location.replace('/auth/callback');
+                      }}
+                      onError={(errMsg) => setError(errMsg)}
+                    />
+                  </div>
 
                   <div className="flex items-center my-4">
                     <hr className="flex-1 border-gray-200 dark:border-white/[0.08]" />
