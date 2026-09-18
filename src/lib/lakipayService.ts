@@ -218,14 +218,11 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
   }
 
   const rawPhone = params.phoneNumber ? formatEthiopianPhone(params.phoneNumber) : '';
-  const defaultMerchantPhone = (process.env.LAKIPAY_DEFAULT_PHONE || process.env.LAKIPAY_MERCHANT_PHONE || '251911000000').replace(/[^0-9]/g, '');
-  const formattedPhone = rawPhone || defaultMerchantPhone;
 
-  // Base payload: LakiPay Hosted Checkout v2 requires phone_number and accepts supported_mediums
-  const dynamicPayload = {
+  // Base payload: Only attach phone_number if available; otherwise LakiPay lets user input their phone on checkout page
+  const dynamicPayload: Record<string, any> = {
     amount: Number(params.amount),
     currency: params.currency || 'ETB',
-    phone_number: formattedPhone,
     reference: params.reference,
     title: String(params.title || 'Tsehay Campus'),
     description: String(params.description || params.title || 'Training Ticket'),
@@ -243,6 +240,10 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
     }
   };
 
+  if (rawPhone) {
+    dynamicPayload.phone_number = rawPhone;
+  }
+
   // Endpoint sequence: Primary official v2 checkout -> fallback v1 initialize
   const endpoints = Array.from(new Set([
     process.env.LAKIPAY_ENDPOINT,
@@ -255,7 +256,7 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
 
   for (const endpoint of endpoints) {
     try {
-      console.log(`[LakiPay Checkout] Requesting session from ${endpoint} for ref: ${params.reference}, phone: ${formattedPhone}`);
+      console.log(`[LakiPay Checkout] Requesting session from ${endpoint} for ref: ${params.reference}, phone: ${rawPhone || 'none'}`);
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {

@@ -299,9 +299,8 @@ export async function POST(request: Request) {
       // Webhook listener: LakiPay callback endpoint
       const webhookCallbackUrl = `${origin}/api/payments/lakipay/webhook`;
 
-      // Use customer's phone if available; otherwise use merchant fallback since customer enters phone on LakiPay checkout page
-      const merchantDefaultPhone = (process.env.LAKIPAY_DEFAULT_PHONE || process.env.LAKIPAY_MERCHANT_PHONE || '251911000000').replace(/[^0-9]/g, '');
-      const phoneForLakipay = validEthPhone || merchantDefaultPhone;
+      // Use customer's phone if provided; do not force fake 251911000000 so LakiPay allows entering phone
+      const phoneForLakipay = validEthPhone || '';
 
       // Initialize session via official LakiPay dynamic flow (POST https://api.lakipay.co/api/v2/payment/checkout)
       const lakipayResult = await initializeLakiPaySession({
