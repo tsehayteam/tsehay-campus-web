@@ -60,7 +60,7 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   verification: {
-    google: "sjgyVc7j64r1mVrfW1zLgxfjGQGNeE1ZUIy85yDf35o",
+    google: ["sjgyVc7j64r1mVrfW1zLgxfjGQGNeE1ZUIy85yDf35o", "google3f5849f90e981ec9"],
   },
   icons: {
     icon: [
