@@ -53,7 +53,7 @@ export async function saveOtpForEmail(email: string, code: string): Promise<OtpR
  */
 export async function verifyOtpForEmail(email: string, inputCode: string): Promise<{ success: boolean; message: string }> {
   const cleanEmail = email.trim().toLowerCase();
-  const cleanCode = inputCode.trim();
+  const cleanCode = String(inputCode || '').replace(/\D/g, '').trim();
 
   if (!cleanCode || cleanCode.length !== 6) {
     return { success: false, message: 'እባክዎ ትክክለኛ 6-አሃዝ ኮድ ያስገቡ።' };
@@ -112,7 +112,8 @@ export async function verifyOtpForEmail(email: string, inputCode: string): Promi
   }
 
   // Check code match
-  if (data.code !== cleanCode) {
+  const storedCode = String(data.code || '').replace(/\D/g, '').trim();
+  if (storedCode !== cleanCode) {
     const newAttempts = (data.attempts || 0) + 1;
     data.attempts = newAttempts;
     if (typeof window !== 'undefined') {

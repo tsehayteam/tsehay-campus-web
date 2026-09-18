@@ -31,7 +31,7 @@ export default function Hero3DPopoutStage({
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [isVideoReady, setIsVideoReady] = useState<boolean>(false);
-  const [showInitialThumbnail, setShowInitialThumbnail] = useState<boolean>(true);
+  const [showInitialThumbnail, setShowInitialThumbnail] = useState<boolean>(false);
   const [customThumbnail, setCustomThumbnail] = useState<string>(initialThumbnail || '');
   const [siteOrigin, setSiteOrigin] = useState<string>(() => {
     if (typeof window !== 'undefined' && window.location?.origin) {
@@ -488,117 +488,108 @@ export default function Hero3DPopoutStage({
   }, [sendUniversalPlaybackCommand, togglePlayPause, triggerFlashFeedback]);
 
   // 🚀 Unified Playback & Scroll Viewport Manager
-  // - Auto-plays when preloader completes
-  // - Automatically PAUSES video when user scrolls down away from the landing video
-  // - Automatically RESUMES video when user scrolls back up to the video
+  // - Autoplay ONLY on fresh initial page visit (starts playing immediately, thumbnail fades instantly)
+  // - Strictly prevents random autoplay on history back/forward navigation
+  // - Automatically MUTES & PAUSES video when scrolled out of screen view via IntersectionObserver
+  // - Restores background ambient audio smoothly when muted or scrolled away
   useEffect(() => {
-    // 1. Initial play if preloader already finished
-    const hasPreloaderFinished = typeof window !== 'undefined' && 
-      !document.documentElement.classList.contains('tsehay-loading') && 
-      (sessionStorage.getItem('tsehay_preloader_seen') === 'true' || localStorage.getItem('tsehay_preloader_seen') === 'true');
+    // 1. Check navigation type to prevent random playback on browser Back / Forward
+    const isBackForwardNav = () => {
+      if (typeof window === 'undefined') return false;
+      try {
+        const navEntries = performance.getEntriesByType('navigation');
+        if (navEntries.length > 0) {
+          const nav = navEntries[0] as PerformanceNavigationTiming;
+          if (nav.type === 'back_forward') return true;
+        }
+        if ((window.performance as any)?.navigation?.type === 2) return true;
+      } catch (_) {}
+      return false;
+    };
+
+    const hasNavigatedAway = typeof window !== 'undefined' && sessionStorage.getItem('tsehay_navigated_away') === 'true';
+    const isBackNav = isBackForwardNav();
+    const isReturningUser = hasNavigatedAway || isBackNav;
+
     let playTimer: NodeJS.Timeout | null = null;
-    if (hasPreloaderFinished) {
-      executePlay(false);
-      playTimer = setTimeout(() => executePlay(false), 300);
+
+    if (isReturningUser) {
+      // 🛑 RETURNING OR BACK-FORWARD USER:
+      // Strictly KEEP PAUSED, DO NOT AUTOPLAY!
+      isPlayingRef.current = false;
+      setIsPlaying(false);
+      executePause(false);
       setShowInitialThumbnail(false);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+        window.dispatchEvent(
+          new CustomEvent('tsehay-hero-video-inview', {
+            detail: { inView: true, hasSound: false }
+          })
+        );
+      }
+    } else {
+      // 🚀 FRESH VISITOR ONLY:
+      // Immediately hide static thumbnail and start video playing without delay
+      setShowInitialThumbnail(false);
+      executePlay(false);
+      playTimer = setTimeout(() => {
+        executePlay(false);
+      }, 250);
     }
 
-    // 2. Preloader completion & History Back/Forward listener
+    // 2. Preloader completion listener (ONLY for fresh visitors)
     const onPreloaderComplete = () => {
       setShowInitialThumbnail(false);
-      executePlay(false);
-      setTimeout(() => executePlay(false), 150);
-      setTimeout(() => executePlay(false), 500);
-      const hasSound = isPlayingRef.current && !isMutedRef.current;
-      window.dispatchEvent(
-        new CustomEvent('tsehay-hero-video-inview', {
-          detail: { inView: true, hasSound }
-        })
-      );
+      if (!isBackForwardNav() && sessionStorage.getItem('tsehay_navigated_away') !== 'true') {
+        executePlay(false);
+        setTimeout(() => executePlay(false), 200);
+        const hasSound = isPlayingRef.current && !isMutedRef.current;
+        window.dispatchEvent(
+          new CustomEvent('tsehay-hero-video-inview', {
+            detail: { inView: true, hasSound }
+          })
+        );
+      }
     };
     window.addEventListener('tsehay-preloader-complete', onPreloaderComplete);
-    window.addEventListener('popstate', onPreloaderComplete, { passive: true });
-    window.addEventListener('pageshow', onPreloaderComplete, { passive: true });
 
-    // 3. High-Precision Scroll Handler: Auto-pause when scrolled down, auto-resume when scrolled back up
-    let scrollTicking = false;
-
-    const handleScroll = () => {
-      if (scrollTicking) return;
-      scrollTicking = true;
-
-      window.requestAnimationFrame(() => {
-        const scrollY = window.scrollY || window.pageYOffset || 0;
-        let isPastVideo = false;
-
-        if (stageRef.current) {
-          const rect = stageRef.current.getBoundingClientRect();
-          // Video bottom is scrolled past top threshold or scrollY > 200
-          if (rect.bottom < 160 || scrollY > 220) {
-            isPastVideo = true;
-          } else if (rect.bottom >= 160 && rect.top <= window.innerHeight * 0.8) {
-            isPastVideo = false;
-          } else {
-            isPastVideo = scrollY > 220;
-          }
-        } else {
-          isPastVideo = scrollY > 220;
-        }
-
-        if (isPastVideo) {
-          // ⬇️ Scrolled down: PAUSE VIDEO, MUTE SOUND, RESTORE BACKGROUND MUSIC!
-          wasAutoPausedByScrollRef.current = true;
-          if (isPlayingRef.current) {
-            executePause(true); // true = auto-paused by scroll
-          }
-          if (!isMutedRef.current) {
-            isMutedRef.current = true;
-            setIsMuted(true);
-            sendUniversalPlaybackCommand('mute');
-          }
-          window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
-          window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
-          window.dispatchEvent(
-            new CustomEvent('tsehay-hero-video-inview', {
-              detail: { inView: false, hasSound: false }
-            })
-          );
-        } else {
-          // ⬆️ Scrolled back up: RESUME VIDEO if it was auto-paused by scroll!
-          if (wasAutoPausedByScrollRef.current && !isPlayingRef.current) {
-            executePlay(true); // true = auto-resumed by scroll back
-          }
-          const hasSound = isPlayingRef.current && !isMutedRef.current;
-          window.dispatchEvent(
-            new CustomEvent('tsehay-hero-video-inview', {
-              detail: { inView: true, hasSound }
-            })
-          );
-          if (hasSound) {
-            window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
-            window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
-          }
-        }
-
-        scrollTicking = false;
-      });
+    // 3. History Back/Forward Protection: strictly keep paused on popstate / pageshow
+    const handlePopState = () => {
+      executePause(false);
+      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted || isBackForwardNav()) {
+        executePause(false);
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      }
+    };
 
-    // 4. Viewport IntersectionObserver with strict 0.25 threshold
+    window.addEventListener('popstate', handlePopState, { passive: true });
+    window.addEventListener('pageshow', handlePageShow, { passive: true });
+
+    // 4. Viewport IntersectionObserver with strict scroll-out mute & pause
     let observer: IntersectionObserver | null = null;
     if (stageRef.current && typeof window !== 'undefined' && 'IntersectionObserver' in window) {
       observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
-          const inView = entry.isIntersecting && entry.intersectionRatio >= 0.25;
-          const scrollY = window.scrollY || window.pageYOffset || 0;
+          if (!entry) return;
 
-          if (!inView && scrollY > 150) {
+          // Out of viewport: less than 20% visible or not intersecting
+          const isOutOfView = !entry.isIntersecting || entry.intersectionRatio < 0.20;
+
+          if (isOutOfView) {
+            // ⬇️ Scrolled down away from landing video:
+            // PAUSE VIDEO, MUTE SOUND, RESTORE BACKGROUND MUSIC!
             wasAutoPausedByScrollRef.current = true;
             if (isPlayingRef.current) {
-              executePause(true);
+              executePause(true); // true = auto-paused by scroll
             }
             if (!isMutedRef.current) {
               isMutedRef.current = true;
@@ -612,9 +603,11 @@ export default function Hero3DPopoutStage({
             );
             window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
             window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
-          } else if (inView) {
+          } else if (entry.isIntersecting && entry.intersectionRatio >= 0.35) {
+            // ⬆️ Scrolled back up to video:
+            // Only resume if it was previously auto-paused by scroll
             if (wasAutoPausedByScrollRef.current && !isPlayingRef.current) {
-              executePlay(true);
+              executePlay(true); // true = auto-resumed by scroll
             }
             const hasSound = isPlayingRef.current && !isMutedRef.current;
             window.dispatchEvent(
@@ -625,15 +618,62 @@ export default function Hero3DPopoutStage({
             if (hasSound) {
               window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
               window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+            } else {
+              window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+              window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
             }
           }
         },
-        { threshold: [0, 0.15, 0.25, 0.5, 0.75, 1.0] }
+        { threshold: [0, 0.1, 0.2, 0.35, 0.5, 0.75, 1.0], rootMargin: '0px' }
       );
       observer.observe(stageRef.current);
     }
 
-    // 5. Tab Visibility Handler (Page Visibility API)
+    // 5. Throttled scroll listener to catch rapid page scrolls
+    let scrollTicking = false;
+    const handleScroll = () => {
+      if (scrollTicking) return;
+      scrollTicking = true;
+
+      window.requestAnimationFrame(() => {
+        const scrollY = window.scrollY || window.pageYOffset || 0;
+        let isPastVideo = false;
+
+        if (stageRef.current) {
+          const rect = stageRef.current.getBoundingClientRect();
+          if (rect.bottom < 120 || scrollY > 260) {
+            isPastVideo = true;
+          }
+        } else if (scrollY > 260) {
+          isPastVideo = true;
+        }
+
+        if (isPastVideo) {
+          wasAutoPausedByScrollRef.current = true;
+          if (isPlayingRef.current) {
+            executePause(true);
+          }
+          if (!isMutedRef.current) {
+            isMutedRef.current = true;
+            setIsMuted(true);
+            sendUniversalPlaybackCommand('mute');
+          }
+          window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+          window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+          window.dispatchEvent(
+            new CustomEvent('tsehay-hero-video-inview', {
+              detail: { inView: false, hasSound: false }
+            })
+          );
+        }
+
+        scrollTicking = false;
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // 6. Tab Visibility Handler (Page Visibility API)
     const handleVisibilityChange = () => {
       if (document.hidden || document.visibilityState === 'hidden') {
         if (isPlayingRef.current) {
@@ -654,9 +694,12 @@ export default function Hero3DPopoutStage({
 
     return () => {
       if (playTimer) clearTimeout(playTimer);
+      try {
+        sessionStorage.setItem('tsehay_navigated_away', 'true');
+      } catch (_) {}
       window.removeEventListener('tsehay-preloader-complete', onPreloaderComplete);
-      window.removeEventListener('popstate', onPreloaderComplete);
-      window.removeEventListener('pageshow', onPreloaderComplete);
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('pageshow', handlePageShow);
       window.removeEventListener('scroll', handleScroll);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (observer) observer.disconnect();
@@ -665,6 +708,8 @@ export default function Hero3DPopoutStage({
           detail: { inView: false, hasSound: false }
         })
       );
+      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
     };
   }, [activeVideoUrl, parsedVideo.isYouTube, parsedVideo.youtubeId, siteOrigin, executePlay, executePause, sendUniversalPlaybackCommand]);
 
@@ -678,6 +723,11 @@ export default function Hero3DPopoutStage({
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
         window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+        window.dispatchEvent(
+          new CustomEvent('tsehay-hero-video-inview', {
+            detail: { inView: true, hasSound: true }
+          })
+        );
       }
     } else {
       sendUniversalPlaybackCommand('mute');
@@ -686,6 +736,11 @@ export default function Hero3DPopoutStage({
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
         window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+        window.dispatchEvent(
+          new CustomEvent('tsehay-hero-video-inview', {
+            detail: { inView: true, hasSound: false }
+          })
+        );
       }
     }
   };

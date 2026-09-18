@@ -165,6 +165,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: authenticatedUser }));
 
       // Check for pending action in sessionStorage
+      let hasResumedAction = false;
       try {
         const pendingActionRaw = sessionStorage.getItem('tsehay_pending_action') ||
                                  sessionStorage.getItem('tsehay_pending_course_action') ||
@@ -172,6 +173,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                                  sessionStorage.getItem('tsehay_pending_mentorship_action');
 
         if (pendingActionRaw) {
+          hasResumedAction = true;
           const pending = JSON.parse(pendingActionRaw);
 
           // Broadcast general resume event
@@ -198,10 +200,25 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       } catch (e) {
         console.warn("Error resuming pending action:", e);
       }
+
+      // Automatically route user to dashboard upon login / registration
+      if (!hasResumedAction) {
+        try {
+          const authReturnUrl = sessionStorage.getItem('tsehay_auth_return_url');
+          if (authReturnUrl && !authReturnUrl.startsWith('/auth') && authReturnUrl !== '/') {
+            sessionStorage.removeItem('tsehay_auth_return_url');
+            router.push(authReturnUrl);
+          } else {
+            router.push('/dashboard');
+          }
+        } catch (e) {
+          router.push('/dashboard');
+        }
+      }
     }
 
     onClose();
-  }, [onClose]);
+  }, [onClose, router]);
 
   // Rollback incomplete sessions on modal close to prevent ghost logins
   const handleSafeClose = useCallback(async () => {
@@ -447,7 +464,27 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   // Handle OTP 6-Digit Changes, Paste, and Auto-Advance
   const handleOtpDigitChange = (index: number, val: string) => {
     setOtpError("");
-    const cleanVal = val.replace(/[^0-9]/g, '').slice(-1);
+    // Strip hidden Unicode zero-width characters, line breaks, whitespace, and non-digits
+    const allCleanDigits = val.replace(/[\u200B-\u200D\uFEFF\s\r\n\t]/g, '').replace(/\D/g, '');
+
+    // Multi-digit paste or keyboard autofill detection
+    if (allCleanDigits.length > 1) {
+      const multiDigits = allCleanDigits.slice(0, 6);
+      const newDigits = ['', '', '', '', '', ''];
+      for (let i = 0; i < multiDigits.length; i++) {
+        newDigits[i] = multiDigits[i];
+      }
+      setOtpDigits(newDigits);
+      if (multiDigits.length === 6) {
+        handleVerifyOtpCode(multiDigits);
+      } else {
+        const nextIdx = Math.min(5, multiDigits.length);
+        otpInputRefs.current[nextIdx]?.focus();
+      }
+      return;
+    }
+
+    const cleanVal = allCleanDigits.slice(-1);
     const newDigits = [...otpDigits];
     newDigits[index] = cleanVal;
     setOtpDigits(newDigits);
@@ -470,17 +507,21 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
   const handleOtpPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
-    if (pasted) {
+    const rawPasted = e.clipboardData?.getData('text') || '';
+    // Strip hidden Unicode zero-width characters, line breaks, whitespace, and non-digits
+    const cleanDigits = rawPasted.replace(/[\u200B-\u200D\uFEFF\s\r\n\t]/g, '').replace(/\D/g, '').slice(0, 6);
+    if (cleanDigits) {
       const newDigits = ['', '', '', '', '', ''];
-      for (let i = 0; i < pasted.length; i++) {
-        newDigits[i] = pasted[i];
+      for (let i = 0; i < cleanDigits.length; i++) {
+        newDigits[i] = cleanDigits[i];
       }
       setOtpDigits(newDigits);
-      if (pasted.length === 6) {
-        handleVerifyOtpCode(pasted);
+      setOtpError("");
+      if (cleanDigits.length === 6) {
+        handleVerifyOtpCode(cleanDigits);
       } else {
-        otpInputRefs.current[pasted.length]?.focus();
+        const nextIdx = Math.min(5, cleanDigits.length);
+        otpInputRefs.current[nextIdx]?.focus();
       }
     }
   };
@@ -488,7 +529,9 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   // Verify 6-Digit OTP Code
   const handleVerifyOtpCode = async (codeToVerify?: string) => {
     const targetEmail = registeredEmail || email;
-    const code = (codeToVerify || otpDigits.join('')).trim();
+    const rawCode = (codeToVerify || otpDigits.join('')).trim();
+    // Thoroughly sanitize code: strip zero-width spaces, newlines, and non-digits
+    const code = rawCode.replace(/[\u200B-\u200D\uFEFF\s\r\n\t]/g, '').replace(/\D/g, '').slice(0, 6);
 
     if (!code || code.length !== 6) {
       setOtpError('እባክዎ 6ቱን አሃዞች በትክክል ያስገቡ።');
@@ -599,7 +642,25 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   // Reset OTP handlers
   const handleResetOtpDigitChange = (index: number, val: string) => {
     setResetOtpError("");
-    const cleanVal = val.replace(/[^0-9]/g, '').slice(-1);
+    const allCleanDigits = val.replace(/[\u200B-\u200D\uFEFF\s\r\n\t]/g, '').replace(/\D/g, '');
+
+    if (allCleanDigits.length > 1) {
+      const multiDigits = allCleanDigits.slice(0, 6);
+      const newDigits = ['', '', '', '', '', ''];
+      for (let i = 0; i < multiDigits.length; i++) {
+        newDigits[i] = multiDigits[i];
+      }
+      setResetOtpDigits(newDigits);
+      if (multiDigits.length === 6) {
+        handleVerifyResetOtpCode(multiDigits);
+      } else {
+        const nextIdx = Math.min(5, multiDigits.length);
+        resetOtpInputRefs.current[nextIdx]?.focus();
+      }
+      return;
+    }
+
+    const cleanVal = allCleanDigits.slice(-1);
     const newDigits = [...resetOtpDigits];
     newDigits[index] = cleanVal;
     setResetOtpDigits(newDigits);
@@ -622,17 +683,20 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
   const handleResetOtpPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
-    if (pasted) {
+    const rawPasted = e.clipboardData?.getData('text') || '';
+    const cleanDigits = rawPasted.replace(/[\u200B-\u200D\uFEFF\s\r\n\t]/g, '').replace(/\D/g, '').slice(0, 6);
+    if (cleanDigits) {
       const newDigits = ['', '', '', '', '', ''];
-      for (let i = 0; i < pasted.length; i++) {
-        newDigits[i] = pasted[i];
+      for (let i = 0; i < cleanDigits.length; i++) {
+        newDigits[i] = cleanDigits[i];
       }
       setResetOtpDigits(newDigits);
-      if (pasted.length === 6) {
-        handleVerifyResetOtpCode(pasted);
+      setResetOtpError("");
+      if (cleanDigits.length === 6) {
+        handleVerifyResetOtpCode(cleanDigits);
       } else {
-        resetOtpInputRefs.current[pasted.length]?.focus();
+        const nextIdx = Math.min(5, cleanDigits.length);
+        resetOtpInputRefs.current[nextIdx]?.focus();
       }
     }
   };
@@ -640,7 +704,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   // Verify Reset 6-Digit OTP Code
   const handleVerifyResetOtpCode = async (codeToVerify?: string) => {
     const targetEmail = registeredEmail || email;
-    const code = (codeToVerify || resetOtpDigits.join('')).trim();
+    const rawCode = (codeToVerify || resetOtpDigits.join('')).trim();
+    const code = rawCode.replace(/[\u200B-\u200D\uFEFF\s\r\n\t]/g, '').replace(/\D/g, '').slice(0, 6);
 
     if (!code || code.length !== 6) {
       setResetOtpError('እባክዎ 6ቱን አሃዞች በትክክል ያስገቡ።');
@@ -1238,6 +1303,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                           inputMode="numeric"
                           maxLength={1}
                           value={digit}
+                          onPaste={handleResetOtpPaste}
                           onChange={(e) => handleResetOtpDigitChange(idx, e.target.value)}
                           onKeyDown={(e) => handleResetOtpKeyDown(idx, e)}
                           autoFocus={idx === 0}
@@ -1441,6 +1507,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                       inputMode="numeric"
                       maxLength={1}
                       value={digit}
+                      onPaste={handleOtpPaste}
                       onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                       autoFocus={idx === 0}

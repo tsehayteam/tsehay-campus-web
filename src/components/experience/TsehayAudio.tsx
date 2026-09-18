@@ -39,12 +39,17 @@ export default function TsehayAudio() {
   const [isTabHidden, setIsTabHidden] = useState(false);
 
   const isMutedRef = useRef(isMuted);
+  const isDuckedRef = useRef(isDucked);
   const isTabHiddenRef = useRef(false);
   const wasPlayingBeforeTabHideRef = useRef(false);
 
   useEffect(() => {
     isMutedRef.current = isMuted;
   }, [isMuted]);
+
+  useEffect(() => {
+    isDuckedRef.current = isDucked;
+  }, [isDucked]);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
@@ -251,6 +256,12 @@ export default function TsehayAudio() {
     const schedule = () => {
       if (!audioCtxRef.current) return;
       const currentCtx = audioCtxRef.current;
+
+      // 🔇 When ducked by video, muted, tab hidden, or on quiet routes: completely PAUSE note synthesis
+      if (isDuckedRef.current || isMutedRef.current || isTabHiddenRef.current || isQuietRoute) {
+        nextNoteTimeRef.current = currentCtx.currentTime + 0.1;
+        return;
+      }
 
       while (nextNoteTimeRef.current < currentCtx.currentTime + lookahead) {
         const step = stepRef.current % 16;
@@ -536,7 +547,15 @@ export default function TsehayAudio() {
     // 2. Explicit custom duck/restore events
     const handleUniversalDuck = (e: Event) => {
       const duck = (e as CustomEvent)?.detail?.duck ?? true;
-      setIsDucked(duck);
+      if (duck) {
+        setIsDucked(true);
+      } else {
+        const allMedia = Array.from(document.querySelectorAll('video, audio')) as HTMLMediaElement[];
+        const anyAudible = allMedia.some(m => !m.paused && !m.ended && !m.muted && m.volume > 0);
+        if (!anyAudible) {
+          setIsDucked(false);
+        }
+      }
     };
 
     // 3. HTMLMediaElement (<video>, <audio>) detection across the entire DOM
@@ -612,7 +631,13 @@ export default function TsehayAudio() {
     window.addEventListener('tsehay-hero-video-inview', handleVideoInView);
     window.addEventListener('tsehay-audio-duck', handleUniversalDuck);
     window.addEventListener('duck-ambient-audio', () => setIsDucked(true));
-    window.addEventListener('restore-ambient-audio', () => setIsDucked(false));
+    window.addEventListener('restore-ambient-audio', () => {
+      const allMedia = Array.from(document.querySelectorAll('video, audio')) as HTMLMediaElement[];
+      const anyAudible = allMedia.some(m => !m.paused && !m.ended && !m.muted && m.volume > 0);
+      if (!anyAudible) {
+        setIsDucked(false);
+      }
+    });
     window.addEventListener('message', handleWindowMessage);
 
     document.addEventListener('play', handleMediaPlay, true);
@@ -642,10 +667,13 @@ export default function TsehayAudio() {
 
     master.gain.cancelScheduledValues(now);
     if (shouldMute) {
-      // Fast, clean fade to silence (0.25s) when muted, hidden, or media has sound
-      master.gain.linearRampToValueAtTime(0.0001, now + 0.25);
+      // Fast, clean fade to silence (0.15s) when video is playing or sound muted
+      master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), now);
+      master.gain.linearRampToValueAtTime(0.0001, now + 0.15);
     } else if (isUnlocked && !isTabHidden) {
-      // Smooth restoration to pleasant ambient volume (0.8s) when active
+      // Smooth restoration to pleasant ambient volume (0.8s) when video ends or is paused/muted
+      nextNoteTimeRef.current = now + 0.1;
+      master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), now);
       master.gain.linearRampToValueAtTime(0.28, now + 0.8);
     }
   }, [isQuietRoute, isDucked, isUnlocked, isMuted, isTabHidden]);

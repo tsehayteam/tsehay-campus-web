@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const cleanCode = code.trim();
+    // Sanitize OTP code: strip all non-digits, linebreaks, hidden zero-width chars, spaces
+    const cleanCode = String(code || '').replace(/\D/g, '').trim();
 
     if (cleanCode.length !== 6) {
       return NextResponse.json({ error: 'እባክዎ ትክክለኛ 6-አሃዝ ኮድ ያስገቡ።' }, { status: 400 });
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
       }
 
       const data = record.data;
+      const storedCode = String(data?.code || '').replace(/\D/g, '').trim();
 
       // 1. Expiration Check (15 mins)
       if (Date.now() > (data?.expiresAt || 0)) {
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 3. Match Verification
-      if (data?.code !== cleanCode) {
+      if (storedCode !== cleanCode) {
         const updatedData = { ...data, attempts: (data?.attempts || 0) + 1 };
         await supabaseServer
           .from('site_settings')

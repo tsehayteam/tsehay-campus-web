@@ -39,6 +39,30 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
   const [referralMessage, setReferralMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
 
+  // 🌟 LakiPay Phone Input State
+  const [phone, setPhone] = useState('');
+  const [phoneTouched, setPhoneTouched] = useState(false);
+
+  // Sync saved user phone number if available
+  useEffect(() => {
+    let resolvedPhone = (user as any)?.phone || (user as any)?.phoneNumber || '';
+    if (!resolvedPhone && typeof window !== 'undefined') {
+      try {
+        resolvedPhone = localStorage.getItem('tsehay_user_phone') || '';
+        if (!resolvedPhone) {
+          const cachedUser = localStorage.getItem('tsehay_auth_user_cache');
+          if (cachedUser) {
+            const parsed = JSON.parse(cachedUser);
+            resolvedPhone = parsed.phone || parsed.phoneNumber || parsed.phone_number || '';
+          }
+        }
+      } catch (e) {}
+    }
+    if (resolvedPhone) {
+      setPhone(prev => prev || resolvedPhone);
+    }
+  }, [user, isOpen, propCourse]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -152,6 +176,10 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
   const finalPrice = isFreeAfterDiscount 
     ? 0 
     : Math.max(0, Math.round(originalPrice * (1 - discountPercent / 100)));
+
+  // Clean & Validate Ethiopian 10-digit phone number (e.g. 09... or 07...)
+  const cleanPhone = phone.replace(/[\s\-()]/g, '').replace(/^(\+?251)/, '0');
+  const isPhoneValid = /^(09|07)\d{8}$/.test(cleanPhone);
 
   // Validate and Apply Promo Code
   const validateAndApplyCode = async (codeToTest?: string) => {
@@ -285,6 +313,19 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
     // 3. Paid Course Checkout with applied discount
     const targetAmount = finalPrice;
 
+    // Validate phone number for LakiPay
+    if (!isFreeAfterDiscount && paymethod === 'lakipay') {
+      if (!isPhoneValid) {
+        setIsPaying(false);
+        setPhoneTouched(true);
+        setError("እባክዎ ትክክለኛ 10-አሃዝ የስልክ ቁጥር ያስገቡ (ለምሳሌ፡ 0911223344 ወይም 0711223344)።");
+        return;
+      }
+      try {
+        localStorage.setItem('tsehay_user_phone', cleanPhone);
+      } catch (e) {}
+    }
+
     try {
       const res = await fetch('/api/initiate-payment', {
         method: 'POST',
@@ -298,7 +339,8 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           discountPercent: discountPercent,
           userEmail: user?.email || 'student@example.com',
           userId: user?.uid || 'anonymous',
-          phoneNumber: (user as any)?.phone || (user as any)?.phoneNumber || '',
+          phoneNumber: cleanPhone || (user as any)?.phone || (user as any)?.phoneNumber || '',
+          phone: cleanPhone || (user as any)?.phone || (user as any)?.phoneNumber || '',
           paymethod: paymethod,
         })
       });
@@ -478,29 +520,85 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                 <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
                 
                 {/* Option 1: LakiPay */}
-                <label 
-                  className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all duration-200 transform hover:-translate-y-0.5 ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-amber-500/10 shadow-[0_0_20px_rgba(249,176,60,0.2)] ring-2 ring-amber-500/40' : 'border-gray-800/90 bg-[#121a2d] hover:bg-[#16233d] hover:border-gray-700'}`}
-                >
-                  <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <input 
-                      type="radio" 
-                      name="paymethod" 
-                      value="lakipay" 
-                      checked={paymethod === 'lakipay'} 
-                      onChange={() => setPaymethod('lakipay')} 
-                      className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
-                    />
-                    <div className="min-w-0 flex-1">
-                      <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                      <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">
-                        For Local Payments
-                      </span>
+                <div className="space-y-2.5">
+                  <label 
+                    className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all duration-200 transform hover:-translate-y-0.5 ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-amber-500/10 shadow-[0_0_20px_rgba(249,176,60,0.2)] ring-2 ring-amber-500/40' : 'border-gray-800/90 bg-[#121a2d] hover:bg-[#16233d] hover:border-gray-700'}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                      <input 
+                        type="radio" 
+                        name="paymethod" 
+                        value="lakipay" 
+                        checked={paymethod === 'lakipay'} 
+                        onChange={() => setPaymethod('lakipay')} 
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
+                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
+                        <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">
+                          For Local Payments (Telebirr, CBE, M-Pesa)
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
-                    <img src="/lakipay-logo.svg" alt="LakiPay" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
-                  </div>
-                </label>
+                    <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
+                      <img src="/lakipay-logo.svg" alt="LakiPay" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
+                    </div>
+                  </label>
+
+                  {/* 🌟 LakiPay Editable Phone Input (No disabled, No readOnly, 10-digit validation) */}
+                  {paymethod === 'lakipay' && (
+                    <div className="bg-[#121a2d]/90 p-3.5 sm:p-4 rounded-2xl border border-amber-500/30 space-y-2 animate-in fade-in zoom-in-95 duration-200 shadow-inner">
+                      <div className="flex items-center justify-between text-xs font-bold text-gray-300">
+                        <label htmlFor="lakipay-phone-field" className="flex items-center gap-1.5 cursor-pointer">
+                          <i className="fa-solid fa-phone text-[#f9b03c]"></i>
+                          <span>የ LakiPay ስልክ ቁጥር (Phone Number)</span>
+                          <span className="text-amber-400">*</span>
+                        </label>
+                        {cleanPhone.length > 0 && (
+                          <span className={`text-[11px] font-mono font-bold ${isPhoneValid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {isPhoneValid ? '✓ 10 አሃዝ ተሟልቷል' : `${cleanPhone.length}/10 አሃዝ`}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-amber-400 font-mono text-xs font-bold">
+                          🇪🇹 +251
+                        </div>
+                        <input
+                          id="lakipay-phone-field"
+                          type="tel"
+                          inputMode="numeric"
+                          placeholder="0911223344 ወይም 0711223344"
+                          value={phone}
+                          disabled={isPaying}
+                          onChange={(e) => {
+                            setPhone(e.target.value);
+                            setPhoneTouched(true);
+                            if (error) setError(null);
+                          }}
+                          className={`w-full bg-[#080d1a] border rounded-xl pl-20 pr-10 py-2.5 sm:py-3 text-xs sm:text-sm font-mono text-white outline-none transition ${
+                            phoneTouched && cleanPhone.length > 0 && !isPhoneValid
+                              ? 'border-red-500/80 focus:border-red-500 ring-1 ring-red-500/40'
+                              : isPhoneValid
+                              ? 'border-emerald-500/80 focus:border-emerald-500 ring-1 ring-emerald-500/40'
+                              : 'border-gray-700 focus:border-[#f9b03c]'
+                          }`}
+                        />
+                        {isPhoneValid && (
+                          <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-emerald-400">
+                            <i className="fa-solid fa-circle-check text-sm"></i>
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-[10.5px] text-gray-400 flex items-center gap-1.5">
+                        <i className="fa-solid fa-circle-info text-[#f9b03c] text-xs shrink-0"></i>
+                        <span>በቴሌብር (Telebirr) ወይም CBE Birr ክፍያ የሚፈጽሙበትን 10-አሃዝ ስልክ ቁጥር ያስገቡ።</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
 
 
                 {/* Option 2: PayPal */}
@@ -561,8 +659,12 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
             <button 
               type="button"
               onClick={handlePayment} 
-              disabled={isPaying} 
-              className="w-full btn-buy-now-vibe py-4 rounded-2xl text-base transition-all flex items-center justify-center gap-2.5 group disabled:opacity-70 cursor-pointer active:scale-[0.98] shadow-[0_0_40px_rgba(249,176,60,0.6)]"
+              disabled={isPaying || (!isFreeAfterDiscount && paymethod === 'lakipay' && !isPhoneValid)} 
+              className={`w-full btn-buy-now-vibe py-4 rounded-2xl text-base transition-all flex items-center justify-center gap-2.5 group active:scale-[0.98] shadow-[0_0_40px_rgba(249,176,60,0.6)] ${
+                isPaying || (!isFreeAfterDiscount && paymethod === 'lakipay' && !isPhoneValid) 
+                  ? 'opacity-60 cursor-not-allowed' 
+                  : 'cursor-pointer'
+              }`}
             >
               {isPaying ? (
                 <>
@@ -574,10 +676,19 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                   <i className="fa-solid fa-gift text-lg buy-icon-animated"></i>
                   <span className="font-black">በነፃ ይመዝገቡ (Enroll 100% Free)</span>
                 </>
+              ) : !isFreeAfterDiscount && paymethod === 'lakipay' && !isPhoneValid ? (
+                <>
+                  <i className="fa-solid fa-phone text-xs text-slate-950/80 mr-0.5"></i>
+                  <span className="font-black">
+                    {cleanPhone.length === 0 
+                      ? `የ 10-አሃዝ ስልክ ቁጥር ያስገቡ (${finalPrice.toLocaleString()} ETB)` 
+                      : `ትክክለኛ ስልክ ቁጥር ይጠበቃል (${cleanPhone.length}/10)`}
+                  </span>
+                </>
               ) : (
                 <>
                   <i className="fa-solid fa-lock text-xs text-slate-950/80 mr-0.5"></i>
-                  <span className="font-black">ወደ ክፍያ ይቀጥሉ ({finalPrice.toLocaleString()} ETB)</span> 
+                  <span className="font-black">ክፍያ ፈጽመህ ተመዝገብ ({finalPrice.toLocaleString()} ETB)</span> 
                   <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
                 </>
               )}
