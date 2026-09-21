@@ -1,10 +1,11 @@
-export const revalidate = 120;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 import AboutClient from './AboutClient';
 import { getLiveAboutVideoDataServer, getLiveAboutCommunityMediaServer } from '@/lib/serverCourses';
 
 export default async function AboutPage() {
-  const [liveAboutData, communityMediaUrl] = await Promise.all([
+  const [liveAboutData, communityMedia] = await Promise.all([
     getLiveAboutVideoDataServer(),
     getLiveAboutCommunityMediaServer()
   ]);
@@ -14,8 +15,8 @@ export default async function AboutPage() {
       initialVideoUrl={liveAboutData.videoUrl}
       initialThumbnail={liveAboutData.thumbnail}
       initialTitle={liveAboutData.title}
-      initialCommunityMediaUrl={communityMediaUrl}
+      initialCommunityMedia={communityMedia}
+      initialCommunityMediaUrl={communityMedia[0]?.url || ''}
     />
   );
 }
-

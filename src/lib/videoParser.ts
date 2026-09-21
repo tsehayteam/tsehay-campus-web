@@ -543,3 +543,53 @@ export function parseEventMedia(rawUrl?: string, autoplay: boolean = false): Par
     rawUrl: trimmed
   };
 }
+
+export interface CommunityMediaItem {
+  id: string;
+  url: string;
+  title?: string;
+  type?: 'image' | 'video' | 'auto';
+}
+
+export function normalizeCommunityMediaItems(data: any): CommunityMediaItem[] {
+  if (!data) return [];
+  
+  if (Array.isArray(data)) {
+    const results: CommunityMediaItem[] = [];
+    data.forEach((item, idx) => {
+      if (typeof item === 'string') {
+        const u = item.trim();
+        if (u) {
+          results.push({ id: `cm-${idx}-${u.slice(-8)}`, url: u, title: '' });
+        }
+      } else if (item && typeof item === 'object') {
+        const u = item.url || item.mediaUrl || item.imageUrl || item.videoUrl || item.src || '';
+        if (typeof u === 'string' && u.trim()) {
+          results.push({
+            id: String(item.id || `cm-${idx}-${u.slice(-8)}`),
+            url: u.trim(),
+            title: typeof item.title === 'string' ? item.title.trim() : (typeof item.caption === 'string' ? item.caption.trim() : ''),
+            type: item.type || 'auto'
+          });
+        }
+      }
+    });
+    return results;
+  }
+
+  const list = data.items || data.mediaList || data.gallery || data.mediaItems;
+  if (Array.isArray(list) && list.length > 0) {
+    return normalizeCommunityMediaItems(list);
+  }
+
+  const single = data.mediaUrl || data.url || data.imageUrl || data.videoUrl;
+  if (single && typeof single === 'string' && single.trim()) {
+    return [{ id: 'cm-legacy-1', url: single.trim(), title: '' }];
+  }
+
+  if (typeof data === 'string' && data.trim()) {
+    return [{ id: 'cm-str-1', url: data.trim(), title: '' }];
+  }
+
+  return [];
+}

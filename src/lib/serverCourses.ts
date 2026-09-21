@@ -1,6 +1,7 @@
 import { supabaseServer, supabaseAdmin } from '@/lib/supabase/server';
 import { DEFAULT_COURSES, formatCourseDesc, deduplicateCourses } from '@/lib/courseCache';
 import { loadPersistedCourses, sharedSiteSettingsCache } from '@/lib/memoryStore';
+import { CommunityMediaItem, normalizeCommunityMediaItems } from '@/lib/videoParser';
 
 const COURSE_COLUMNS_PROJECTION = [
   'id',
@@ -305,12 +306,8 @@ export async function getLiveAboutVideoDataServer(): Promise<LiveAboutVideoData>
   return result;
 }
 
-export async function getLiveAboutCommunityMediaServer(): Promise<string> {
-  if (cachedAboutCommunityMedia && (Date.now() - cachedAboutCommunityMedia.timestamp < SERVER_CACHE_TTL_MS)) {
-    return cachedAboutCommunityMedia.data;
-  }
-
-  let mediaUrl = '/assets/community_placeholder.jpg';
+export async function getLiveAboutCommunityMediaServer(): Promise<CommunityMediaItem[]> {
+  let items: CommunityMediaItem[] = [];
   try {
     const { data: setting } = await supabaseAdmin
       .from('site_settings')
@@ -319,31 +316,25 @@ export async function getLiveAboutCommunityMediaServer(): Promise<string> {
       .maybeSingle();
 
     if (setting?.data) {
-      const data = setting.data;
-      const raw = data.mediaUrl || data.url || data.imageUrl || data.videoUrl;
-      if (raw && typeof raw === 'string') {
-        mediaUrl = raw.trim();
-      }
+      items = normalizeCommunityMediaItems(setting.data);
     } else if (sharedSiteSettingsCache.has('about_community_media')) {
       const cached = sharedSiteSettingsCache.get('about_community_media');
-      const raw = cached?.mediaUrl || cached?.url || cached?.imageUrl || cached?.videoUrl;
-      if (raw && typeof raw === 'string') {
-        mediaUrl = raw.trim();
-      }
+      items = normalizeCommunityMediaItems(cached);
     }
-    cachedAboutCommunityMedia = { data: mediaUrl, timestamp: Date.now() };
   } catch (err) {
     console.warn('getLiveAboutCommunityMediaServer error:', err);
     if (sharedSiteSettingsCache.has('about_community_media')) {
       const cached = sharedSiteSettingsCache.get('about_community_media');
-      const raw = cached?.mediaUrl || cached?.url || cached?.imageUrl || cached?.videoUrl;
-      if (raw && typeof raw === 'string') {
-        mediaUrl = raw.trim();
-      }
+      items = normalizeCommunityMediaItems(cached);
     }
   }
 
-  return mediaUrl;
+  return items;
+}
+
+export async function getLiveAboutCommunityMediaUrlServer(): Promise<string> {
+  const items = await getLiveAboutCommunityMediaServer();
+  return items[0]?.url || '';
 }
 
 export interface LivePortfolioData {
