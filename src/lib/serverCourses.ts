@@ -195,7 +195,7 @@ export async function getLiveCoursesServer(): Promise<any[]> {
   return DEFAULT_COURSES;
 }
 
-const DEFAULT_LANDING_VIDEO = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
+const DEFAULT_LANDING_VIDEO = '';
 
 export interface LiveLandingVideoData {
   videoUrl: string;
@@ -203,12 +203,8 @@ export interface LiveLandingVideoData {
 }
 
 export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoData> {
-  if (cachedLandingVideo && (Date.now() - cachedLandingVideo.timestamp < SERVER_CACHE_TTL_MS)) {
-    return cachedLandingVideo.data;
-  }
-
   const result: LiveLandingVideoData = {
-    videoUrl: DEFAULT_LANDING_VIDEO,
+    videoUrl: '',
     thumbnail: ''
   };
 
@@ -232,8 +228,6 @@ export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoD
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
       if (thumb && typeof thumb === 'string') result.thumbnail = thumb.trim();
     }
-
-    cachedLandingVideo = { data: result, timestamp: Date.now() };
   } catch (err) {
     console.warn('getLiveLandingVideoDataServer error:', err);
     if (sharedSiteSettingsCache.has('landing_video')) {

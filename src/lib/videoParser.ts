@@ -167,7 +167,7 @@ export function parseDropboxUrl(url: string): { isDropbox: boolean; streamUrl: s
  * Formats any image or video thumbnail URL safely.
  */
 export function parseImageUrl(rawUrl?: string): string {
-  if (!rawUrl || !rawUrl.trim()) return '/assets/hero-bg-new.jpg';
+  if (!rawUrl || !rawUrl.trim()) return '';
   let trimmed = rawUrl.trim();
 
   // If already a base64 data URL or local blob, return immediately
@@ -210,7 +210,7 @@ export function getYouTubeThumbnail(youtubeId?: string, customThumb?: string): s
   if (youtubeId && youtubeId.trim()) {
     return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
   }
-  return '/assets/hero-bg-new.jpg';
+  return '';
 }
 
 export function getMediaThumbnail(url?: string, fallback: string = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'): string {
@@ -274,7 +274,7 @@ export function isMediaVideo(url?: string): boolean {
  * Securely formats it into a valid iframe embed or direct <video> src with metadata.
  */
 export function parseVideoUrl(rawUrl: string, autoplay: boolean = false): ParsedVideo {
-  const ytParams = `rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&hd=1&playsinline=1&enablejsapi=1&iv_load_policy=3`;
+  const ytParams = `rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&mute=${autoplay ? 1 : 0}&playsinline=1&controls=1&vq=hd1080&hd=1&enablejsapi=1&iv_load_policy=3`;
 
   if (!rawUrl || !rawUrl.trim()) {
     return {
@@ -376,7 +376,7 @@ export function parseVideoUrl(rawUrl: string, autoplay: boolean = false): Parsed
   if (vimeoId) {
     return {
       type: 'embed',
-      src: `https://player.vimeo.com/video/${vimeoId}${autoplay ? '?autoplay=1' : ''}`,
+      src: `https://player.vimeo.com/video/${vimeoId}${autoplay ? '?autoplay=1&muted=1&playsinline=1' : ''}`,
       isDirectVideo: false,
       isYouTube: false,
       isGoogleDrive: false,
@@ -450,6 +450,7 @@ export function parseVideoUrl(rawUrl: string, autoplay: boolean = false): Parsed
       params.set('autoplay', 'true');
       params.set('muted', 'true');
       params.set('loop', 'true');
+      params.set('playsinline', 'true');
     }
     params.set('preload', 'true');
     params.set('responsive', 'true');
@@ -479,9 +480,12 @@ export function parseVideoUrl(rawUrl: string, autoplay: boolean = false): Parsed
   let generalSrc = trimmed;
   if (autoplay) {
     if (!generalSrc.includes('autoplay=')) {
-      generalSrc += (generalSrc.includes('?') ? '&' : '?') + 'autoplay=1';
+      generalSrc += (generalSrc.includes('?') ? '&' : '?') + 'autoplay=1&mute=1&playsinline=1';
     } else {
       generalSrc = generalSrc.replace(/autoplay=0/g, 'autoplay=1');
+      if (!generalSrc.includes('mute=')) {
+        generalSrc += (generalSrc.includes('?') ? '&' : '?') + 'mute=1&playsinline=1';
+      }
     }
   }
 

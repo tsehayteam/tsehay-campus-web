@@ -1,10 +1,16 @@
 {
   "landing_video": {
-    "url": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
-    "videoUrl": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
-    "youtubeUrl": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
-    "thumbnail": "https://img.youtube.com/vi/mgdOMtW6J8k/maxresdefault.jpg",
+    "url": "https://player.mediadelivery.net/play/750029/8d43ea38-dfaa-4dd8-bc28-03b4fad3b9a4",
+    "videoUrl": "https://player.mediadelivery.net/play/750029/8d43ea38-dfaa-4dd8-bc28-03b4fad3b9a4",
+    "youtubeUrl": "https://player.mediadelivery.net/play/750029/8d43ea38-dfaa-4dd8-bc28-03b4fad3b9a4",
+    "thumbnail": "https://www.dropbox.com/scl/fi/4rc2p5wmhz4049mbp97dy/land.jpeg?rlkey=8p6gu1h6p0zs8jy4rotnyw5bt&st=1jd3m0m3&dl=0",
+    "poster": "https://www.dropbox.com/scl/fi/4rc2p5wmhz4049mbp97dy/land.jpeg?rlkey=8p6gu1h6p0zs8jy4rotnyw5bt&st=1jd3m0m3&dl=0",
+    "thumbUrl": "https://www.dropbox.com/scl/fi/4rc2p5wmhz4049mbp97dy/land.jpeg?rlkey=8p6gu1h6p0zs8jy4rotnyw5bt&st=1jd3m0m3&dl=0",
+    "thumbnailUrl": "https://www.dropbox.com/scl/fi/4rc2p5wmhz4049mbp97dy/land.jpeg?rlkey=8p6gu1h6p0zs8jy4rotnyw5bt&st=1jd3m0m3&dl=0",
+    "heroThumbnailUrl": "https://www.dropbox.com/scl/fi/4rc2p5wmhz4049mbp97dy/land.jpeg?rlkey=8p6gu1h6p0zs8jy4rotnyw5bt&st=1jd3m0m3&dl=0",
+    "posterUrl": "https://www.dropbox.com/scl/fi/4rc2p5wmhz4049mbp97dy/land.jpeg?rlkey=8p6gu1h6p0zs8jy4rotnyw5bt&st=1jd3m0m3&dl=0",
+    "landingVideoThumbnail": "https://www.dropbox.com/scl/fi/4rc2p5wmhz4049mbp97dy/land.jpeg?rlkey=8p6gu1h6p0zs8jy4rotnyw5bt&st=1jd3m0m3&dl=0",
     "settingKey": "landing_video",
-    "updatedAt": "2026-09-02T18:48:12.043Z"
+    "updatedAt": "2026-09-21T20:39:50.105Z"
   }
 }

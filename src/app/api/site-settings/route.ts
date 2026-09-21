@@ -30,9 +30,11 @@ const ALLOWED_PUBLIC_KEYS = [
 
 const DEFAULT_SETTINGS: Record<string, any> = {
   landing_video: {
-    url: 'https://player.mediadelivery.net/play/738515/e5140f50-c80d-424d-9830-6f1e2c5a0139',
-    videoUrl: 'https://player.mediadelivery.net/play/738515/e5140f50-c80d-424d-9830-6f1e2c5a0139',
-    thumbnail: '/assets/hero-bg-new.jpg',
+    url: 'https://player.mediadelivery.net/play/750029/8d43ea38-dfaa-4dd8-bc28-03b4fad3b9a4',
+    videoUrl: 'https://player.mediadelivery.net/play/750029/8d43ea38-dfaa-4dd8-bc28-03b4fad3b9a4',
+    thumbnail: 'https://www.dropbox.com/scl/fi/4rc2p5wmhz4049mbp97dy/land.jpeg?rlkey=8p6gu1h6p0zs8jy4rotnyw5bt&st=1jd3m0m3&dl=0',
+    heroThumbnailUrl: 'https://www.dropbox.com/scl/fi/4rc2p5wmhz4049mbp97dy/land.jpeg?rlkey=8p6gu1h6p0zs8jy4rotnyw5bt&st=1jd3m0m3&dl=0',
+    posterUrl: 'https://www.dropbox.com/scl/fi/4rc2p5wmhz4049mbp97dy/land.jpeg?rlkey=8p6gu1h6p0zs8jy4rotnyw5bt&st=1jd3m0m3&dl=0',
   },
   youtube_portfolio: {
     localVideoUrl: 'https://youtu.be/h9JsGCkd_4o?si=qoSHzmD3-EWjin8k',

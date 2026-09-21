@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, videoUrl: null, url: null, thumbnail: '', data: null });
   } catch (error: any) {
     console.error('Error fetching landing video in API route:', error);
-    return NextResponse.json({ success: true, url: 'https://www.youtube.com/watch?v=mgdOMtW6J8k', videoUrl: 'https://www.youtube.com/watch?v=mgdOMtW6J8k', thumbnail: '' });
+    return NextResponse.json({ success: true, url: null, videoUrl: null, thumbnail: '', heroThumbnailUrl: '', posterUrl: '' });
   }
 }
 

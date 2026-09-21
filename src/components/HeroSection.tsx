@@ -60,7 +60,7 @@ export default function HeroSection({
         }
       } catch (e) {}
     }
-    return "https://www.youtube.com/watch?v=mgdOMtW6J8k";
+    return "";
   });
 
   const [activeThumbnail, setActiveThumbnail] = useState<string>(() => {
@@ -78,7 +78,6 @@ export default function HeroSection({
     return "";
   });
 
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Sync prop changes into state
@@ -140,7 +139,6 @@ export default function HeroSection({
       const thumb = e.detail?.heroThumbnailUrl || e.detail?.posterUrl || e.detail?.thumbnail || e.detail?.landingVideoThumbnail || '';
       if (typeof thumb === 'string') {
         setActiveThumbnail(thumb.trim());
-        setIsPlaying(false);
       }
     };
     window.addEventListener('tsehay_landing_video_updated', handleUpdate);
@@ -158,7 +156,6 @@ export default function HeroSection({
           const thumb = ev.data?.heroThumbnailUrl || ev.data?.posterUrl || ev.data?.thumbnail || ev.data?.landingVideoThumbnail || '';
           if (typeof thumb === 'string') {
             setActiveThumbnail(thumb.trim());
-            setIsPlaying(false);
           }
         };
       } catch (e) {}
@@ -182,7 +179,6 @@ export default function HeroSection({
               }
               if (typeof thumb === 'string') {
                 setActiveThumbnail(thumb.trim());
-                setIsPlaying(false);
               }
             }
           }
@@ -197,7 +193,6 @@ export default function HeroSection({
       }
       if (e.key === 'tsehay_landing_video_thumb' && !isCancelled) {
         setActiveThumbnail(e.newValue ? e.newValue.trim() : '');
-        setIsPlaying(false);
       }
     };
     window.addEventListener('storage', handleStorage);
@@ -235,9 +230,9 @@ export default function HeroSection({
     const raw = (activeVideoUrl || '').trim();
     if (!raw) {
       return {
-        type: 'youtube' as const,
-        src: `https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1${isPlaying ? '&autoplay=1' : ''}`,
-        raw
+        type: 'none' as const,
+        src: '',
+        raw: ''
       };
     }
 
@@ -246,7 +241,7 @@ export default function HeroSection({
     if (ytId) {
       return {
         type: 'youtube' as const,
-        src: `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1${isPlaying ? '&autoplay=1' : ''}`,
+        src: `https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&playsinline=1&loop=1&playlist=${ytId}&rel=0&modestbranding=1&enablejsapi=1`,
         raw
       };
     }
@@ -289,8 +284,8 @@ export default function HeroSection({
       };
     }
 
-    // D. Third-Party Player Embed (Vimeo, BunnyCDN, Cloudflare Stream, Google Drive, or Custom Player iframe)
-    const parsed = parseVideoUrl(raw, isPlaying);
+    // D. Third-Party Player Embed (Bunny Stream, Vimeo, Cloudflare Stream, Google Drive, or Custom Player iframe)
+    const parsed = parseVideoUrl(raw, true);
     if (parsed.isDirectVideo) {
       return {
         type: 'direct_video' as const,
@@ -306,8 +301,8 @@ export default function HeroSection({
         embedSrc += (embedSrc.includes('?') ? '&' : '?') + `poster=${encodeURIComponent(effectivePoster)}`;
       }
     }
-    if (isPlaying && !embedSrc.includes('autoplay=')) {
-      embedSrc += (embedSrc.includes('?') ? '&' : '?') + 'autoplay=1';
+    if (!embedSrc.includes('autoplay=')) {
+      embedSrc += (embedSrc.includes('?') ? '&' : '?') + 'autoplay=1&mute=1&playsinline=1';
     }
 
     return {
@@ -315,14 +310,19 @@ export default function HeroSection({
       src: embedSrc,
       raw
     };
-  }, [activeVideoUrl, isPlaying, effectivePoster]);
+  }, [activeVideoUrl, effectivePoster]);
 
-  const handleStartPlay = () => {
-    setIsPlaying(true);
+  // Direct video programmatic autoplay trigger with unmuted policy compliance
+  useEffect(() => {
     if (videoConfig.type === 'direct_video' && videoRef.current) {
-      videoRef.current.play().catch(() => {});
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {});
+      }
     }
-  };
+  }, [videoConfig.src, videoConfig.type]);
 
   return (
     <section className="relative overflow-hidden bg-neutral-950 pt-10 sm:pt-14 pb-14 sm:pb-20" id="home">
@@ -369,7 +369,7 @@ export default function HeroSection({
           {/* የቪዲዮ ፍሬም */}
           <div className="relative rounded-2xl border border-neutral-800/80 bg-neutral-900/50 p-2 shadow-2xl backdrop-blur-xl sm:p-4 transition-transform duration-500 ease-out hover:-translate-y-1">
             <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950">
-              {/* 1. Underlying Video Player */}
+              {/* Autoplaying Video Player Stage */}
               {videoConfig.type === 'direct_video' ? (
                 <video
                   ref={videoRef}
@@ -377,52 +377,33 @@ export default function HeroSection({
                   className="h-full w-full object-cover"
                   src={videoConfig.src}
                   poster={effectivePoster || undefined}
-                  controls
+                  autoPlay
+                  muted
                   playsInline
-                  preload="metadata"
+                  loop
+                  controls
+                  preload="auto"
                 />
-              ) : (
+              ) : videoConfig.type === 'youtube' || videoConfig.type === 'embed' ? (
                 <iframe
-                  key={`${videoConfig.src}-${isPlaying}`}
+                  key={videoConfig.src}
                   className="h-full w-full object-cover"
                   src={videoConfig.src}
                   title="Tsehay Campus Introduction"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen
+                  loading="eager"
                 />
-              )}
-
-              {/* 2. Interactive Overlay Cover Image (Active until user clicks Play) */}
-              {effectivePoster && !isPlaying && (
-                <div
-                  onClick={handleStartPlay}
-                  className="absolute inset-0 z-20 w-full h-full cursor-pointer overflow-hidden bg-black flex items-center justify-center transition-all duration-500 select-none group/cover"
-                  title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play Video)"
-                >
-                  <img
-                    src={effectivePoster}
-                    alt="Hero Video Thumbnail"
-                    className="w-full h-full object-cover group-hover/cover:scale-105 transition-transform duration-700 ease-out"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = 'none';
-                    }}
-                  />
-
-                  {/* Dark gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/30 pointer-events-none" />
-
-                  {/* Glowing Animated Play Button */}
-                  <div className="relative z-10 flex flex-col items-center justify-center gap-3">
-                    <div className="relative flex items-center justify-center">
-                      <div className="absolute -inset-4 rounded-full bg-[#f9b03c]/35 blur-xl group-hover/cover:bg-[#f9b03c]/60 transition duration-500 animate-pulse" />
-                      <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 flex items-center justify-center shadow-[0_0_35px_rgba(249,176,60,0.7)] group-hover/cover:scale-110 transition-transform duration-300 border-2 border-white/50">
-                        <i className="fa-solid fa-play text-xl sm:text-2xl ml-1 text-slate-950" />
-                      </div>
-                    </div>
-                    <span className="px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white text-xs font-bold shadow-lg flex items-center gap-1.5">
-                      <i className="fa-solid fa-circle-play text-[#f9b03c]" />
-                      <span>ቪዲዮውን ይመልከቱ (Watch Video)</span>
-                    </span>
+              ) : effectivePoster ? (
+                <img
+                  src={effectivePoster}
+                  alt="Hero Thumbnail"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-neutral-950">
+                  <div className="flex flex-col items-center gap-2 text-neutral-500">
+                    <i className="fa-solid fa-circle-play text-4xl text-[#f9b03c]/40 animate-pulse" />
                   </div>
                 </div>
               )}
