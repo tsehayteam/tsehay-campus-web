@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { EventTicket, DEFAULT_EVENTS } from '@/lib/eventCache';
+import { EventTicket, DEFAULT_EVENTS, isEventPassed } from '@/lib/eventCache';
 import { sendTicketEmail } from '@/lib/ticketEmailService';
 import { loadPersistedEvents } from '@/lib/memoryStore';
 import { invalidateEventsCache } from '@/app/api/events/route';
@@ -142,6 +142,16 @@ export async function POST(req: NextRequest) {
     const mapsUrl = body.mapsUrl || matchedEvent?.mapsUrl || '';
     const eventLocation = body.eventLocation || body.location || (isOnline ? 'Online Google Meet' : (matchedEvent?.location || 'Addis Ababa, Ethiopia'));
     const eventImage = (body.eventImage || body.image || matchedEvent?.image || '').toString().trim();
+
+    // 🌟 Event Expiration / Passed Status Validation
+    const targetEventForDate = matchedEvent || { date: eventDate, time: eventTime };
+    if (isEventPassed(targetEventForDate)) {
+      return NextResponse.json({
+        success: false,
+        expired: true,
+        error: `ይቅርታ፣ የዚህ ዝግጅት (${eventTitle}) ቀን ስላለፈ አዲስ ምዝገባ ተዘግቷል! (Registration closed - Event has passed)`
+      }, { status: 400, headers: NO_CACHE_HEADERS });
+    }
 
     // 🌟 Live Inventory Stock Validation & Decrement Check
     const capacity = Number(matchedEvent?.capacity) || 100;

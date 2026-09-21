@@ -22,6 +22,7 @@ const ALLOWED_PUBLIC_KEYS = [
   'landing_video',
   'youtube_portfolio',
   'about_video',
+  'about_community_media',
   'landing_page_video',
   'public_announcements',
   'deleted_courses',

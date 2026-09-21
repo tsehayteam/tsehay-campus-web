@@ -33,6 +33,7 @@ const COURSE_COLUMNS_PROJECTION = [
 let cachedServerCourses: { data: any[]; timestamp: number } | null = null;
 let cachedLandingVideo: { data: LiveLandingVideoData; timestamp: number } | null = null;
 let cachedAboutVideo: { data: LiveAboutVideoData; timestamp: number } | null = null;
+let cachedAboutCommunityMedia: { data: string; timestamp: number } | null = null;
 let cachedPortfolio: { data: LivePortfolioData; timestamp: number } | null = null;
 let cachedYouTubeVideos: { data: LiveYouTubeVideoItem[]; timestamp: number } | null = null;
 const SERVER_CACHE_TTL_MS = 15 * 1000;
@@ -41,6 +42,7 @@ export function invalidateServerCoursesCache() {
   cachedServerCourses = null;
   cachedLandingVideo = null;
   cachedAboutVideo = null;
+  cachedAboutCommunityMedia = null;
   cachedPortfolio = null;
   cachedYouTubeVideos = null;
 }
@@ -307,6 +309,47 @@ export async function getLiveAboutVideoDataServer(): Promise<LiveAboutVideoData>
   }
 
   return result;
+}
+
+export async function getLiveAboutCommunityMediaServer(): Promise<string> {
+  if (cachedAboutCommunityMedia && (Date.now() - cachedAboutCommunityMedia.timestamp < SERVER_CACHE_TTL_MS)) {
+    return cachedAboutCommunityMedia.data;
+  }
+
+  let mediaUrl = '/assets/community_placeholder.jpg';
+  try {
+    const { data: setting } = await supabaseAdmin
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'about_community_media')
+      .maybeSingle();
+
+    if (setting?.data) {
+      const data = setting.data;
+      const raw = data.mediaUrl || data.url || data.imageUrl || data.videoUrl;
+      if (raw && typeof raw === 'string') {
+        mediaUrl = raw.trim();
+      }
+    } else if (sharedSiteSettingsCache.has('about_community_media')) {
+      const cached = sharedSiteSettingsCache.get('about_community_media');
+      const raw = cached?.mediaUrl || cached?.url || cached?.imageUrl || cached?.videoUrl;
+      if (raw && typeof raw === 'string') {
+        mediaUrl = raw.trim();
+      }
+    }
+    cachedAboutCommunityMedia = { data: mediaUrl, timestamp: Date.now() };
+  } catch (err) {
+    console.warn('getLiveAboutCommunityMediaServer error:', err);
+    if (sharedSiteSettingsCache.has('about_community_media')) {
+      const cached = sharedSiteSettingsCache.get('about_community_media');
+      const raw = cached?.mediaUrl || cached?.url || cached?.imageUrl || cached?.videoUrl;
+      if (raw && typeof raw === 'string') {
+        mediaUrl = raw.trim();
+      }
+    }
+  }
+
+  return mediaUrl;
 }
 
 export interface LivePortfolioData {

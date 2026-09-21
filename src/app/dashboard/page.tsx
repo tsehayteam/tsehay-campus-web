@@ -107,6 +107,9 @@ function StudentDashboardContent() {
 
   const setCurrentView = (newView: string) => {
     _setCurrentView(newView);
+    if (newView !== 'classroom') {
+      setIsFocusMode(false);
+    }
     if (newView === 'classroom') {
       updateUrlState({ 
         view: 'classroom', 
@@ -622,17 +625,8 @@ function StudentDashboardContent() {
         (document as any).webkitExitFullscreen();
       }
       setIsFullscreen(false);
-      setIsFocusMode(false);
-      return;
     }
-
-    if (isFocusMode) {
-      setIsFocusMode(false);
-      return;
-    }
-
-    setIsFocusMode(true);
-    setIsSyllabusCollapsed(true);
+    setIsFocusMode(prev => !prev);
   };
   
   // 🗑️ Tsehay AI 15-Day Recycle Bin State
@@ -2041,28 +2035,6 @@ function StudentDashboardContent() {
   return (
     <div className="min-h-screen bg-[#030509] text-slate-200 flex flex-col md:flex-row font-body relative overflow-x-hidden selection:bg-[#f9b03c]/30">
       
-      {/* Floating Distraction-Free Focus Mode Exit Button (Icon Only - Zero Text, Bold Glowing/Pulsing Visual Feedback) */}
-      {isFocusMode && (
-        <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[9999] animate-in fade-in zoom-in-95 duration-300">
-          <button
-            type="button"
-            onClick={() => setIsFocusMode(false)}
-            className="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#3268ba] text-slate-950 border-2 border-white shadow-[0_0_35px_rgba(249,176,60,0.9)] flex items-center justify-center cursor-pointer active:scale-90 transition-all duration-300 group hover:rotate-12"
-            title="የትኩረት ሁነታን ዝጋ (Exit Focus Mode)"
-            aria-label="Exit Focus Mode"
-          >
-            {/* Blinking / Pulsing Aura */}
-            <span className="absolute -inset-1 rounded-2xl bg-[#f9b03c] opacity-75 blur-sm animate-ping pointer-events-none"></span>
-            <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#f9b03c] to-[#3268ba] animate-pulse opacity-60 pointer-events-none"></span>
-            <div className="relative z-10 flex items-center justify-center">
-              <svg className="w-6 h-6 text-slate-950 font-black drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
-              </svg>
-            </div>
-          </button>
-        </div>
-      )}
-
       {/* Sidebar Navigation - Deep Glassmorphism (Hidden in Focus Mode) */}
       <aside className={`${isFocusMode ? 'hidden' : 'w-full md:w-80 lg:w-84 xl:w-96'} bg-[#030509]/95 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-white/[0.08] flex flex-col items-stretch shadow-2xl z-20 shrink-0 transition-all duration-300 md:h-screen md:sticky md:top-0`}>
         <div className="h-16 md:h-20 w-full flex items-center justify-between px-4 lg:px-6 border-b border-white/[0.06]">
@@ -2734,25 +2706,27 @@ function StudentDashboardContent() {
                   </div>
                 )}
 
-                {/* Enhanced Existing Screen Expander with Dual-Color Alternating Pulse */}
+                {/* Single Source of Truth Screen Expander / Focus Mode Toggle */}
                 <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
                         onClick={toggleFullscreen}
-                        className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-[#0c1326] via-[#101c3d] to-[#080d1a] text-white border transition-all duration-500 flex items-center justify-center cursor-pointer active:scale-95 group animate-[dualPulseGlow_3s_ease-in-out_infinite]"
-                        title={isFocusMode || isFullscreen ? "ስክሪን አሳንስ (Exit Focus Mode)" : "ስክሪን አስፋ (Focus Theater Mode)"}
-                        aria-label="Focus Theater Mode"
+                        className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-[#0c1326] via-[#101c3d] to-[#080d1a] text-white border border-white/10 hover:border-[#f9b03c]/60 transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 group shadow-lg"
+                        title={isFocusMode ? "ስክሪን አሳንስ (Exit Focus Mode)" : "ስክሪን አስፋ (Focus Theater Mode)"}
+                        aria-label={isFocusMode ? "Exit Focus Mode" : "Focus Theater Mode"}
                     >
-                        {/* Dual-Color Alternating Pulsing Corner Cue */}
-                        <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 pointer-events-none">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#3268ba] border border-white/40 shadow-sm animate-pulse"></span>
-                        </span>
+                        {/* Dual-Color Alternating Pulsing Corner Cue (only in standard mode to draw attention) */}
+                        {!isFocusMode && (
+                          <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 pointer-events-none">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#3268ba] border border-white/40 shadow-sm animate-pulse"></span>
+                          </span>
+                        )}
 
                         {/* Ambient dual-color sheen */}
                         <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-[#3268ba]/20 to-[#f9b03c]/20 opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
-                        {isFocusMode || isFullscreen ? (
+                        {isFocusMode ? (
                           <Minimize2 className="w-5 h-5 text-[#f9b03c] group-hover:scale-110 transition-transform duration-200 relative z-10" />
                         ) : (
                           <Maximize className="w-5 h-5 text-amber-300 group-hover:text-white group-hover:scale-110 transition-transform duration-200 relative z-10" />

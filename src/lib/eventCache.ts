@@ -31,7 +31,7 @@ export interface TsehayEvent {
   videoUrl?: string;
   tags: string[];
   isFeatured?: boolean;
-  status: 'upcoming' | 'ongoing' | 'completed' | 'sold_out' | 'active' | 'published' | 'inactive';
+  status: 'upcoming' | 'ongoing' | 'completed' | 'sold_out' | 'active' | 'published' | 'inactive' | 'passed' | 'expired';
   createdAt?: any;
   updatedAt?: any;
 }
@@ -110,6 +110,157 @@ export function generateEventSlug(title: string, fallbackId?: string): string {
     slug = fallbackId ? fallbackId.replace(/^evt_/, '').replace(/_/g, '-') : `event-${Date.now().toString(36)}`;
   }
   return slug;
+}
+
+/**
+ * Parses any event date & time string into a valid JavaScript Date object.
+ * Handles:
+ * - Dates with English in parentheses: "መስከረም 10, 2019 (Sept 20, 2026)"
+ * - Standard Gregorian / ISO dates: "2026-09-20", "Sept 20, 2026"
+ * - Amharic Ethiopian calendar dates: "መስከረም 10, 2019", "ጥቅምት 15, 2017"
+ * - End time from time strings: "ከቀኑ 8:00 - 12:00 (02:00 PM - 06:00 PM)"
+ */
+export function parseEventDate(rawDate?: string, rawTime?: string): Date | null {
+  if (!rawDate || typeof rawDate !== 'string') return null;
+  const trimmedDate = rawDate.trim();
+  if (!trimmedDate) return null;
+
+  let parsed: Date | null = null;
+
+  // 1. Check if there's an English date inside parentheses e.g. "(Sept 20, 2026)" or "(Oct 05, 2026)"
+  const parenMatch = trimmedDate.match(/\(([^)]+)\)/);
+  if (parenMatch && parenMatch[1]) {
+    const candidate = parenMatch[1].trim();
+    const d = new Date(candidate);
+    if (!isNaN(d.getTime())) {
+      parsed = d;
+    }
+  }
+
+  // 2. Direct Date.parse for ISO or standard date formats
+  if (!parsed) {
+    const d = new Date(trimmedDate);
+    if (!isNaN(d.getTime())) {
+      parsed = d;
+    }
+  }
+
+  // 3. Search for English month names within the string (e.g. "Sept 20, 2026" or "20 Sept 2026")
+  if (!parsed) {
+    const monthRegex = /(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})/i;
+    const match = trimmedDate.match(monthRegex);
+    if (match) {
+      const monthStr = match[1];
+      const dayStr = match[2];
+      const yearStr = match[3];
+      const d = new Date(`${monthStr} ${dayStr}, ${yearStr}`);
+      if (!isNaN(d.getTime())) {
+        parsed = d;
+      }
+    }
+  }
+
+  // 4. Handle Amharic Ethiopian Calendar dates (e.g. "መስከረም 10, 2019" or "ጥቅምት 15, 2017")
+  if (!parsed) {
+    const amharicMonths: Record<string, { baseDay: number; baseMonth: number }> = {
+      'መስከረም': { baseDay: 11, baseMonth: 8 },  // September
+      'ጥቅምት': { baseDay: 11, baseMonth: 9 },   // October
+      'ኅዳር': { baseDay: 10, baseMonth: 10 },   // November
+      'ህዳር': { baseDay: 10, baseMonth: 10 },
+      'ታኅሣሥ': { baseDay: 10, baseMonth: 11 }, // December
+      'ታህሳስ': { baseDay: 10, baseMonth: 11 },
+      'ጥር': { baseDay: 9, baseMonth: 0 },       // January
+      'የካቲት': { baseDay: 8, baseMonth: 1 },    // February
+      'መጋቢት': { baseDay: 10, baseMonth: 2 },   // March
+      'ሚያዝያ': { baseDay: 9, baseMonth: 3 },     // April
+      'ግንቦት': { baseDay: 9, baseMonth: 4 },     // May
+      'ሰኔ': { baseDay: 8, baseMonth: 5 },       // June
+      'ሐምሌ': { baseDay: 8, baseMonth: 6 },      // July
+      'ሀምሌ': { baseDay: 8, baseMonth: 6 },
+      'ነሐሴ': { baseDay: 7, baseMonth: 7 },      // August
+      'ነሀሴ': { baseDay: 7, baseMonth: 7 },
+      'ጳጉሜን': { baseDay: 6, baseMonth: 8 },    // September
+      'ጳጉሜ': { baseDay: 6, baseMonth: 8 }
+    };
+
+    for (const [mName, mInfo] of Object.entries(amharicMonths)) {
+      if (trimmedDate.includes(mName)) {
+        const dayMatch = trimmedDate.match(new RegExp(`${mName}\\s*(\\d{1,2})`));
+        const yearMatch = trimmedDate.match(/(\d{4})/);
+        const day = dayMatch ? parseInt(dayMatch[1], 10) : 1;
+        const ethYear = yearMatch ? parseInt(yearMatch[1], 10) : 2017;
+        const gregYear = ethYear < 2020 ? (mInfo.baseMonth >= 8 ? ethYear + 7 : ethYear + 8) : ethYear;
+        const approxDate = new Date(gregYear, mInfo.baseMonth, mInfo.baseDay + (day - 1));
+        if (!isNaN(approxDate.getTime())) {
+          parsed = approxDate;
+          break;
+        }
+      }
+    }
+  }
+
+  if (!parsed) return null;
+
+  // Extract end time or start time if rawTime is available
+  if (rawTime && typeof rawTime === 'string') {
+    const timeClean = rawTime.trim();
+    const times = Array.from(timeClean.matchAll(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/gi));
+    if (times.length > 0) {
+      // Pick last time in string (i.e. event end time) so event stays active until it concludes
+      const targetMatch = times[times.length - 1];
+      let hours = parseInt(targetMatch[1], 10);
+      const minutes = targetMatch[2] ? parseInt(targetMatch[2], 10) : 0;
+      const meridiem = targetMatch[3]?.toUpperCase();
+
+      if (meridiem === 'PM' && hours < 12) hours += 12;
+      if (meridiem === 'AM' && hours === 12) hours = 0;
+
+      parsed.setHours(hours, minutes, 0, 0);
+      return parsed;
+    }
+  }
+
+  // If no specific time found, set to end of day (23:59:59) so the event is active during its day
+  parsed.setHours(23, 59, 59, 999);
+  return parsed;
+}
+
+/**
+ * Automatically determines whether an event has passed by comparing eventDate & eventTime with new Date().
+ */
+export function isEventPassed(eventOrDate: any, rawTime?: string): boolean {
+  if (!eventOrDate) return false;
+
+  // If status is explicitly set to passed / completed / expired
+  if (typeof eventOrDate === 'object') {
+    const st = (eventOrDate.status || '').toLowerCase().trim();
+    if (st === 'passed' || st === 'completed' || st === 'expired') {
+      return true;
+    }
+  }
+
+  const dateStr = typeof eventOrDate === 'string'
+    ? eventOrDate
+    : (eventOrDate.eventDate || eventOrDate.event_date || eventOrDate.date || '');
+
+  const timeStr = rawTime || (typeof eventOrDate === 'object'
+    ? (eventOrDate.eventTime || eventOrDate.event_time || eventOrDate.time || '')
+    : '');
+
+  const eventDateObj = parseEventDate(dateStr, timeStr);
+  if (!eventDateObj) return false;
+
+  return eventDateObj.getTime() < Date.now();
+}
+
+/**
+ * Returns the effective status of the event ('passed' | 'sold_out' | 'upcoming' | etc.)
+ */
+export function getEventEffectiveStatus(event: TsehayEvent | any): string {
+  if (!event) return 'upcoming';
+  if (isEventPassed(event)) return 'passed';
+  if (event.status === 'sold_out' || getRemainingSeats(event) <= 0) return 'sold_out';
+  return event.status || 'upcoming';
 }
 
 export const DEFAULT_EVENTS: TsehayEvent[] = [

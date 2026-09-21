@@ -4,18 +4,20 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabase/client';
-import { parseVideoEmbedUrl, parseImageUrl, getMediaThumbnail } from '@/lib/videoParser';
+import { parseVideoEmbedUrl, parseImageUrl, getMediaThumbnail, isMediaVideo } from '@/lib/videoParser';
 
 interface AboutClientProps {
   initialVideoUrl?: string;
   initialThumbnail?: string;
   initialTitle?: string;
+  initialCommunityMediaUrl?: string;
 }
 
 export default function AboutClient({
   initialVideoUrl,
   initialThumbnail,
   initialTitle,
+  initialCommunityMediaUrl,
 }: AboutClientProps) {
   const { t, lang } = useLanguage();
 
@@ -392,8 +394,8 @@ export default function AboutClient({
                 </h2>
               </div>
 
-              {/* Single High-Quality Focused Community Photo Card */}
-              <AboutSingleCleanPhoto />
+              {/* Single High-Quality Focused Community Photo / Video Card */}
+              <AboutSingleCleanPhoto initialCommunityMediaUrl={initialCommunityMediaUrl} />
             </div>
 
           </div>
@@ -1031,70 +1033,271 @@ function AboutSingleReelSlider() {
 }
 
 // =========================================================================
-// 🌟 3. SINGLE CLEAN COMMUNITY PHOTO
+// 🌟 3. CAMPUS COMMUNITY MEDIA (PHOTO OR VIDEO WITH BRAND FALLBACK)
 // =========================================================================
-function AboutSingleCleanPhoto() {
-  const [photoSrc, setPhotoSrc] = useState<string>('https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg');
+interface AboutSingleCleanPhotoProps {
+  initialCommunityMediaUrl?: string;
+}
+
+function AboutSingleCleanPhoto({ initialCommunityMediaUrl }: AboutSingleCleanPhotoProps) {
+  const [mediaUrl, setMediaUrl] = useState<string>(() => {
+    if (initialCommunityMediaUrl && initialCommunityMediaUrl.trim()) {
+      return initialCommunityMediaUrl.trim();
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_about_community_media_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const u = parsed?.mediaUrl || parsed?.url || parsed?.imageUrl || parsed?.videoUrl;
+          if (u && typeof u === 'string' && u.trim()) return u.trim();
+        }
+      } catch (e) {}
+    }
+    return '';
+  });
+
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [hasMediaError, setHasMediaError] = useState(false);
 
-  // Clean community photo state initialized seamlessly
+  // Sync prop changes from SSR into active state
+  useEffect(() => {
+    if (initialCommunityMediaUrl && initialCommunityMediaUrl.trim()) {
+      setMediaUrl(initialCommunityMediaUrl.trim());
+      setHasMediaError(false);
+    }
+  }, [initialCommunityMediaUrl]);
 
-  return (
-    <div className="max-w-4xl mx-auto flex justify-center">
-      <div
-        onClick={() => setIsLightboxOpen(true)}
-        style={{
-          borderRadius: '16px',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          background: 'rgba(255, 255, 255, 0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-        }}
-        className="group relative w-full aspect-[16/9] sm:aspect-[21/9] rounded-[16px] overflow-hidden cursor-pointer shadow-[0_10px_35px_rgba(0,0,0,0.5)] hover:shadow-[0_15px_45px_rgba(249,176,60,0.25)] hover:border-[#f9b03c]/50 transition-all duration-500 transform hover:-translate-y-1.5 hover:scale-[1.01]"
-        title="ምስሉን በትልቁ ለማየት ይጫኑ"
-      >
-        <img
-          src={photoSrc}
-          alt="Tsehay Campus Community"
-          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200&auto=format&fit=crop';
-          }}
-        />
+  // Instant local updates from admin dashboard broadcasts
+  useEffect(() => {
+    const handleUpdate = (data: any) => {
+      if (!data) return;
+      const u = data.mediaUrl || data.url || data.imageUrl || data.videoUrl;
+      if (typeof u === 'string') {
+        setMediaUrl(u.trim());
+        setHasMediaError(false);
+      }
+    };
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-      </div>
+    const handleCustom = (e: any) => handleUpdate(e.detail);
+    window.addEventListener('tsehay_about_community_media_updated', handleCustom);
 
-      {isLightboxOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => setIsLightboxOpen(false)}
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      bc = new BroadcastChannel('tsehay_about_community_media_channel');
+      bc.onmessage = (ev) => handleUpdate(ev.data);
+    }
+
+    return () => {
+      window.removeEventListener('tsehay_about_community_media_updated', handleCustom);
+      if (bc) bc.close();
+    };
+  }, []);
+
+  // Supabase Realtime, Broadcast Channel, and Server API sync
+  useEffect(() => {
+    let isCancelled = false;
+
+    const fetchCommunityMedia = async () => {
+      try {
+        let res = await fetch('/api/admin/site-settings?settingKey=about_community_media', { cache: 'no-store' });
+        if (!res.ok) res = await fetch('/api/site-settings?settingKey=about_community_media', { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          const data = json?.data || json;
+          const u = data?.mediaUrl || data?.url || data?.imageUrl || data?.videoUrl;
+          if (u && typeof u === 'string' && !isCancelled) {
+            setMediaUrl(u.trim());
+            setHasMediaError(false);
+            try {
+              localStorage.setItem('tsehay_about_community_media_cache', JSON.stringify({ mediaUrl: u.trim() }));
+            } catch (e) {}
+          }
+        }
+      } catch (e) {}
+    };
+
+    fetchCommunityMedia();
+
+    const channel = supabase
+      .channel('realtime_community_media_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload: any) => {
+          if (payload?.new && payload.new.key === 'about_community_media' && !isCancelled) {
+            const data = payload.new.data;
+            const u = data?.mediaUrl || data?.url || data?.imageUrl || data?.videoUrl;
+            if (u && typeof u === 'string') {
+              setMediaUrl(u.trim());
+              setHasMediaError(false);
+              try {
+                localStorage.setItem('tsehay_about_community_media_cache', JSON.stringify({ mediaUrl: u.trim() }));
+              } catch (e) {}
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isCancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const cleanMedia = (!hasMediaError && mediaUrl && mediaUrl.trim()) ? mediaUrl.trim() : '';
+  const isVideo = cleanMedia ? isMediaVideo(cleanMedia) : false;
+
+  // 1. VIDEO MODE (YouTube, Vimeo, Google Drive Video, Direct MP4, Embed)
+  if (cleanMedia && isVideo) {
+    const parsed = parseVideoEmbedUrl(cleanMedia, false);
+    return (
+      <div className="max-w-4xl mx-auto w-full">
+        <div 
+          className="relative w-full aspect-[16/9] sm:aspect-[21/9] rounded-[22px] overflow-hidden shadow-[0_15px_45px_rgba(0,0,0,0.7)] border-2 border-[#f9b03c]/35 bg-black transition-all duration-500 hover:shadow-[0_20px_55px_rgba(249,176,60,0.35)] hover:border-[#f9b03c]/70"
         >
-          <div
-            className="relative max-w-5xl w-full bg-slate-900 rounded-2xl overflow-hidden border border-white/20 shadow-2xl p-3"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-end pb-2">
-              <button
-                type="button"
-                onClick={() => setIsLightboxOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
-                aria-label="Close"
-              >
-                <i className="fa-solid fa-xmark text-sm"></i>
-              </button>
-            </div>
+          {parsed.type === 'video' ? (
+            <video
+              controls
+              playsInline
+              src={parsed.src}
+              className="w-full h-full object-cover rounded-[20px]"
+            />
+          ) : (
+            <iframe
+              src={parsed.src}
+              title="Tsehay Campus Community Video"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full rounded-[20px]"
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
 
-            <div className="rounded-xl overflow-hidden max-h-[80vh] flex items-center justify-center bg-black">
-              <img
-                src={photoSrc}
-                alt="Tsehay Campus Community High-Res"
-                className="max-h-[80vh] w-auto object-contain"
-              />
+  // 2. IMAGE MODE (Direct Image URL, Drive Photo, Compressed Image)
+  if (cleanMedia && !isVideo) {
+    const parsedSrc = parseImageUrl(cleanMedia);
+    return (
+      <div className="max-w-4xl mx-auto w-full flex justify-center">
+        <div
+          onClick={() => setIsLightboxOpen(true)}
+          style={{
+            borderRadius: '20px',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid rgba(249, 176, 60, 0.25)',
+          }}
+          className="group relative w-full aspect-[16/9] sm:aspect-[21/9] rounded-[20px] overflow-hidden cursor-pointer shadow-[0_15px_45px_rgba(0,0,0,0.6)] hover:shadow-[0_20px_55px_rgba(249,176,60,0.3)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:-translate-y-1 hover:scale-[1.01]"
+          title="ምስሉን በትልቁ ለማየት ይጫኑ (Click to view full screen)"
+        >
+          <img
+            src={parsedSrc}
+            alt="Tsehay Campus Community"
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            onError={() => {
+              setHasMediaError(true);
+            }}
+          />
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none flex items-end justify-between p-6">
+            <div className="flex items-center gap-2 text-white font-bold text-xs bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 shadow-lg">
+              <i className="fa-solid fa-expand text-[#f9b03c]"></i>
+              <span>በትልቁ ይመልከቱ (Full View)</span>
+            </div>
+            <span className="text-[11px] font-bold text-[#f9b03c] tracking-wider uppercase bg-black/40 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-[#f9b03c]/20">
+              Tsehay Campus
+            </span>
+          </div>
+        </div>
+
+        {/* Lightbox Modal */}
+        {isLightboxOpen && (
+          <div
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+            onClick={() => setIsLightboxOpen(false)}
+          >
+            <div
+              className="relative max-w-5xl w-full bg-slate-900 rounded-2xl overflow-hidden border border-[#f9b03c]/40 shadow-[0_0_50px_rgba(249,176,60,0.25)] p-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center pb-2 px-2">
+                <span className="text-xs font-bold text-[#f9b03c] flex items-center gap-2">
+                  <i className="fa-solid fa-users"></i>
+                  የስልጠና ማህበረሰብ • Campus Community
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsLightboxOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+                  aria-label="Close"
+                >
+                  <i className="fa-solid fa-xmark text-sm"></i>
+                </button>
+              </div>
+
+              <div className="rounded-xl overflow-hidden max-h-[80vh] flex items-center justify-center bg-black">
+                <img
+                  src={parsedSrc}
+                  alt="Tsehay Campus Community High-Res"
+                  className="max-h-[80vh] w-auto object-contain"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 3. BRAND FALLBACK PLACEHOLDER (ጥቁርና ወርቃማ ድምቀት - LUXURY DARK & GOLD AESTHETIC)
+  return (
+    <div className="max-w-4xl mx-auto w-full flex justify-center">
+      <div
+        style={{
+          borderRadius: '20px',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          background: 'linear-gradient(135deg, rgba(12, 17, 29, 0.95) 0%, rgba(5, 7, 13, 0.98) 100%)',
+          border: '1px solid rgba(249, 176, 60, 0.3)',
+        }}
+        className="relative w-full aspect-[16/9] sm:aspect-[21/9] rounded-[20px] overflow-hidden shadow-[0_15px_45px_rgba(0,0,0,0.7)] flex flex-col items-center justify-center p-6 sm:p-10 text-center transition-all duration-500 hover:border-[#f9b03c]/60 hover:shadow-[0_20px_55px_rgba(249,176,60,0.2)]"
+      >
+        {/* Ambient Golden Glow Backdrops */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(249,176,60,0.15)_0%,transparent_65%)] pointer-events-none" />
+        <div className="absolute -top-24 -left-24 w-72 h-72 bg-[#3268ba]/15 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-[#f9b03c]/15 rounded-full blur-[100px] pointer-events-none" />
+
+        {/* Brand Emblem / Camera Icon */}
+        <div className="relative z-10 mb-4 sm:mb-5">
+          <div className="relative flex items-center justify-center">
+            <span className="absolute -inset-2 rounded-2xl bg-[#f9b03c]/20 blur-md pointer-events-none"></span>
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#111625] via-slate-900 to-black border-2 border-[#f9b03c]/50 flex items-center justify-center text-[#f9b03c] text-2xl sm:text-3xl shadow-[0_0_30px_rgba(249,176,60,0.35)]">
+              <i className="fa-solid fa-camera-retro"></i>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Elegant Typography */}
+        <div className="relative z-10 space-y-2 max-w-lg">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-bold shadow-[0_0_15px_rgba(249,176,60,0.15)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping" />
+            <span>Tsehay Campus Community</span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-black font-heading text-white tracking-tight">
+            የስልጠና ማህበረሰብ እና የተማሪዎች ትስስር
+          </h3>
+          <p className="text-xs sm:text-sm text-gray-400 font-medium leading-relaxed">
+            በፀሐይ ካምፓስ የተማሪዎች ማህበረሰብ የሚዘጋጁ ዝግጅቶች፣ የልምድ ልውውጦች እና የስልጠና እንቅስቃሴዎች።
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
+

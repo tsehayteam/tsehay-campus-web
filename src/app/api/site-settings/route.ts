@@ -18,6 +18,7 @@ const ALLOWED_PUBLIC_KEYS = [
   'landing_video',
   'youtube_portfolio',
   'about_video',
+  'about_community_media',
   'landing_page_video',
   'public_announcements',
   'deleted_courses',
@@ -40,6 +41,10 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   about_video: {
     videoUrl: 'https://player.mediadelivery.net/play/738515/250574a7-8f25-4496-b31f-2fed1cd9d83a',
     thumbnail: '/assets/about_video_cover.jpg',
+  },
+  about_community_media: {
+    mediaUrl: '/assets/community_placeholder.jpg',
+    url: '/assets/community_placeholder.jpg',
   }
 };
 

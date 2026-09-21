@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TsehayEvent, EventTicket, formatEventBannerUrl, DEFAULT_EVENT_BANNER, getCachedUserTickets, saveCachedUserTicket } from '@/lib/eventCache';
+import { TsehayEvent, EventTicket, formatEventBannerUrl, DEFAULT_EVENT_BANNER, getCachedUserTickets, saveCachedUserTicket, isEventPassed } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { validateReferralCode, recordReferralUsage } from '@/lib/referralService';
 import { Check, CheckCircle2, Ticket, Mail } from 'lucide-react';
@@ -141,10 +141,14 @@ export default function TwoStageEventBookingModal({
     ? 0
     : Math.max(0, Math.round(originalPrice * (1 - discountPercent / 100)));
 
-  // Validate Step 1 Inputs
   const handleProceedToStep2 = (e: React.FormEvent) => {
     e.preventDefault();
     setStep1Error(null);
+
+    if (isEventPassed(event)) {
+      setStep1Error('ይቅርታ፣ ይህ ክስተት ቀኑ ስላለፈ አዲስ ምዝገባ ተዘግቷል (Registration closed - Event has passed)።');
+      return;
+    }
 
     const trimmedName = attendeeName.trim();
     const trimmedEmail = attendeeEmail.trim().toLowerCase();
@@ -615,6 +619,27 @@ export default function TwoStageEventBookingModal({
                     ዝጋ
                   </button>
                 </div>
+              </div>
+            ) : isEventPassed(event) ? (
+              <div className="py-8 px-4 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                <div className="w-16 h-16 rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400 mx-auto flex items-center justify-center text-2xl shadow-[0_0_30px_rgba(239,68,68,0.3)]">
+                  <i className="fa-solid fa-calendar-xmark" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black text-white font-heading">
+                    ክስተቱ አልፏል • EVENT PASSED
+                  </h3>
+                  <p className="text-xs text-red-300 max-w-sm mx-auto font-body">
+                    ይህ ዝግጅት ቀኑ ስላለፈ አዲስ ምዝገባ እና የቲኬት ሽያጭ ሙሉ በሙሉ ተዘግቷል (Registration is closed)።
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition cursor-pointer border border-white/10"
+                >
+                  ዝጋ (Close)
+                </button>
               </div>
             ) : step === 3 && confirmedTicket ? (
               /* ========================================================= */

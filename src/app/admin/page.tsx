@@ -5,7 +5,7 @@ import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_COURSES, COMING_SOON_COURSES, getComingSoonCourses, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate, deduplicateCourses } from '@/lib/courseCache';
-import { DEFAULT_EVENTS, DEFAULT_EVENT_BANNER, formatEventBannerUrl, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket, getDeletedEventIds, recordDeletedEventId } from '@/lib/eventCache';
+import { DEFAULT_EVENTS, DEFAULT_EVENT_BANNER, formatEventBannerUrl, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket, getDeletedEventIds, recordDeletedEventId, isEventPassed } from '@/lib/eventCache';
 import AdminQrScanner from '@/components/AdminQrScanner';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
@@ -389,6 +389,23 @@ export default function AdminDashboard() {
   const [aboutPreviewMode, setAboutPreviewMode] = useState<'thumbnail' | 'player'>('thumbnail');
   const [isSavingAboutVideo, setIsSavingAboutVideo] = useState(false);
   const [aboutVideoSavedMessage, setAboutVideoSavedMessage] = useState('');
+
+  // About Community Media State (Campus Community Media / Photo & Video)
+  const [aboutCommunityMediaUrl, setAboutCommunityMediaUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_about_community_media_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed.mediaUrl === 'string') return parsed.mediaUrl;
+          if (parsed && typeof parsed.url === 'string') return parsed.url;
+        }
+      } catch (e) {}
+    }
+    return '';
+  });
+  const [isSavingAboutCommunityMedia, setIsSavingAboutCommunityMedia] = useState(false);
+  const [aboutCommunityMediaSavedMessage, setAboutCommunityMediaSavedMessage] = useState('');
 
   // Portfolio Videos State - Synchronous lazy cache init so it NEVER reverts on refresh
   const [portfolioLocalUrl, setPortfolioLocalUrl] = useState<string>(() => {
@@ -1710,6 +1727,19 @@ export default function AdminDashboard() {
           .catch(e => console.warn("About video API load error:", e));
       });
 
+    // Fetch About Community Media
+    fetch('/api/admin/site-settings?settingKey=about_community_media')
+      .then(res => res.json())
+      .then(json => {
+        if (json?.data) {
+          const url = json.data.mediaUrl || json.data.url || json.data.imageUrl || json.data.videoUrl;
+          if (url && typeof url === 'string') {
+            setAboutCommunityMediaUrl(url);
+          }
+        }
+      })
+      .catch(e => console.warn("About community media API load error:", e));
+
     fetch('/api/admin/site-settings?settingKey=landing_video')
       .then(res => res.json())
       .then(json => {
@@ -2106,6 +2136,106 @@ export default function AdminDashboard() {
           setAboutVideoThumbnail(compressedDataUrl);
         } else {
           setAboutVideoThumbnail(rawDataUrl);
+        }
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 📸 Save About Us / Campus Community Media Link (Image or Video)
+  const handleSaveAboutCommunityMedia = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthorizedAdmin()) {
+      alert("ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።");
+      return;
+    }
+
+    const cleanUrl = aboutCommunityMediaUrl.trim();
+    setIsSavingAboutCommunityMedia(true);
+    setAboutCommunityMediaSavedMessage('');
+
+    const mediaPayload = {
+      mediaUrl: cleanUrl,
+      url: cleanUrl,
+      imageUrl: cleanUrl,
+      videoUrl: cleanUrl,
+      settingKey: 'about_community_media'
+    };
+
+    // 1. Instant local storage cache update for immediate zero-latency UI preview
+    try {
+      localStorage.setItem('tsehay_about_community_media_cache', JSON.stringify(mediaPayload));
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('tsehay_about_community_media_updated', {
+        detail: mediaPayload
+      }));
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('tsehay_about_community_media_channel');
+        bc.postMessage(mediaPayload);
+        setTimeout(() => bc.close(), 200);
+      }
+    } catch (e) {}
+
+    try {
+      await fetch('/api/admin/site-settings', {
+        method: 'POST',
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({
+          settingKey: 'about_community_media',
+          data: mediaPayload
+        })
+      });
+
+      setAboutCommunityMediaSavedMessage('የስልጠና ማህበረሰብ ሚዲያ በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
+      setTimeout(() => setAboutCommunityMediaSavedMessage(''), 4000);
+    } catch (err: any) {
+      console.error("Error saving about community media:", err);
+      setAboutCommunityMediaSavedMessage('የስልጠና ማህበረሰብ ሚዲያ በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
+      setTimeout(() => setAboutCommunityMediaSavedMessage(''), 4000);
+    } finally {
+      setIsSavingAboutCommunityMedia(false);
+    }
+  };
+
+  // 📷 Handle About Community Media Image Upload (Canvas Compression)
+  const handleAboutCommunityMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 15 * 1024 * 1024) {
+      alert("የመረጡት ምስል መጠን ከ 15MB በታች መሆን አለበት።");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string;
+      if (!rawDataUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const maxWidth = 1920;
+        const maxHeight = 1080;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+          setAboutCommunityMediaUrl(compressedDataUrl);
+        } else {
+          setAboutCommunityMediaUrl(rawDataUrl);
         }
       };
       img.src = rawDataUrl;
@@ -4307,7 +4437,7 @@ export default function AdminDashboard() {
                 onClick={() => { setActiveTab('about_video'); setSidebarMobileOpen(false); }} 
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'about_video' ? 'bg-[#f9b03c]/15 text-[#f9b03c] shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
               >
-                <span className="flex items-center gap-2.5"><i className="fa-solid fa-film text-sm"></i> ስለ እኛ ቪዲዮ</span>
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-film text-sm"></i> ስለ እኛ ሚዲያ (About Us Media)</span>
               </button>
               <button 
                 onClick={() => { setActiveTab('landing_video'); setSidebarMobileOpen(false); }} 
@@ -5238,6 +5368,17 @@ export default function AdminDashboard() {
                                   <p className="font-bold text-sm text-dark dark:text-white line-clamp-1">{event.title}</p>
                                   <div className="text-xs text-gray-500 font-semibold flex items-center gap-1.5">
                                     <span>{event.speaker}</span>
+                                    {isEventPassed(event) ? (
+                                      <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/40 px-1.5 py-0.2 rounded-md font-black flex items-center gap-1">
+                                        <i className="fa-solid fa-clock-rotate-left text-[7px] text-red-400"></i>
+                                        <span>ያለፈ (Passed)</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded-md font-bold flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        <span>ቀጣይ (Upcoming)</span>
+                                      </span>
+                                    )}
                                     {event.status === 'active' && (
                                       <span className="text-[10px] bg-amber-500/20 text-[#f9b03c] border border-amber-500/40 px-1.5 py-0.2 rounded-md font-black flex items-center gap-1">
                                         <i className="fa-solid fa-star text-[7px] text-[#f9b03c] animate-pulse"></i>
@@ -8171,6 +8312,176 @@ export default function AdminDashboard() {
                   </div>
                 </form>
               </div>
+
+              {/* ===================== CAMPUS COMMUNITY MEDIA CARD ===================== */}
+              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-700 pb-5 mb-6">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-[#3268ba]/15 border border-[#3268ba]/30 flex items-center justify-center text-[#5a93e8] text-xl shadow-sm">
+                      <i className="fa-solid fa-camera-retro"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-dark dark:text-white">የስልጠና ማህበረሰብ ሚዲያ (Campus Community Media / Photo & Video)</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">በ "ስለ እኛ" (About Us) ገጽ ላይ "በስልጠና ላይ ያሉ • Campus Community" በሚለው ክፍል የሚታየውን ምስል ወይም ቪዲዮ እዚህ ያስተዳድሩ</p>
+                    </div>
+                  </div>
+                  {aboutCommunityMediaSavedMessage && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 animate-bounce">
+                      <i className="fa-solid fa-circle-check"></i>
+                      <span>{aboutCommunityMediaSavedMessage}</span>
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleSaveAboutCommunityMedia} className="space-y-6">
+                  {/* Media Link Input */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i className="fa-solid fa-link text-[#3268ba]"></i>
+                        <span>የሚዲያ ሊንክ (Media Link: Image / Video / Drive / YouTube) *</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold px-3 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
+                          <i className="fa-solid fa-cloud-arrow-up"></i>
+                          <span>ምስል ጫን (Upload)</span>
+                          <input type="file" accept="image/*" onChange={handleAboutCommunityMediaUpload} className="hidden" />
+                        </label>
+                        {(() => {
+                          const yId = extractYouTubeId(aboutCommunityMediaUrl);
+                          if (yId) {
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => setAboutCommunityMediaUrl(`https://img.youtube.com/vi/${yId}/maxresdefault.jpg`)}
+                                className="text-[11px] bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-bold px-3 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <i className="fa-brands fa-youtube"></i>
+                                <span>ከዩቲዩብ ፎቶ አስመጣ</span>
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <textarea
+                        rows={2}
+                        placeholder="e.g. https://... (Direct Image URL .jpg/.png/.webp, Google Drive Link, YouTube Video, ወይም MP4)"
+                        value={aboutCommunityMediaUrl}
+                        onChange={(e) => setAboutCommunityMediaUrl(e.target.value)}
+                        className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#3268ba] focus:ring-2 focus:ring-[#3268ba]/20 transition pr-10"
+                      />
+                      {aboutCommunityMediaUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setAboutCommunityMediaUrl('')}
+                          className="absolute right-3.5 top-4 text-gray-400 hover:text-red-500 transition text-sm cursor-pointer"
+                          title="አጽዳ"
+                        >
+                          <i className="fa-solid fa-xmark"></i>
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-2.5 flex flex-wrap gap-2 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                      <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md">Direct Image URLs (.jpg, .png, .webp)</span>
+                      <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md">Google Drive Image / Video</span>
+                      <span className="bg-red-500/10 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-md">YouTube Video Link</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-md">Direct MP4 Video</span>
+                    </div>
+                  </div>
+
+                  {/* Live Interactive Preview */}
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <h4 className="text-sm font-black text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i className="fa-solid fa-eye text-[#3268ba]"></i>
+                        <span>ቀጥታ እይታ (Live Preview):</span>
+                      </h4>
+                      <span className="text-xs text-gray-400">
+                        {aboutCommunityMediaUrl.trim() 
+                          ? (isMediaVideo(aboutCommunityMediaUrl) ? '🎬 የቪዲዮ እይታ (Video Mode)' : '🖼️ የምስል እይታ (Image Mode)') 
+                          : '⚡ ተጠባባቂ ምስል (Fallback Brand Placeholder)'}
+                      </span>
+                    </div>
+
+                    <div className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-[#3268ba]/40 bg-black aspect-video flex items-center justify-center group">
+                      {aboutCommunityMediaUrl.trim() ? (
+                        isMediaVideo(aboutCommunityMediaUrl) ? (
+                          (() => {
+                            const parsed = parseVideoEmbedUrl(aboutCommunityMediaUrl, true);
+                            return (
+                              <div className="relative w-full h-full">
+                                {parsed.type === 'video' ? (
+                                  <video
+                                    controls
+                                    autoPlay
+                                    muted
+                                    playsInline
+                                    src={parsed.src}
+                                    className="w-full h-full object-cover rounded-2xl"
+                                  />
+                                ) : (
+                                  <iframe
+                                    src={parsed.src}
+                                    title="Community Media Live Preview"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    className="w-full h-full rounded-2xl"
+                                  />
+                                )}
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          <div className="relative w-full h-full">
+                            <img
+                              src={parseImageUrl(aboutCommunityMediaUrl)}
+                              alt="Community Media Preview"
+                              className="w-full h-full object-cover rounded-2xl transition-transform duration-700 group-hover:scale-105"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/assets/about_video_cover.jpg';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-4">
+                              <span className="text-xs text-white/90 font-medium px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-xs">
+                                🔍 ምስሉ በድረ-ገጹ ላይ በትልቁ ለማየት (Lightbox) ያስችላል
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      ) : (
+                        /* Brand Fallback Placeholder Preview */
+                        <div className="relative w-full h-full bg-gradient-to-br from-[#0c1222] via-[#080d1a] to-black flex flex-col items-center justify-center p-6 text-center border border-[#f9b03c]/20">
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(249,176,60,0.1)_0%,transparent_70%)] pointer-events-none" />
+                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#f9b03c]/20 to-amber-500/10 border border-[#f9b03c]/30 flex items-center justify-center text-[#f9b03c] text-2xl mb-3 shadow-[0_0_25px_rgba(249,176,60,0.2)]">
+                            <i className="fa-solid fa-camera-retro"></i>
+                          </div>
+                          <h5 className="text-base font-black text-white tracking-wide">Tsehay Campus • የስልጠና ማህበረሰብ</h5>
+                          <p className="text-xs text-[#f9b03c]/80 mt-1 font-medium">የተጠባባቂ ምስል እይታ (Fallback Placeholder Preview)</p>
+                          <span className="text-[11px] text-gray-400 mt-2 max-w-sm">
+                            ሊንክ ባልገባበት ጊዜ ድረ-ገጹ የተሰበረ ምስል ሳያሳይ ይህንን የተዋበ የብራንድ ገጽታ ያሳያል።
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-end gap-3">
+                    <button
+                      type="submit"
+                      disabled={isSavingAboutCommunityMedia}
+                      className="bg-gradient-to-r from-[#3268ba] to-blue-600 hover:from-blue-600 hover:to-[#3268ba] text-white font-black px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-[0_0_25px_rgba(50,104,186,0.5)] transition-all duration-300 disabled:opacity-50 flex items-center gap-2 cursor-pointer active:scale-95 text-sm"
+                    >
+                      <i className="fa-solid fa-floppy-disk"></i>
+                      <span>{isSavingAboutCommunityMedia ? 'እየቀየረ ነው...' : 'አስቀምጥ (Save Community Media)'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
@@ -10424,6 +10735,7 @@ export default function AdminDashboard() {
                   >
                     <option value="active">🟢 ንቁ ባነር (በዋናው ገጽ ባነር ላይ የሚታይ - Active Banner)</option>
                     <option value="upcoming">⚪ መደበኛ ክንውን (Upcoming Event)</option>
+                    <option value="passed">⏰ ያለፈ / የተጠናቀቀ (Passed / Closed)</option>
                     <option value="inactive">🔴 የተደበቀ / የማይታይ (Inactive / Draft)</option>
                   </select>
                 </div>

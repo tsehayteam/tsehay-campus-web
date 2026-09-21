@@ -14,7 +14,8 @@ import {
   getCachedUserTickets,
   saveCachedUserTicket,
   getDeletedEventIds,
-  recordDeletedEventId
+  recordDeletedEventId,
+  isEventPassed
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
@@ -377,6 +378,10 @@ export default function UpcomingEventsSection() {
       return;
     }
 
+    if (isEventPassed(event)) {
+      alert('ይቅርታ፣ የዚህ ዝግጅት ቀን ስላለፈ አዲስ ምዝገባ ተዘግቷል! (Registration is closed because this event has passed)');
+      return;
+    }
     const remaining = getRemainingSeats(event);
     if (remaining <= 0) {
       return;
@@ -416,6 +421,11 @@ export default function UpcomingEventsSection() {
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEvent) return;
+
+    if (isEventPassed(selectedEvent)) {
+      setBookingError('ይቅርታ፣ የዚህ ዝግጅት ቀን ስላለፈ አዲስ ምዝገባ ተዘግቷል! (Event has passed)');
+      return;
+    }
 
     const trimmedName = attendeeName.trim();
     const trimmedEmail = attendeeEmail.trim().toLowerCase();
@@ -665,6 +675,7 @@ export default function UpcomingEventsSection() {
         {/* Event Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {events.map((event) => {
+            const isPassed = isEventPassed(event);
             const capacity = Number(event.capacity) || 100;
             const liveRegCount = (registrationsCountByEvent[event.id] || (event.slug ? registrationsCountByEvent[event.slug] : 0) || 0);
             const baseReg = Number(event.registeredCount) || 0;
@@ -685,9 +696,13 @@ export default function UpcomingEventsSection() {
             return (
               <div 
                 key={event.id}
-                className={`group relative rounded-3xl p-6 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.01] flex flex-col justify-between backdrop-blur-xl bg-black/60 border ${
-                  isAlreadyRegistered ? 'border-emerald-500/50 shadow-[0_15px_40px_rgba(16,185,129,0.2)]' : 'border-white/10 hover:border-[#f9b03c]/60'
-                } shadow-[0_20px_50px_rgba(0,0,0,0.7)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25)]`}
+                className={`group relative rounded-3xl p-6 transition-all duration-500 flex flex-col justify-between backdrop-blur-xl border ${
+                  isPassed
+                    ? 'bg-black/80 border-red-500/20 opacity-75 grayscale-[25%] hover:opacity-100 hover:grayscale-0 shadow-[0_15px_40px_rgba(0,0,0,0.8)]'
+                    : isAlreadyRegistered 
+                      ? 'bg-black/60 border-emerald-500/50 shadow-[0_15px_40px_rgba(16,185,129,0.2)] hover:-translate-y-2 hover:scale-[1.01]' 
+                      : 'bg-black/60 border-white/10 hover:border-[#f9b03c]/60 shadow-[0_20px_50px_rgba(0,0,0,0.7)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25)] hover:-translate-y-2 hover:scale-[1.01]'
+                }`}
               >
                 {/* 3D Radial Glow on Hover */}
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-[#f9b03c]/10 via-transparent to-[#3268ba]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -702,7 +717,7 @@ export default function UpcomingEventsSection() {
                     <img 
                       src={posterUrl} 
                       alt={event.title} 
-                      className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
+                      className={`w-full h-full object-cover transition-transform duration-700 ${isPassed ? '' : 'group-hover/img:scale-105'}`}
                       loading="eager"
                       decoding="async"
                       onError={(e) => {
@@ -712,16 +727,24 @@ export default function UpcomingEventsSection() {
                     
                     {/* Top Status Capsules */}
                     <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2 z-20 pointer-events-none">
-                      <span className="px-3 py-1 rounded-full bg-[#3268ba]/80 backdrop-blur-md text-white border border-[#3268ba] text-xs font-black shadow-md flex items-center gap-1.5">
-                        <i className={`fa-solid ${event.isOnline ? 'fa-globe' : 'fa-location-dot'} text-[11px]`}></i>
-                        <span>{event.isOnline ? 'Virtual Live Stream' : 'In-Person (አካል)'}</span>
-                      </span>
+                      {isPassed ? (
+                        <span className="px-3 py-1 rounded-full bg-red-600/90 backdrop-blur-md text-white border border-red-500 text-xs font-black shadow-lg flex items-center gap-1.5 animate-pulse">
+                          <i className="fa-solid fa-clock-rotate-left text-[11px]"></i>
+                          <span>ክስተቱ አልፏል (EVENT PASSED)</span>
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full bg-[#3268ba]/80 backdrop-blur-md text-white border border-[#3268ba] text-xs font-black shadow-md flex items-center gap-1.5">
+                          <i className={`fa-solid ${event.isOnline ? 'fa-globe' : 'fa-location-dot'} text-[11px]`}></i>
+                          <span>{event.isOnline ? 'Virtual Live Stream' : 'In-Person (አካል)'}</span>
+                        </span>
+                      )}
+
                       {isAlreadyRegistered ? (
                         <span className="px-2.5 py-1 rounded-full bg-emerald-600/95 text-white text-[10px] font-black tracking-wider uppercase shadow-md flex items-center gap-1">
                           <i className="fa-solid fa-circle-check text-[10px]"></i>
                           <span>ተመዝግበዋል</span>
                         </span>
-                      ) : isSoldOut ? (
+                      ) : (!isPassed && isSoldOut) ? (
                         <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md animate-pulse flex items-center gap-1">
                           <Ban className="w-3 h-3 text-white" aria-hidden="true" />
                           <span>አልቋል (Sold Out)</span>
@@ -794,7 +817,12 @@ export default function UpcomingEventsSection() {
 
                     <div className="flex justify-between text-[11px] font-bold mb-1.5">
                       <span className="text-slate-300">የተያዙ ቦታዎች ({percentTaken}%)</span>
-                      {isSoldOut ? (
+                      {isPassed ? (
+                        <span className="text-red-400 font-black flex items-center gap-1">
+                          <i className="fa-solid fa-lock text-[10px]"></i>
+                          <span>ክስተቱ ተጠናቋል (Event Closed)</span>
+                        </span>
+                      ) : isSoldOut ? (
                         <span className="text-red-400 font-black">ትኬቱ ሙሉ በሙሉ አልቋል!</span>
                       ) : (
                         <span className="text-[#f9b03c] font-black">{remainingSeats} ቦታዎች ብቻ ቀርተዋል!</span>
@@ -802,7 +830,7 @@ export default function UpcomingEventsSection() {
                     </div>
                     <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden p-0.5">
                       <div 
-                        className={`h-full rounded-full transition-all duration-1000 ${isSoldOut ? 'bg-red-500' : 'bg-gradient-to-r from-[#3268ba] via-[#5a93e8] to-[#f9b03c] shadow-[0_0_10px_rgba(249,176,60,0.8)]'}`}
+                        className={`h-full rounded-full transition-all duration-1000 ${isPassed ? 'bg-slate-600' : isSoldOut ? 'bg-red-500' : 'bg-gradient-to-r from-[#3268ba] via-[#5a93e8] to-[#f9b03c] shadow-[0_0_10px_rgba(249,176,60,0.8)]'}`}
                         style={{ width: `${percentTaken}%` }}
                       />
                     </div>
@@ -810,7 +838,17 @@ export default function UpcomingEventsSection() {
 
                   {/* Action Buttons Row */}
                   <div className="flex items-center gap-2.5">
-                    {isAlreadyRegistered ? (
+                    {isPassed && !isAlreadyRegistered ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 bg-slate-900/90 text-slate-400 border border-white/10 cursor-not-allowed shadow-inner"
+                        title="ይህ ክስተት ቀኑ ስላለፈ ምዝገባ ተዘግቷል"
+                      >
+                        <i className="fa-solid fa-lock text-xs text-red-400"></i>
+                        <span>ምዝገባ ተዘግቷል / Registration Closed</span>
+                      </button>
+                    ) : isAlreadyRegistered ? (
                       <div className="flex-1 flex flex-col gap-1.5">
                         <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[11px] font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>

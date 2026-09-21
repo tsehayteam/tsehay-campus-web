@@ -19,7 +19,8 @@ import {
   getCachedUserTickets,
   saveCachedUserTicket,
   getDeletedEventIds,
-  recordDeletedEventId
+  recordDeletedEventId,
+  isEventPassed
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
@@ -341,6 +342,11 @@ export default function EventsClient() {
       return;
     }
 
+    if (isEventPassed(event)) {
+      alert('ይቅርታ፣ ይህ ክስተት ቀኑ ስላለፈ አዲስ ምዝገባ ተዘግቷል (This event has passed and registration is closed)።');
+      return;
+    }
+
     setSelectedEvent(event);
     const seats = getRemainingSeats(event);
     if (seats <= 0) {
@@ -495,6 +501,7 @@ export default function EventsClient() {
             {filteredEvents.map((evt) => {
               const remaining = getRemainingSeats(evt);
               const isSoldOut = remaining <= 0;
+              const isPassed = isEventPassed(evt);
               const cleanVid = (evt.videoUrl || '').trim();
               const hasVideo = Boolean(cleanVid && cleanVid !== 'none' && cleanVid !== 'yelewim');
               const effectiveVideoUrl = hasVideo ? cleanVid : '';
@@ -503,7 +510,11 @@ export default function EventsClient() {
               return (
                 <div
                   key={evt.id}
-                  className="group rounded-3xl bg-[#090d16]/90 border border-white/10 hover:border-[#f9b03c]/60 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.7)] backdrop-blur-2xl hover:-translate-y-1.5"
+                  className={`group rounded-3xl transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.7)] backdrop-blur-2xl ${
+                    isPassed
+                      ? 'bg-[#090d16]/80 border border-red-500/20 opacity-75 grayscale-[25%] hover:opacity-100 hover:grayscale-0'
+                      : 'bg-[#090d16]/90 border border-white/10 hover:border-[#f9b03c]/60 hover:-translate-y-1.5'
+                  }`}
                 >
                   <div>
                     {/* Event Banner - Clean & Direct Link to Preview */}
@@ -531,7 +542,17 @@ export default function EventsClient() {
 
                       {/* Badges */}
                       <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20 pointer-events-none">
-                        <div className="px-3 py-1 rounded-full bg-[#f9b03c] text-slate-950 font-black text-[11px] shadow-[0_0_15px_rgba(249,176,60,0.5)]">
+                        {isPassed && (
+                          <div className="px-3 py-1 rounded-full bg-red-600/90 text-white font-black text-[10px] tracking-wider uppercase shadow-[0_0_15px_rgba(239,68,68,0.5)] border border-red-400/40 backdrop-blur-md flex items-center gap-1">
+                            <i className="fa-solid fa-clock-rotate-left text-[9px]" />
+                            <span>ክስተቱ አልፏል</span>
+                          </div>
+                        )}
+                        <div className={`px-3 py-1 rounded-full font-black text-[11px] ${
+                          isPassed 
+                            ? 'bg-slate-300/80 text-slate-900 shadow-sm' 
+                            : 'bg-[#f9b03c] text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.5)]'
+                        }`}>
                           {evt.isFree || evt.price === 0 ? 'ነፃ (FREE)' : `${evt.price} ETB`}
                         </div>
                       </div>
@@ -540,8 +561,8 @@ export default function EventsClient() {
                     {/* Content Body */}
                     <div className="p-5 space-y-3">
                       {/* Date & Time Row */}
-                      <div className="flex items-center gap-3 text-[11px] text-[#f9b03c] font-bold">
-                        <span className="flex items-center gap-1">
+                      <div className="flex items-center gap-3 text-[11px] font-bold">
+                        <span className={`flex items-center gap-1 ${isPassed ? 'text-red-400' : 'text-[#f9b03c]'}`}>
                           <i className="fa-regular fa-calendar" />
                           <span>{evt.date}</span>
                         </span>
@@ -587,13 +608,22 @@ export default function EventsClient() {
                   {/* Card Footer Actions */}
                   <div className="p-5 pt-0">
                     <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between mb-3">
-                      {/* የቀረ ክፍት ቦታ ማሳያ */}
-                      <div className="text-sm font-medium">
-                        ክፍት ቦታ፦{" "}
-                        <span className="text-emerald-500 font-bold">
-                          {Math.max(0, (evt.seatCapacity || evt.capacity || 50) - (evt.registeredCount || 0))}
-                        </span>
-                        {" "}ከ {evt.seatCapacity || evt.capacity || 50}
+                      {/* የቀረ ክፍት ቦታ ወይም የተጠናቀቀበት ማሳያ */}
+                      <div className="text-xs font-medium">
+                        {isPassed ? (
+                          <span className="text-red-400 font-bold flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                            ክስተቱ ተጠናቋል (Passed)
+                          </span>
+                        ) : (
+                          <>
+                            ክፍት ቦታ፦{" "}
+                            <span className="text-emerald-500 font-bold">
+                              {Math.max(0, (evt.seatCapacity || evt.capacity || 50) - (evt.registeredCount || 0))}
+                            </span>
+                            {" "}ከ {evt.seatCapacity || evt.capacity || 50}
+                          </>
+                        )}
                       </div>
 
                       <Link
@@ -628,6 +658,19 @@ export default function EventsClient() {
                               <span>ትኬትህን እይ (View Ticket)</span>
                             </button>
                           </div>
+                        );
+                      }
+
+                      if (isPassed) {
+                        return (
+                          <button
+                            type="button"
+                            disabled
+                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider bg-red-950/40 text-red-300/80 border border-red-500/30 cursor-not-allowed flex items-center justify-center gap-2 shadow-inner"
+                          >
+                            <i className="fa-solid fa-calendar-xmark text-red-400" />
+                            <span>ምዝገባ ተዘግቷል / Registration Closed</span>
+                          </button>
                         );
                       }
 
