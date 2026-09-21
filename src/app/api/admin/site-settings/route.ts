@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
+import { revalidatePath } from 'next/cache';
 import { invalidateServerCoursesCache } from '@/lib/serverCourses';
 
 export const memorySiteSettingsCache = sharedSiteSettingsCache;
@@ -128,6 +129,10 @@ export async function POST(req: NextRequest) {
     savePersistedSetting(settingKey, payload);
     try {
       invalidateServerCoursesCache();
+      revalidatePath('/');
+      if (settingKey === 'about_video' || settingKey === 'about_community_media') {
+        revalidatePath('/about');
+      }
     } catch (e) {}
 
     return NextResponse.json({ 

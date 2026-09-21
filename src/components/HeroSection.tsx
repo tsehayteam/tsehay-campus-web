@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { parseVideoUrl, extractYouTubeId, parseDropboxUrl } from "@/lib/videoParser";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { parseVideoUrl, extractYouTubeId, parseDropboxUrl, parseImageUrl } from "@/lib/videoParser";
+import { supabase } from "@/lib/supabase/client";
 
 interface HeroSectionProps {
   videoSrc?: string;
@@ -74,8 +75,11 @@ export default function HeroSection({
         }
       } catch (e) {}
     }
-    return "/assets/hero-bg-new.jpg";
+    return "";
   });
+
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Sync prop changes into state
   useEffect(() => {
@@ -90,25 +94,36 @@ export default function HeroSection({
     }
   }, [videoThumbnail]);
 
-  // Live Admin Sync (BroadcastChannel, CustomEvent, Storage & fail-safe API fetch)
+  // Live Admin Sync (Supabase Realtime, BroadcastChannel, CustomEvent, Storage & fail-safe API fetch)
   useEffect(() => {
     let isCancelled = false;
 
-    // 1. Initial fail-safe API check
+    // 1. Initial fail-safe API check with cache: no-store
     const fetchLandingVideo = async () => {
       try {
-        let res = await fetch('/api/admin/save-landing-video', { cache: 'no-store' });
-        if (!res.ok) res = await fetch('/api/admin/site-settings?settingKey=landing_video', { cache: 'no-store' });
+        let res = await fetch(`/api/admin/save-landing-video?t=${Date.now()}`, { 
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        });
+        if (!res.ok) {
+          res = await fetch(`/api/admin/site-settings?settingKey=landing_video&t=${Date.now()}`, { 
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+          });
+        }
         if (res.ok) {
           const json = await res.json();
           const d = json?.data || json;
           const url = d?.url || d?.videoUrl || d?.youtubeUrl;
-          const thumb = d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl;
+          const thumb = d?.heroThumbnailUrl || d?.posterUrl || d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl || d?.thumbUrl || d?.poster || '';
           if (!isCancelled && url && typeof url === 'string' && url.trim()) {
             setActiveVideoUrl(url.trim());
-            if (thumb && typeof thumb === 'string' && thumb.trim()) {
-              setActiveThumbnail(thumb.trim());
-            }
+          }
+          if (!isCancelled && typeof thumb === 'string') {
+            setActiveThumbnail(thumb.trim());
+            try {
+              localStorage.setItem('tsehay_landing_video_thumb', thumb.trim());
+            } catch (e) {}
           }
         }
       } catch (e) {}
@@ -118,11 +133,14 @@ export default function HeroSection({
 
     // 2. Custom Event from Admin save
     const handleUpdate = (e: any) => {
-      if (e.detail?.videoUrl && !isCancelled) {
+      if (isCancelled) return;
+      if (e.detail?.videoUrl) {
         setActiveVideoUrl(e.detail.videoUrl.trim());
-        if (e.detail.thumbnail) {
-          setActiveThumbnail(e.detail.thumbnail.trim());
-        }
+      }
+      const thumb = e.detail?.heroThumbnailUrl || e.detail?.posterUrl || e.detail?.thumbnail || e.detail?.landingVideoThumbnail || '';
+      if (typeof thumb === 'string') {
+        setActiveThumbnail(thumb.trim());
+        setIsPlaying(false);
       }
     };
     window.addEventListener('tsehay_landing_video_updated', handleUpdate);
@@ -133,23 +151,53 @@ export default function HeroSection({
       try {
         bc = new BroadcastChannel('tsehay_landing_video_channel');
         bc.onmessage = (ev) => {
-          if (ev.data?.videoUrl && !isCancelled) {
+          if (isCancelled) return;
+          if (ev.data?.videoUrl) {
             setActiveVideoUrl(ev.data.videoUrl.trim());
-            if (ev.data.thumbnail) {
-              setActiveThumbnail(ev.data.thumbnail.trim());
-            }
+          }
+          const thumb = ev.data?.heroThumbnailUrl || ev.data?.posterUrl || ev.data?.thumbnail || ev.data?.landingVideoThumbnail || '';
+          if (typeof thumb === 'string') {
+            setActiveThumbnail(thumb.trim());
+            setIsPlaying(false);
           }
         };
       } catch (e) {}
     }
 
-    // 4. Storage event
+    // 4. Supabase Realtime WebSocket subscription on site_settings
+    let sbChannel: any = null;
+    try {
+      sbChannel = supabase
+        .channel('public_site_settings_hero_landing_video')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'site_settings' },
+          (payload: any) => {
+            if (payload?.new && (payload.new.key === 'landing_video' || payload.new.setting_key === 'landing_video') && !isCancelled) {
+              const d = payload.new.data;
+              const url = d?.url || d?.videoUrl || d?.youtubeUrl;
+              const thumb = d?.heroThumbnailUrl || d?.posterUrl || d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl || d?.poster || '';
+              if (url && typeof url === 'string' && url.trim()) {
+                setActiveVideoUrl(url.trim());
+              }
+              if (typeof thumb === 'string') {
+                setActiveThumbnail(thumb.trim());
+                setIsPlaying(false);
+              }
+            }
+          }
+        )
+        .subscribe();
+    } catch (e) {}
+
+    // 5. Storage event listener
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'tsehay_landing_video_cache' && e.newValue && !isCancelled) {
         setActiveVideoUrl(e.newValue.trim());
       }
-      if (e.key === 'tsehay_landing_video_thumb' && e.newValue && !isCancelled) {
-        setActiveThumbnail(e.newValue.trim());
+      if (e.key === 'tsehay_landing_video_thumb' && !isCancelled) {
+        setActiveThumbnail(e.newValue ? e.newValue.trim() : '');
+        setIsPlaying(false);
       }
     };
     window.addEventListener('storage', handleStorage);
@@ -159,8 +207,28 @@ export default function HeroSection({
       window.removeEventListener('tsehay_landing_video_updated', handleUpdate);
       window.removeEventListener('storage', handleStorage);
       if (bc) bc.close();
+      if (sbChannel) {
+        try { supabase.removeChannel(sbChannel); } catch (e) {}
+      }
     };
   }, []);
+
+  // Resolve thumbnail without any hardcoded fallback
+  const resolvedThumbnailUrl = useMemo(() => {
+    const raw = (activeThumbnail || '').trim();
+    if (!raw) return '';
+    return parseImageUrl(raw) || raw;
+  }, [activeThumbnail]);
+
+  const effectivePoster = useMemo(() => {
+    if (resolvedThumbnailUrl) return resolvedThumbnailUrl;
+    // Derive from YouTube if applicable
+    const ytId = extractYouTubeId(activeVideoUrl);
+    if (ytId) {
+      return `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
+    }
+    return '';
+  }, [resolvedThumbnailUrl, activeVideoUrl]);
 
   // 2. Dynamic Video Player Resolution (YouTube, Direct Video HTML5, or 3rd-Party Embed)
   const videoConfig = useMemo(() => {
@@ -168,7 +236,7 @@ export default function HeroSection({
     if (!raw) {
       return {
         type: 'youtube' as const,
-        src: 'https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1',
+        src: `https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1${isPlaying ? '&autoplay=1' : ''}`,
         raw
       };
     }
@@ -178,7 +246,7 @@ export default function HeroSection({
     if (ytId) {
       return {
         type: 'youtube' as const,
-        src: `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`,
+        src: `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1${isPlaying ? '&autoplay=1' : ''}`,
         raw
       };
     }
@@ -222,7 +290,7 @@ export default function HeroSection({
     }
 
     // D. Third-Party Player Embed (Vimeo, BunnyCDN, Cloudflare Stream, Google Drive, or Custom Player iframe)
-    const parsed = parseVideoUrl(raw, false);
+    const parsed = parseVideoUrl(raw, isPlaying);
     if (parsed.isDirectVideo) {
       return {
         type: 'direct_video' as const,
@@ -231,12 +299,30 @@ export default function HeroSection({
       };
     }
 
+    let embedSrc = parsed.src || raw;
+    // For Bunny Stream or custom iframe, pass poster as query param if available
+    if (effectivePoster && (embedSrc.includes('mediadelivery.net') || embedSrc.includes('bunnycdn'))) {
+      if (!embedSrc.includes('poster=')) {
+        embedSrc += (embedSrc.includes('?') ? '&' : '?') + `poster=${encodeURIComponent(effectivePoster)}`;
+      }
+    }
+    if (isPlaying && !embedSrc.includes('autoplay=')) {
+      embedSrc += (embedSrc.includes('?') ? '&' : '?') + 'autoplay=1';
+    }
+
     return {
       type: 'embed' as const,
-      src: parsed.src || raw,
+      src: embedSrc,
       raw
     };
-  }, [activeVideoUrl]);
+  }, [activeVideoUrl, isPlaying, effectivePoster]);
+
+  const handleStartPlay = () => {
+    setIsPlaying(true);
+    if (videoConfig.type === 'direct_video' && videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  };
 
   return (
     <section className="relative overflow-hidden bg-neutral-950 pt-10 sm:pt-14 pb-14 sm:pb-20" id="home">
@@ -283,25 +369,62 @@ export default function HeroSection({
           {/* የቪዲዮ ፍሬም */}
           <div className="relative rounded-2xl border border-neutral-800/80 bg-neutral-900/50 p-2 shadow-2xl backdrop-blur-xl sm:p-4 transition-transform duration-500 ease-out hover:-translate-y-1">
             <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950">
+              {/* 1. Underlying Video Player */}
               {videoConfig.type === 'direct_video' ? (
                 <video
+                  ref={videoRef}
                   key={videoConfig.src}
                   className="h-full w-full object-cover"
                   src={videoConfig.src}
-                  poster={activeThumbnail || "/assets/hero-bg-new.jpg"}
+                  poster={effectivePoster || undefined}
                   controls
                   playsInline
                   preload="metadata"
                 />
               ) : (
                 <iframe
-                  key={videoConfig.src}
+                  key={`${videoConfig.src}-${isPlaying}`}
                   className="h-full w-full object-cover"
                   src={videoConfig.src}
                   title="Tsehay Campus Introduction"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen
                 />
+              )}
+
+              {/* 2. Interactive Overlay Cover Image (Active until user clicks Play) */}
+              {effectivePoster && !isPlaying && (
+                <div
+                  onClick={handleStartPlay}
+                  className="absolute inset-0 z-20 w-full h-full cursor-pointer overflow-hidden bg-black flex items-center justify-center transition-all duration-500 select-none group/cover"
+                  title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play Video)"
+                >
+                  <img
+                    src={effectivePoster}
+                    alt="Hero Video Thumbnail"
+                    className="w-full h-full object-cover group-hover/cover:scale-105 transition-transform duration-700 ease-out"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = 'none';
+                    }}
+                  />
+
+                  {/* Dark gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/30 pointer-events-none" />
+
+                  {/* Glowing Animated Play Button */}
+                  <div className="relative z-10 flex flex-col items-center justify-center gap-3">
+                    <div className="relative flex items-center justify-center">
+                      <div className="absolute -inset-4 rounded-full bg-[#f9b03c]/35 blur-xl group-hover/cover:bg-[#f9b03c]/60 transition duration-500 animate-pulse" />
+                      <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 flex items-center justify-center shadow-[0_0_35px_rgba(249,176,60,0.7)] group-hover/cover:scale-110 transition-transform duration-300 border-2 border-white/50">
+                        <i className="fa-solid fa-play text-xl sm:text-2xl ml-1 text-slate-950" />
+                      </div>
+                    </div>
+                    <span className="px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white text-xs font-bold shadow-lg flex items-center gap-1.5">
+                      <i className="fa-solid fa-circle-play text-[#f9b03c]" />
+                      <span>ቪዲዮውን ይመልከቱ (Watch Video)</span>
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
           </div>

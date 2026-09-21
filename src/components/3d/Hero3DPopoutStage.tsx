@@ -802,7 +802,7 @@ export default function Hero3DPopoutStage({
     parsedVideo.thumbnailUrl || (
       parsedVideo.youtubeId 
         ? `https://img.youtube.com/vi/${parsedVideo.youtubeId}/maxresdefault.jpg`
-        : '/assets/hero-bg-new.jpg'
+        : ''
     );
 
   return (
@@ -923,7 +923,7 @@ export default function Hero3DPopoutStage({
               src={displayThumbnail} 
               alt="Tsehay Campus Hero Preview" 
               className="w-full h-full object-cover pointer-events-none scale-100 group-hover:scale-105 transition-transform duration-700 ease-out"
-              onError={(e) => { e.currentTarget.src = '/assets/hero-bg-new.jpg'; }}
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
             />
           </div>
 

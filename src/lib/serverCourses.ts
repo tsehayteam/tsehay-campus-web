@@ -209,7 +209,7 @@ export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoD
 
   const result: LiveLandingVideoData = {
     videoUrl: DEFAULT_LANDING_VIDEO,
-    thumbnail: '/assets/hero-bg-new.jpg'
+    thumbnail: ''
   };
 
   try {
@@ -222,15 +222,15 @@ export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoD
     if (setting && setting.data) {
       const data = setting.data;
       const url = data.url || data.videoUrl || data.youtubeUrl;
-      const thumb = data.landingVideoThumbnail || data.thumbnail || data.thumbnailUrl || data.poster;
+      const thumb = data.heroThumbnailUrl || data.posterUrl || data.landingVideoThumbnail || data.thumbnail || data.thumbnailUrl || data.thumbUrl || data.poster || '';
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
-      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
+      if (thumb && typeof thumb === 'string') result.thumbnail = thumb.trim();
     } else if (sharedSiteSettingsCache.has('landing_video')) {
       const cached = sharedSiteSettingsCache.get('landing_video');
       const url = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
-      const thumb = cached?.landingVideoThumbnail || cached?.thumbnail || cached?.thumbnailUrl || cached?.poster;
+      const thumb = cached?.heroThumbnailUrl || cached?.posterUrl || cached?.landingVideoThumbnail || cached?.thumbnail || cached?.thumbnailUrl || cached?.thumbUrl || cached?.poster || '';
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
-      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
+      if (thumb && typeof thumb === 'string') result.thumbnail = thumb.trim();
     }
 
     cachedLandingVideo = { data: result, timestamp: Date.now() };
@@ -239,9 +239,9 @@ export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoD
     if (sharedSiteSettingsCache.has('landing_video')) {
       const cached = sharedSiteSettingsCache.get('landing_video');
       const url = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
-      const thumb = cached?.landingVideoThumbnail || cached?.thumbnail || cached?.thumbnailUrl || cached?.poster;
+      const thumb = cached?.heroThumbnailUrl || cached?.posterUrl || cached?.landingVideoThumbnail || cached?.thumbnail || cached?.thumbnailUrl || cached?.thumbUrl || cached?.poster || '';
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
-      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
+      if (thumb && typeof thumb === 'string') result.thumbnail = thumb.trim();
     }
   }
 

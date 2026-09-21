@@ -19,9 +19,22 @@ export async function GET(req: NextRequest) {
       if (row?.data) {
         const data = row.data;
         const videoUrl = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumbnail = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster || '';
+        const thumbnail = data?.heroThumbnailUrl || data?.posterUrl || data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster || '';
         if (videoUrl || thumbnail) {
-          return NextResponse.json({ success: true, videoUrl, url: videoUrl, thumbnail, landingVideoThumbnail: thumbnail, data });
+          return NextResponse.json({ 
+            success: true, 
+            videoUrl, 
+            url: videoUrl, 
+            thumbnail, 
+            heroThumbnailUrl: thumbnail,
+            posterUrl: thumbnail,
+            landingVideoThumbnail: thumbnail, 
+            data 
+          }, {
+            headers: {
+              'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
+            }
+          });
         }
       }
     } catch (e) {}
@@ -29,9 +42,22 @@ export async function GET(req: NextRequest) {
     if (sharedSiteSettingsCache.has('landing_video')) {
       const cached = sharedSiteSettingsCache.get('landing_video');
       const videoUrl = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
-      const thumbnail = cached?.landingVideoThumbnail || cached?.thumbnail || cached?.thumbnailUrl || cached?.thumbUrl || cached?.poster || '';
+      const thumbnail = cached?.heroThumbnailUrl || cached?.posterUrl || cached?.landingVideoThumbnail || cached?.thumbnail || cached?.thumbnailUrl || cached?.thumbUrl || cached?.poster || '';
       if (videoUrl || thumbnail) {
-        return NextResponse.json({ success: true, videoUrl, url: videoUrl, thumbnail, landingVideoThumbnail: thumbnail, data: cached });
+        return NextResponse.json({ 
+          success: true, 
+          videoUrl, 
+          url: videoUrl, 
+          thumbnail, 
+          heroThumbnailUrl: thumbnail,
+          posterUrl: thumbnail,
+          landingVideoThumbnail: thumbnail, 
+          data: cached 
+        }, {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
+          }
+        });
       }
     }
 
@@ -57,11 +83,15 @@ export async function POST(req: NextRequest) {
     }
 
     const thumbnail = (
+      body.heroThumbnailUrl ||
+      body.posterUrl ||
       body.landingVideoThumbnail || 
       body.thumbnail || 
       body.thumbnailUrl || 
       body.thumbUrl || 
       body.poster || 
+      body.data?.heroThumbnailUrl ||
+      body.data?.posterUrl ||
       body.data?.landingVideoThumbnail || 
       body.data?.thumbnail || 
       ''
@@ -76,6 +106,8 @@ export async function POST(req: NextRequest) {
       thumbnailUrl: thumbnail,
       thumbUrl: thumbnail,
       poster: thumbnail,
+      posterUrl: thumbnail,
+      heroThumbnailUrl: thumbnail,
       settingKey: 'landing_video',
       updatedAt: new Date().toISOString()
     };

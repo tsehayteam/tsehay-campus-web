@@ -2263,16 +2263,24 @@ export default function AdminDashboard() {
     // 1. Instant local storage cache update for zero latency
     try {
       localStorage.setItem('tsehay_landing_video_cache', cleanUrl);
-      if (cleanThumb) {
-        localStorage.setItem('tsehay_landing_video_thumb', cleanThumb);
-      }
+      localStorage.setItem('tsehay_landing_video_thumb', cleanThumb);
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new CustomEvent('tsehay_landing_video_updated', {
-        detail: { videoUrl: cleanUrl, thumbnail: cleanThumb }
+        detail: { 
+          videoUrl: cleanUrl, 
+          thumbnail: cleanThumb,
+          heroThumbnailUrl: cleanThumb,
+          posterUrl: cleanThumb
+        }
       }));
       if (typeof BroadcastChannel !== 'undefined') {
         const bc = new BroadcastChannel('tsehay_landing_video_channel');
-        bc.postMessage({ videoUrl: cleanUrl, thumbnail: cleanThumb });
+        bc.postMessage({ 
+          videoUrl: cleanUrl, 
+          thumbnail: cleanThumb,
+          heroThumbnailUrl: cleanThumb,
+          posterUrl: cleanThumb
+        });
         setTimeout(() => bc.close(), 200);
       }
     } catch (e) {}
@@ -2292,7 +2300,9 @@ export default function AdminDashboard() {
             landingVideoThumbnail: cleanThumb,
             thumbnailUrl: cleanThumb,
             thumbUrl: cleanThumb,
-            poster: cleanThumb
+            poster: cleanThumb,
+            posterUrl: cleanThumb,
+            heroThumbnailUrl: cleanThumb
           }
         })
       });
@@ -2308,7 +2318,9 @@ export default function AdminDashboard() {
           landingVideoThumbnail: cleanThumb,
           thumbnailUrl: cleanThumb,
           thumbUrl: cleanThumb,
-          poster: cleanThumb
+          poster: cleanThumb,
+          posterUrl: cleanThumb,
+          heroThumbnailUrl: cleanThumb
         })
       });
 
