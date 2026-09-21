@@ -2697,10 +2697,7 @@ function StudentDashboardContent() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2.5">
-                    <span className="text-xs font-black uppercase tracking-wider text-[#f9b03c] bg-[#f9b03c]/15 px-3 py-1 rounded-full border border-[#f9b03c]/30 shadow-inner">
-                      የትኩረት ሁነታ (Focus Theater Mode)
-                    </span>
-                    <span className="text-xs text-slate-400 font-bold truncate max-w-[200px] sm:max-w-[400px]">
+                    <span className="text-xs sm:text-sm text-slate-400 font-bold truncate max-w-[250px] sm:max-w-[500px]">
                       {(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title}
                     </span>
                   </div>
