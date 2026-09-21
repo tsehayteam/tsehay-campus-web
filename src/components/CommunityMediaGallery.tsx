@@ -44,6 +44,7 @@ export default function CommunityMediaGallery({
 
   // Lightbox Modal State
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'masonry' | 'grid'>('masonry');
 
   // Sync prop changes from SSR
   useEffect(() => {
@@ -228,7 +229,7 @@ export default function CommunityMediaGallery({
   }
 
   // =========================================================================
-  // CASE 1: EXACTLY 1 ITEM -> FULL SPOTLIGHT DISPLAY
+  // CASE 1: EXACTLY 1 ITEM -> FULL SPOTLIGHT DISPLAY (PORTRAIT / SQUARE / LANDSCAPE)
   // =========================================================================
   if (validItems.length === 1) {
     const item = validItems[0];
@@ -262,15 +263,30 @@ export default function CommunityMediaGallery({
         ) : (
           <div
             onClick={() => setActiveLightboxIndex(0)}
-            className="group relative w-full aspect-video sm:aspect-[21/9] rounded-[24px] overflow-hidden cursor-pointer shadow-[0_20px_50px_rgba(0,0,0,0.7)] border-2 border-[#f9b03c]/30 hover:border-[#f9b03c]/70 bg-neutral-900 transition-all duration-500 hover:scale-[1.01]"
+            className="group relative w-full min-h-[360px] sm:min-h-[460px] max-h-[640px] rounded-[24px] overflow-hidden cursor-pointer shadow-[0_20px_50px_rgba(0,0,0,0.7)] border-2 border-[#f9b03c]/30 hover:border-[#f9b03c]/70 bg-neutral-950 transition-all duration-500 hover:scale-[1.008] flex items-center justify-center"
             title="በትልቁ ለማየት ይጫኑ (Click to view full image)"
           >
+            {/* Ambient Blurred Backdrop (Ensures zero dead space for portrait, square, or wide photos) */}
+            <img
+              src={parseImageUrl(item.url)}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none"
+            />
+            <div className="absolute inset-0 bg-black/35 backdrop-blur-[1px] pointer-events-none" />
+
+            {/* Foreground Photo (Respects true aspect ratio with object-contain/cover without distortion) */}
             <img
               src={parseImageUrl(item.url)}
               alt={item.title || "Tsehay Campus Community"}
-              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              className={`relative z-10 max-h-[600px] w-auto max-w-full ${item.fit === 'contain' ? 'object-contain p-2 sm:p-4' : 'object-contain sm:object-cover sm:w-full sm:h-full'} rounded-2xl transition-transform duration-700 ease-out group-hover:scale-[1.01] drop-shadow-2xl`}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/assets/about_video_cover.jpg';
+              }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-between p-6 opacity-90 group-hover:opacity-100 transition-opacity">
+
+            {/* Overlay Badges & Title */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-between p-6 opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none">
               <div className="flex items-center gap-2 text-white font-bold text-xs bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/20 shadow-lg">
                 <i className="fa-solid fa-expand text-[#f9b03c]"></i>
                 <span>{item.title || "በትልቁ ይመልከቱ (Full View)"}</span>
@@ -289,7 +305,7 @@ export default function CommunityMediaGallery({
   }
 
   // =========================================================================
-  // CASE 2: EXACTLY 2 ITEMS -> BALANCED 2-COLUMN GRID
+  // CASE 2: EXACTLY 2 ITEMS -> BALANCED 2-COLUMN GRID (ADAPTIVE HEIGHTS)
   // =========================================================================
   if (validItems.length === 2) {
     return (
@@ -297,7 +313,7 @@ export default function CommunityMediaGallery({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           {validItems.map((item, idx) => (
             <div key={item.id || idx} className="w-full">
-              {renderMediaCard(item, idx, "aspect-[16/10] sm:aspect-[4/3]")}
+              {renderMediaCard(item, idx, "h-[320px] sm:h-[400px]")}
             </div>
           ))}
         </div>
@@ -307,28 +323,73 @@ export default function CommunityMediaGallery({
   }
 
   // =========================================================================
-  // CASE 3+: MULTIPLE ITEMS -> MODERN RESPONSIVE GALLERY / MASONRY GRID
+  // CASE 3+: MULTIPLE ITEMS -> MODERN RESPONSIVE MASONRY / GRID LAYOUT
   // =========================================================================
   return (
-    <div className={`max-w-6xl mx-auto w-full ${className}`}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-        {validItems.map((item, idx) => {
-          // Subtle visual rhythm: if 5+ items, first item can span 2 columns on tablet/desktop
-          const isFeatured = validItems.length >= 5 && idx === 0;
-          const cardAspect = isFeatured 
-            ? "aspect-video sm:aspect-[16/9]" 
-            : "aspect-[4/3] sm:aspect-[16/11]";
-
-          return (
-            <div
-              key={item.id || idx}
-              className={`${isFeatured ? 'sm:col-span-2' : ''} w-full`}
+    <div className={`max-w-6xl mx-auto w-full ${className} space-y-4`}>
+      {/* View Mode Switcher Header */}
+      {validItems.length >= 3 && (
+        <div className="flex items-center justify-between pb-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+            <i className="fa-solid fa-images text-[#f9b03c]" />
+            <span>{validItems.length} ማህበረሰብ ሚዲያዎች (Community Media)</span>
+          </div>
+          <div className="inline-flex items-center p-1 rounded-xl bg-slate-900/80 border border-white/10 text-xs">
+            <button
+              type="button"
+              onClick={() => setViewMode('masonry')}
+              className={`px-3 py-1 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'masonry'
+                  ? 'bg-[#f9b03c] text-slate-950 shadow-sm'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+              title="ተለዋዋጭ አቀማመጥ (Masonry View)"
             >
-              {renderMediaCard(item, idx, cardAspect)}
+              <i className="fa-solid fa-table-cells-large" />
+              <span className="hidden sm:inline">ተለዋዋጭ (Masonry)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`px-3 py-1 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-[#f9b03c] text-slate-950 shadow-sm'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+              title="ወጥ ግሪድ (Grid View)"
+            >
+              <i className="fa-solid fa-grip" />
+              <span className="hidden sm:inline">ወጥ ግሪድ (Grid)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'masonry' ? (
+        /* True Masonry: Portrait, square, and landscape photos flow naturally without cropping */
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 [column-fill:_balance]">
+          {validItems.map((item, idx) => (
+            <div key={item.id || idx} className="break-inside-avoid mb-5">
+              {renderMediaCard(item, idx, "h-auto max-h-[580px]")}
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      ) : (
+        /* Uniform Grid */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {validItems.map((item, idx) => {
+            const isFeatured = validItems.length >= 5 && idx === 0;
+            return (
+              <div
+                key={item.id || idx}
+                className={`${isFeatured ? 'sm:col-span-2' : ''} w-full`}
+              >
+                {renderMediaCard(item, idx, isFeatured ? "h-[340px] sm:h-[420px]" : "h-[280px] sm:h-[340px]")}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {renderLightbox()}
     </div>
@@ -340,22 +401,33 @@ export default function CommunityMediaGallery({
   function renderMediaCard(item: CommunityMediaItem, idx: number, aspectClass: string) {
     const isVid = isMediaVideo(item.url);
     const parsedImg = parseImageUrl(item.url);
+    const isContain = item.fit === 'contain';
 
     return (
       <div
         onClick={() => setActiveLightboxIndex(idx)}
         style={{
-          background: 'rgba(255, 255, 255, 0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'rgba(15, 23, 42, 0.75)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
         }}
-        className={`group relative w-full ${aspectClass} rounded-2xl overflow-hidden cursor-pointer shadow-xl hover:shadow-[0_15px_40px_rgba(249,176,60,0.25)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:-translate-y-1`}
+        className={`group relative w-full ${aspectClass} rounded-2xl overflow-hidden cursor-pointer shadow-xl hover:shadow-[0_15px_40px_rgba(249,176,60,0.25)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:-translate-y-1 flex items-center justify-center bg-neutral-950`}
         title={item.title || (isVid ? "ቪዲዮውን ለማየት ይጫኑ (Click to Play)" : "በትልቁ ለማየት ይጫኑ (Click to View)")}
       >
-        {/* Media Image / Thumbnail */}
+        {/* Ambient Blurred Background (Matches photo colors & fills any ratio seamlessly) */}
+        <img
+          src={parsedImg}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-125 pointer-events-none select-none"
+        />
+        <div className="absolute inset-0 bg-black/25 pointer-events-none" />
+
+        {/* Foreground Media Image (Respects true aspect ratio, never distorted or stretched) */}
         <img
           src={parsedImg}
           alt={item.title || `Community Media ${idx + 1}`}
-          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          className={`relative z-10 w-full ${aspectClass.includes('h-auto') ? 'h-auto max-h-[560px]' : 'h-full'} ${isContain ? 'object-contain p-2' : 'object-cover'} transition-transform duration-700 ease-out group-hover:scale-105`}
+          loading="lazy"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = '/assets/about_video_cover.jpg';
           }}
@@ -391,9 +463,16 @@ export default function CommunityMediaGallery({
               </>
             )}
           </span>
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-white/60 bg-black/40 backdrop-blur-xs">
-            #{idx + 1}
-          </span>
+          <div className="flex items-center gap-1">
+            {isContain && (
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold text-[#f9b03c] bg-black/60 backdrop-blur-xs border border-[#f9b03c]/30">
+                ሙሉ
+              </span>
+            )}
+            <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-white/60 bg-black/40 backdrop-blur-xs">
+              #{idx + 1}
+            </span>
+          </div>
         </div>
 
         {/* Bottom Title & Action Bar */}

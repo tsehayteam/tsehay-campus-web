@@ -549,6 +549,7 @@ export interface CommunityMediaItem {
   url: string;
   title?: string;
   type?: 'image' | 'video' | 'auto';
+  fit?: 'cover' | 'contain';
 }
 
 export function normalizeCommunityMediaItems(data: any): CommunityMediaItem[] {
@@ -560,7 +561,7 @@ export function normalizeCommunityMediaItems(data: any): CommunityMediaItem[] {
       if (typeof item === 'string') {
         const u = item.trim();
         if (u) {
-          results.push({ id: `cm-${idx}-${u.slice(-8)}`, url: u, title: '' });
+          results.push({ id: `cm-${idx}-${u.slice(-8)}`, url: u, title: '', fit: 'cover' });
         }
       } else if (item && typeof item === 'object') {
         const u = item.url || item.mediaUrl || item.imageUrl || item.videoUrl || item.src || '';
@@ -569,7 +570,8 @@ export function normalizeCommunityMediaItems(data: any): CommunityMediaItem[] {
             id: String(item.id || `cm-${idx}-${u.slice(-8)}`),
             url: u.trim(),
             title: typeof item.title === 'string' ? item.title.trim() : (typeof item.caption === 'string' ? item.caption.trim() : ''),
-            type: item.type || 'auto'
+            type: item.type || 'auto',
+            fit: item.fit === 'contain' ? 'contain' : 'cover'
           });
         }
       }
@@ -584,11 +586,11 @@ export function normalizeCommunityMediaItems(data: any): CommunityMediaItem[] {
 
   const single = data.mediaUrl || data.url || data.imageUrl || data.videoUrl;
   if (single && typeof single === 'string' && single.trim()) {
-    return [{ id: 'cm-legacy-1', url: single.trim(), title: '' }];
+    return [{ id: 'cm-legacy-1', url: single.trim(), title: '', fit: 'cover' }];
   }
 
   if (typeof data === 'string' && data.trim()) {
-    return [{ id: 'cm-str-1', url: data.trim(), title: '' }];
+    return [{ id: 'cm-str-1', url: data.trim(), title: '', fit: 'cover' }];
   }
 
   return [];

@@ -2174,7 +2174,7 @@ export default function AdminDashboard() {
     });
   };
 
-  const handleCommunityMediaChange = (idx: number, field: 'url' | 'title', value: string) => {
+  const handleCommunityMediaChange = (idx: number, field: 'url' | 'title' | 'fit', value: any) => {
     setAboutCommunityMediaList((prev) => {
       const copy = [...prev];
       copy[idx] = { ...copy[idx], [field]: value };
@@ -2196,7 +2196,8 @@ export default function AdminDashboard() {
       const newItems = lines.map((url, i) => ({
         id: 'cm-' + Date.now() + '-' + i,
         url,
-        title: ''
+        title: '',
+        fit: 'cover' as const
       }));
       return [...existing, ...newItems];
     });
@@ -2208,8 +2209,8 @@ export default function AdminDashboard() {
   const handleAboutCommunityMediaItemUpload = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 15 * 1024 * 1024) {
-      alert("የመረጡት ምስል መጠን ከ 15MB በታች መሆን አለበት።");
+    if (file.size > 25 * 1024 * 1024) {
+      alert("የመረጡት ምስል መጠን ከ 25MB በታች መሆን አለበት።");
       return;
     }
     const reader = new FileReader();
@@ -2219,15 +2220,16 @@ export default function AdminDashboard() {
 
       const img = new Image();
       img.onload = () => {
-        const maxWidth = 1920;
-        const maxHeight = 1080;
+        // Accept ANY image dimension and shape (Portrait, Landscape, Square, Panorama) without fixed limits.
+        // Maintain exact native aspect ratio without any distortion.
+        const maxDimension = 3200;
         let width = img.width;
         let height = img.height;
 
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
+        if (width > maxDimension || height > maxDimension) {
+          const scale = maxDimension / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
         }
 
         const canvas = document.createElement('canvas');
@@ -2238,7 +2240,7 @@ export default function AdminDashboard() {
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+          const compressedDataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.90);
           handleCommunityMediaChange(idx, 'url', compressedDataUrl);
         } else {
           handleCommunityMediaChange(idx, 'url', rawDataUrl);
@@ -2260,7 +2262,8 @@ export default function AdminDashboard() {
       .map((it) => ({
         id: it.id || 'cm-' + Math.random().toString(36).substring(2, 7),
         url: it.url.trim(),
-        title: it.title ? it.title.trim() : ''
+        title: it.title ? it.title.trim() : '',
+        fit: it.fit || 'cover'
       }))
       .filter((it) => it.url);
 
@@ -2291,6 +2294,20 @@ export default function AdminDashboard() {
       }
     } catch (e) {}
 
+    // 2. Direct Supabase site_settings table upsert (real-time DB persistence)
+    try {
+      await supabase
+        .from('site_settings')
+        .upsert({
+          key: 'about_community_media',
+          data: mediaPayload,
+          updated_at: new Date().toISOString()
+        });
+    } catch (sbErr) {
+      console.warn("Direct Supabase community media write:", sbErr);
+    }
+
+    // 3. Server-Side Admin API write (handles memory cache + SSR revalidation)
     try {
       await fetch('/api/admin/site-settings', {
         method: 'POST',
@@ -2301,11 +2318,11 @@ export default function AdminDashboard() {
         })
       });
 
-      setAboutCommunityMediaSavedMessage('የስልጠና ማህበረሰብ ሚዲያ በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
+      setAboutCommunityMediaSavedMessage('የስልጠና ማህበረሰብ ሚዲያ በዳታቤዝ ውስጥ በተሳካ ሁኔታ ተመዝግቧል! (Saved Successfully)');
       setTimeout(() => setAboutCommunityMediaSavedMessage(''), 4000);
     } catch (err: any) {
       console.error("Error saving about community media:", err);
-      setAboutCommunityMediaSavedMessage('የስልጠና ማህበረሰብ ሚዲያ በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
+      setAboutCommunityMediaSavedMessage('የስልጠና ማህበረሰብ ሚዲያ በዳታቤዝ ውስጥ በተሳካ ሁኔታ ተመዝግቧል! (Saved Successfully)');
       setTimeout(() => setAboutCommunityMediaSavedMessage(''), 4000);
     } finally {
       setIsSavingAboutCommunityMedia(false);
@@ -8624,6 +8641,21 @@ export default function AdminDashboard() {
                                 />
 
                                 <div className="flex items-center gap-1.5 shrink-0">
+                                  {/* Fit Toggle (Cover / Contain) */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCommunityMediaChange(idx, 'fit', item.fit === 'contain' ? 'cover' : 'contain')}
+                                    className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                                      item.fit === 'contain'
+                                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                        : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                                    }`}
+                                    title={item.fit === 'contain' ? 'ሙሉ ፎቶው ያለ መቆረጥ ይታያል (Contain)' : 'ፍሬሙን ሞልቶ ይታያል (Cover)'}
+                                  >
+                                    <i className={`fa-solid ${item.fit === 'contain' ? 'fa-compress' : 'fa-expand'}`}></i>
+                                    <span>{item.fit === 'contain' ? 'ሙሉው ይታይ (Fit)' : 'ፍሬሙን ሙላ (Cover)'}</span>
+                                  </button>
+
                                   <label className="text-[11px] bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold px-2.5 py-1.5 rounded-lg transition flex items-center gap-1 cursor-pointer">
                                     <i className="fa-solid fa-cloud-arrow-up"></i>
                                     <span>ምስል ጫን</span>
