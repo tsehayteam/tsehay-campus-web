@@ -44,7 +44,6 @@ export default function CommunityMediaGallery({
 
   // Lightbox Modal State
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'masonry' | 'grid'>('masonry');
 
   // Sync prop changes from SSR
   useEffect(() => {
@@ -304,16 +303,14 @@ export default function CommunityMediaGallery({
               }}
             />
 
-            {/* Overlay Badges & Title */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-between p-6 opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none">
-              <div className="flex items-center gap-2 text-white font-bold text-xs bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/20 shadow-lg">
-                <i className="fa-solid fa-expand text-[#f9b03c]"></i>
-                <span>{item.title || "በትልቁ ይመልከቱ (Full View)"}</span>
+            {/* Optional Caption on Hover */}
+            {item.title && (
+              <div className="absolute inset-x-0 bottom-0 z-20 p-5 bg-gradient-to-t from-black/85 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                <p className="text-white text-sm sm:text-base font-bold tracking-tight truncate drop-shadow-md">
+                  {item.title}
+                </p>
               </div>
-              <span className="text-xs font-bold text-[#f9b03c] tracking-wider uppercase bg-black/50 backdrop-blur-xs px-3 py-1 rounded-lg border border-[#f9b03c]/30">
-                Tsehay Campus
-              </span>
-            </div>
+            )}
           </div>
         )}
 
@@ -324,19 +321,13 @@ export default function CommunityMediaGallery({
   }
 
   // =========================================================================
-  // CASE 2+: MULTIPLE ITEMS -> UNIFIED RESPONSIVE MASONRY / GRID LAYOUT
-  // Renders ALL uploaded photos & videos without any limit or truncation
+  // CASE 2+: MULTIPLE ITEMS -> CLEAN MINIMALIST RESPONSIVE MASONRY
+  // Pure photos with zero technical clutter, labels, or side text
   // =========================================================================
   const getContainerMaxWidth = () => {
     if (validItems.length === 2) return 'max-w-5xl';
     if (validItems.length === 3) return 'max-w-6xl';
     return 'max-w-7xl';
-  };
-
-  const getGridColumnsClass = () => {
-    if (validItems.length === 2) return 'grid-cols-1 sm:grid-cols-2 gap-6';
-    if (validItems.length === 3) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5';
-    return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6';
   };
 
   const getMasonryColumnsClass = () => {
@@ -346,80 +337,22 @@ export default function CommunityMediaGallery({
   };
 
   return (
-    <div className={`${getContainerMaxWidth()} mx-auto w-full ${className} space-y-5`}>
-      {/* Dynamic Header & View Mode Switcher */}
-      <div className="flex items-center justify-between pb-1 px-1">
-        <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
-          <i className="fa-solid fa-images text-[#f9b03c]" />
-          <span>
-            {validItems.length} በስልጠና ላይ ያሉ ተማሪዎች ፎቶዎች / ሚዲያዎች (Community Media)
-          </span>
-        </div>
-        {validItems.length >= 2 && (
-          <div className="inline-flex items-center p-1 rounded-xl bg-slate-900/80 border border-white/10 text-xs">
-            <button
-              type="button"
-              onClick={() => setViewMode('masonry')}
-              className={`px-3 py-1 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'masonry'
-                  ? 'bg-[#f9b03c] text-slate-950 shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-              title="ተለዋዋጭ አቀማመጥ (Masonry View)"
-            >
-              <i className="fa-solid fa-table-cells-large" />
-              <span className="hidden sm:inline">ተለዋዋጭ (Masonry)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`px-3 py-1 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'grid'
-                  ? 'bg-[#f9b03c] text-slate-950 shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-              title="ወጥ ግሪድ (Grid View)"
-            >
-              <i className="fa-solid fa-grip" />
-              <span className="hidden sm:inline">ወጥ ግሪድ (Grid)</span>
-            </button>
+    <div className={`${getContainerMaxWidth()} mx-auto w-full ${className}`}>
+      {/* Clean Fluid Masonry: Portrait, square, and landscape photos flow naturally without cropping */}
+      <div className={`${getMasonryColumnsClass()} [column-fill:_balance]`}>
+        {validItems.map((item, idx) => (
+          <div key={item.id || idx} className="break-inside-avoid mb-5">
+            {renderMediaCard(item, idx, "h-auto max-h-[580px]")}
           </div>
-        )}
+        ))}
       </div>
-
-      {/* Render Full Array of Items */}
-      {viewMode === 'masonry' ? (
-        /* True Masonry: Portrait, square, and landscape photos flow naturally without cropping */
-        <div className={`${getMasonryColumnsClass()} [column-fill:_balance]`}>
-          {validItems.map((item, idx) => (
-            <div key={item.id || idx} className="break-inside-avoid mb-5">
-              {renderMediaCard(item, idx, "h-auto max-h-[580px]")}
-            </div>
-          ))}
-        </div>
-      ) : (
-        /* Uniform Responsive Grid: All photos aligned */
-        <div className={`grid ${getGridColumnsClass()}`}>
-          {validItems.map((item, idx) => {
-            const isFeatured = validItems.length >= 5 && idx === 0;
-            return (
-              <div
-                key={item.id || idx}
-                className={`${isFeatured ? 'sm:col-span-2' : ''} w-full`}
-              >
-                {renderMediaCard(item, idx, isFeatured ? "h-[340px] sm:h-[420px]" : "h-[280px] sm:h-[340px]")}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {renderLightbox()}
     </div>
   );
 
   // =========================================================================
-  // HELPER: RENDER INDIVIDUAL MEDIA CARD
+  // HELPER: RENDER INDIVIDUAL MEDIA CARD (CLEAN & MINIMALIST)
   // =========================================================================
   function renderMediaCard(item: CommunityMediaItem, idx: number, aspectClass: string) {
     const isVid = isMediaVideo(item.url);
@@ -456,12 +389,9 @@ export default function CommunityMediaGallery({
           }}
         />
 
-        {/* Dark Bottom Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none transition-opacity duration-300" />
-
         {/* Video Overlay Play Icon */}
         {isVid && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <div className="relative flex items-center justify-center">
               <div className="absolute -inset-3 rounded-full bg-[#f9b03c]/30 blur-md group-hover:bg-[#f9b03c]/50 transition duration-300 animate-pulse" />
               <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -471,50 +401,14 @@ export default function CommunityMediaGallery({
           </div>
         )}
 
-        {/* Top Badges */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-          <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-black/60 backdrop-blur-md border border-white/10 text-white flex items-center gap-1.5 shadow-md">
-            {isVid ? (
-              <>
-                <i className="fa-solid fa-video text-[#f9b03c]" />
-                <span>ቪዲዮ (Video)</span>
-              </>
-            ) : (
-              <>
-                <i className="fa-solid fa-camera text-[#3268ba]" />
-                <span>ምስል (Photo)</span>
-              </>
-            )}
-          </span>
-          <div className="flex items-center gap-1">
-            {isContain && (
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold text-[#f9b03c] bg-black/60 backdrop-blur-xs border border-[#f9b03c]/30">
-                ሙሉ
-              </span>
-            )}
-            <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-white/60 bg-black/40 backdrop-blur-xs">
-              #{idx + 1}
-            </span>
+        {/* Optional Caption on Hover (Only if admin set a custom title) */}
+        {item.title && (
+          <div className="absolute inset-x-0 bottom-0 z-20 p-3.5 bg-gradient-to-t from-black/85 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <p className="text-white text-xs sm:text-sm font-semibold tracking-tight truncate drop-shadow-md">
+              {item.title}
+            </p>
           </div>
-        </div>
-
-        {/* Bottom Title & Action Bar */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between pointer-events-none">
-          <div className="max-w-[80%]">
-            {item.title ? (
-              <p className="text-white text-xs sm:text-sm font-bold tracking-tight truncate drop-shadow-md">
-                {item.title}
-              </p>
-            ) : (
-              <p className="text-white/80 text-xs font-medium tracking-tight">
-                Tsehay Campus • ማህበረሰብ
-              </p>
-            )}
-          </div>
-          <div className="w-8 h-8 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-[#f9b03c] flex items-center justify-center text-xs group-hover:scale-110 transition-transform">
-            <i className={`fa-solid ${isVid ? 'fa-play' : 'fa-expand'}`} />
-          </div>
-        </div>
+        )}
       </div>
     );
   }

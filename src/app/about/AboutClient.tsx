@@ -384,13 +384,13 @@ export default function AboutClient({
             </div>
 
             {/* =========================================================================
-                 SINGLE CLEAN COMMUNITY PHOTO (NO TEXT OVERLAYS)
+                 CLEAN MINIMALIST COMMUNITY PHOTO GALLERY
                ========================================================================= */}
-            <div className="space-y-8 pt-8 border-t border-white/5">
-              <div className="text-center max-w-3xl mx-auto">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#3268ba]/10 border border-[#3268ba]/30 text-[#5a93e8] text-xs font-bold mb-3 shadow-[0_0_15px_rgba(50,104,186,0.15)]">
-                  <i className="fa-solid fa-camera-retro text-[11px]"></i>
-                  <span>የስልጠና ማህበረሰብ • Campus Community</span>
+            <div className="space-y-6 pt-10 border-t border-white/5">
+              <div className="text-center max-w-3xl mx-auto space-y-2">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#3268ba]/10 border border-[#3268ba]/30 text-[#5a93e8] text-xs font-bold shadow-[0_0_15px_rgba(50,104,186,0.15)]">
+                  <i className="fa-solid fa-users text-[11px] text-[#f9b03c]"></i>
+                  <span>የስልጠና ማህበረሰብ / Campus Community</span>
                 </div>
                 <h2 className="text-2xl sm:text-4xl font-black font-heading text-white tracking-tight">
                   በስልጠና ላይ ያሉ ተማሪዎች
