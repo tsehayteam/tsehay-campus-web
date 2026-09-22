@@ -293,11 +293,11 @@ export default function CommunityMediaGallery({
             />
             <div className="absolute inset-0 bg-black/35 backdrop-blur-[1px] pointer-events-none" />
 
-            {/* Foreground Photo (Respects true aspect ratio with object-contain/cover without distortion) */}
+            {/* Foreground Photo (Full uncropped image display with object-contain) */}
             <img
               src={parseImageUrl(item.url)}
               alt={item.title || "Tsehay Campus Community"}
-              className={`relative z-10 max-h-[600px] w-auto max-w-full ${item.fit === 'contain' ? 'object-contain p-2 sm:p-4' : 'object-contain sm:object-cover sm:w-full sm:h-full'} rounded-2xl transition-transform duration-700 ease-out group-hover:scale-[1.01] drop-shadow-2xl`}
+              className="relative z-10 max-h-[560px] w-auto max-w-full object-contain p-2 sm:p-4 rounded-2xl transition-transform duration-700 ease-out group-hover:scale-[1.01] drop-shadow-2xl"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = '/assets/about_video_cover.jpg';
               }}
@@ -426,7 +426,7 @@ export default function CommunityMediaGallery({
     const isAdjacent = Math.abs(diff) === 1;
     const isOuter = Math.abs(diff) === 2;
 
-    let xPercent = -50;
+    let xOffsetPercent = 0;
     let xOffsetPx = 0;
     let rotateY = 0;
     let scale = 1;
@@ -443,7 +443,7 @@ export default function CommunityMediaGallery({
       brightness = 1;
     } else if (isAdjacent) {
       const dir = diff > 0 ? 1 : -1;
-      xPercent = -50 + dir * 62;
+      xOffsetPercent = dir * 64;
       scale = 0.88;
       rotateY = dir * -16;
       opacity = 0.72;
@@ -451,7 +451,7 @@ export default function CommunityMediaGallery({
       brightness = 0.85;
     } else if (isOuter) {
       const dir = diff > 0 ? 1 : -1;
-      xPercent = -50 + dir * 115;
+      xOffsetPercent = dir * 115;
       scale = 0.72;
       rotateY = dir * -24;
       opacity = 0.32;
@@ -459,7 +459,7 @@ export default function CommunityMediaGallery({
       brightness = 0.55;
     } else {
       const dir = diff > 0 ? 1 : -1;
-      xPercent = -50 + dir * 160;
+      xOffsetPercent = dir * 160;
       scale = 0.5;
       rotateY = dir * -30;
       opacity = 0;
@@ -467,7 +467,7 @@ export default function CommunityMediaGallery({
     }
 
     return {
-      transform: `translateX(${xPercent}%) translateX(${xOffsetPx}px) scale(${scale}) rotateY(${rotateY}deg)`,
+      transform: `translate(-50%, -50%) translateX(${xOffsetPercent}%) translateX(${xOffsetPx}px) scale(${scale}) rotateY(${rotateY}deg)`,
       opacity,
       zIndex,
       filter: `brightness(${brightness})`,
@@ -483,9 +483,9 @@ export default function CommunityMediaGallery({
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => { setIsPaused(false); setIsDragging(false); }}
     >
-      {/* 3D Stage Container */}
+      {/* 3D Stage Container (Optimized height for zero top dead space) */}
       <div 
-        className="relative w-full h-[360px] sm:h-[440px] md:h-[500px] lg:h-[540px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
+        className="relative w-full h-[320px] sm:h-[390px] md:h-[450px] lg:h-[490px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
         style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -495,7 +495,7 @@ export default function CommunityMediaGallery({
         onMouseUp={handleMouseUp}
       >
         {/* Ambient Stage Background Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[320px] bg-[radial-gradient(circle_at_50%_50%,rgba(249,176,60,0.14)_0%,transparent_70%)] pointer-events-none blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[300px] bg-[radial-gradient(circle_at_50%_50%,rgba(249,176,60,0.12)_0%,transparent_70%)] pointer-events-none blur-3xl" />
 
         {/* 3D Coverflow Slides */}
         {validItems.map((item, idx) => {
@@ -509,27 +509,27 @@ export default function CommunityMediaGallery({
               key={item.id || idx}
               style={style}
               onClick={() => handleCardClick(idx)}
-              className={`absolute top-1/2 left-1/2 w-[270px] sm:w-[380px] md:w-[480px] lg:w-[540px] h-[310px] sm:h-[390px] md:h-[450px] lg:h-[480px] rounded-[24px] sm:rounded-[28px] overflow-hidden transition-all flex items-center justify-center bg-slate-950 ${
+              className={`absolute top-1/2 left-1/2 w-[270px] sm:w-[370px] md:w-[460px] lg:w-[520px] h-[300px] sm:h-[370px] md:h-[430px] lg:h-[470px] rounded-[24px] sm:rounded-[28px] overflow-hidden transition-all flex items-center justify-center bg-slate-950/95 ${
                 isCenter 
-                  ? 'border-2 border-[#f9b03c]/90 shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(249,176,60,0.35)]' 
+                  ? 'border-2 border-[#f9b03c]/90 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_35px_rgba(249,176,60,0.35)]' 
                   : 'border border-white/15 shadow-[0_15px_35px_rgba(0,0,0,0.7)]'
               }`}
               title={isCenter ? "በትልቁ ለማየት ይጫኑ (Click to View Fullscreen)" : "ይህንን ለማየት ይጫኑ (Click to Select)"}
             >
-              {/* Ambient Blurred Background (fills any shape/orientation) */}
+              {/* Ambient Blurred Background (fills any shape/orientation seamlessly) */}
               <img
                 src={parsedImg}
                 alt=""
                 aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-45 scale-125 pointer-events-none select-none"
+                className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none"
               />
               <div className="absolute inset-0 bg-black/25 pointer-events-none" />
 
-              {/* Foreground Photo (Respects true native aspect ratio) */}
+              {/* Foreground Photo (Full uncropped image display with object-contain on all devices) */}
               <img
                 src={parsedImg}
                 alt={item.title || `Community Photo ${idx + 1}`}
-                className="relative z-10 w-full h-full object-contain sm:object-cover rounded-[22px] sm:rounded-[26px] select-none pointer-events-none"
+                className="relative z-10 w-full h-full object-contain p-2 sm:p-3 rounded-[22px] sm:rounded-[26px] select-none pointer-events-none drop-shadow-md"
                 loading="lazy"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = '/assets/about_video_cover.jpg';

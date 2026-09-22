@@ -386,8 +386,8 @@ export default function AboutClient({
             {/* =========================================================================
                  CLEAN MINIMALIST COMMUNITY PHOTO GALLERY
                ========================================================================= */}
-            <div className="space-y-6 pt-10 border-t border-white/5">
-              <div className="text-center max-w-3xl mx-auto space-y-2">
+            <div className="space-y-3 sm:space-y-4 pt-6 border-t border-white/5">
+              <div className="text-center max-w-3xl mx-auto space-y-1.5">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#3268ba]/10 border border-[#3268ba]/30 text-[#5a93e8] text-xs font-bold shadow-[0_0_15px_rgba(50,104,186,0.15)]">
                   <i className="fa-solid fa-users text-[11px] text-[#f9b03c]"></i>
                   <span>የስልጠና ማህበረሰብ / Campus Community</span>
