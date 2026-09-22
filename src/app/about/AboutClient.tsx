@@ -393,7 +393,7 @@ export default function AboutClient({
                   <span>የስልጠና ማህበረሰብ • Campus Community</span>
                 </div>
                 <h2 className="text-2xl sm:text-4xl font-black font-heading text-white tracking-tight">
-                  በስልጠና ላይ ያሉ
+                  በስልጠና ላይ ያሉ ተማሪዎች
                 </h2>
               </div>
 

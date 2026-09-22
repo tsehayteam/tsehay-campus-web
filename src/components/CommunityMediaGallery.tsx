@@ -92,9 +92,28 @@ export default function CommunityMediaGallery({
     };
     window.addEventListener('storage', handleStorage);
 
-    // 4. Initial Fail-Safe API check with cache: no-store
+    // 4. Initial Multi-Tier Fresh Fetch (Direct Supabase + API Fail-Safe)
     const fetchFresh = async () => {
       try {
+        // Direct Supabase fetch for zero API gateway latency
+        try {
+          const { data: sbData } = await supabase
+            .from('site_settings')
+            .select('data')
+            .eq('key', 'about_community_media')
+            .maybeSingle();
+
+          if (sbData?.data && !isCancelled) {
+            const normalized = normalizeCommunityMediaItems(sbData.data);
+            if (normalized.length > 0) {
+              setItems(normalized);
+              try {
+                localStorage.setItem('tsehay_about_community_media_cache', JSON.stringify(sbData.data));
+              } catch (e) {}
+            }
+          }
+        } catch (sbErr) {}
+
         let res = await fetch(`/api/admin/site-settings?settingKey=about_community_media&t=${Date.now()}`, {
           cache: 'no-store',
           headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
@@ -305,35 +324,38 @@ export default function CommunityMediaGallery({
   }
 
   // =========================================================================
-  // CASE 2: EXACTLY 2 ITEMS -> BALANCED 2-COLUMN GRID (ADAPTIVE HEIGHTS)
+  // CASE 2+: MULTIPLE ITEMS -> UNIFIED RESPONSIVE MASONRY / GRID LAYOUT
+  // Renders ALL uploaded photos & videos without any limit or truncation
   // =========================================================================
-  if (validItems.length === 2) {
-    return (
-      <div className={`max-w-5xl mx-auto w-full ${className}`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          {validItems.map((item, idx) => (
-            <div key={item.id || idx} className="w-full">
-              {renderMediaCard(item, idx, "h-[320px] sm:h-[400px]")}
-            </div>
-          ))}
-        </div>
-        {renderLightbox()}
-      </div>
-    );
-  }
+  const getContainerMaxWidth = () => {
+    if (validItems.length === 2) return 'max-w-5xl';
+    if (validItems.length === 3) return 'max-w-6xl';
+    return 'max-w-7xl';
+  };
 
-  // =========================================================================
-  // CASE 3+: MULTIPLE ITEMS -> MODERN RESPONSIVE MASONRY / GRID LAYOUT
-  // =========================================================================
+  const getGridColumnsClass = () => {
+    if (validItems.length === 2) return 'grid-cols-1 sm:grid-cols-2 gap-6';
+    if (validItems.length === 3) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5';
+    return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6';
+  };
+
+  const getMasonryColumnsClass = () => {
+    if (validItems.length === 2) return 'columns-1 sm:columns-2 gap-6';
+    if (validItems.length === 3) return 'columns-1 sm:columns-2 lg:columns-3 gap-5';
+    return 'columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-5';
+  };
+
   return (
-    <div className={`max-w-6xl mx-auto w-full ${className} space-y-4`}>
-      {/* View Mode Switcher Header */}
-      {validItems.length >= 3 && (
-        <div className="flex items-center justify-between pb-1">
-          <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
-            <i className="fa-solid fa-images text-[#f9b03c]" />
-            <span>{validItems.length} ማህበረሰብ ሚዲያዎች (Community Media)</span>
-          </div>
+    <div className={`${getContainerMaxWidth()} mx-auto w-full ${className} space-y-5`}>
+      {/* Dynamic Header & View Mode Switcher */}
+      <div className="flex items-center justify-between pb-1 px-1">
+        <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+          <i className="fa-solid fa-images text-[#f9b03c]" />
+          <span>
+            {validItems.length} በስልጠና ላይ ያሉ ተማሪዎች ፎቶዎች / ሚዲያዎች (Community Media)
+          </span>
+        </div>
+        {validItems.length >= 2 && (
           <div className="inline-flex items-center p-1 rounded-xl bg-slate-900/80 border border-white/10 text-xs">
             <button
               type="button"
@@ -362,12 +384,13 @@ export default function CommunityMediaGallery({
               <span className="hidden sm:inline">ወጥ ግሪድ (Grid)</span>
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
+      {/* Render Full Array of Items */}
       {viewMode === 'masonry' ? (
         /* True Masonry: Portrait, square, and landscape photos flow naturally without cropping */
-        <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 [column-fill:_balance]">
+        <div className={`${getMasonryColumnsClass()} [column-fill:_balance]`}>
           {validItems.map((item, idx) => (
             <div key={item.id || idx} className="break-inside-avoid mb-5">
               {renderMediaCard(item, idx, "h-auto max-h-[580px]")}
@@ -375,8 +398,8 @@ export default function CommunityMediaGallery({
           ))}
         </div>
       ) : (
-        /* Uniform Grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+        /* Uniform Responsive Grid: All photos aligned */
+        <div className={`grid ${getGridColumnsClass()}`}>
           {validItems.map((item, idx) => {
             const isFeatured = validItems.length >= 5 && idx === 0;
             return (
