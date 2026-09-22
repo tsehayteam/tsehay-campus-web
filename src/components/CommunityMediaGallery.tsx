@@ -320,98 +320,297 @@ export default function CommunityMediaGallery({
     );
   }
 
-  // =========================================================================
-  // CASE 2+: MULTIPLE ITEMS -> CLEAN MINIMALIST RESPONSIVE MASONRY
-  // Pure photos with zero technical clutter, labels, or side text
-  // =========================================================================
-  const getContainerMaxWidth = () => {
-    if (validItems.length === 2) return 'max-w-5xl';
-    if (validItems.length === 3) return 'max-w-6xl';
-    return 'max-w-7xl';
+  // Active Slide State for 3D Coverflow Slider
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handlePrevSlide = useCallback(() => {
+    if (validItems.length <= 1) return;
+    setActiveIndex((prev) => (prev - 1 + validItems.length) % validItems.length);
+  }, [validItems.length]);
+
+  const handleNextSlide = useCallback(() => {
+    if (validItems.length <= 1) return;
+    setActiveIndex((prev) => (prev + 1) % validItems.length);
+  }, [validItems.length]);
+
+  // Smooth Autoplay with pause on hover & touch interaction
+  useEffect(() => {
+    if (isPaused || validItems.length <= 1) return;
+    const timer = setInterval(() => {
+      handleNextSlide();
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [isPaused, validItems.length, handleNextSlide]);
+
+  // Circular distance helper for infinite carousel math
+  const getSlideDiff = useCallback((index: number, active: number, total: number) => {
+    if (total <= 1) return 0;
+    let diff = (index - active) % total;
+    while (diff < -total / 2) diff += total;
+    while (diff > total / 2) diff -= total;
+    return diff;
+  }, []);
+
+  // Touch & Swipe Event Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsPaused(true);
+    setTouchStartX(e.touches[0].clientX);
+    setDragOffset(0);
   };
 
-  const getMasonryColumnsClass = () => {
-    if (validItems.length === 2) return 'columns-1 sm:columns-2 gap-6';
-    if (validItems.length === 3) return 'columns-1 sm:columns-2 lg:columns-3 gap-5';
-    return 'columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-5';
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const currentX = e.touches[0].clientX;
+    setDragOffset(currentX - touchStartX);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX !== null) {
+      if (dragOffset < -40) {
+        handleNextSlide();
+      } else if (dragOffset > 40) {
+        handlePrevSlide();
+      }
+    }
+    setTouchStartX(null);
+    setDragOffset(0);
+    setTimeout(() => setIsPaused(false), 2500);
+  };
+
+  // Desktop Mouse Drag Event Handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setIsPaused(true);
+    setTouchStartX(e.clientX);
+    setDragOffset(0);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || touchStartX === null) return;
+    setDragOffset(e.clientX - touchStartX);
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging && touchStartX !== null) {
+      if (dragOffset < -50) {
+        handleNextSlide();
+      } else if (dragOffset > 50) {
+        handlePrevSlide();
+      }
+    }
+    setIsDragging(false);
+    setTouchStartX(null);
+    setDragOffset(0);
+    setIsPaused(false);
+  };
+
+  // Card click handler: center card opens lightbox, side cards rotate slider
+  const handleCardClick = (idx: number) => {
+    if (Math.abs(dragOffset) > 15) return;
+    const diff = getSlideDiff(idx, activeIndex, validItems.length);
+    if (diff === 0) {
+      setActiveLightboxIndex(idx);
+    } else {
+      setActiveIndex(idx);
+    }
+  };
+
+  // Compute 3D Coverflow transform, depth, perspective, and lighting for each slide
+  const getSlideStyle = (idx: number): React.CSSProperties => {
+    const diff = getSlideDiff(idx, activeIndex, validItems.length);
+    const isCenter = diff === 0;
+    const isAdjacent = Math.abs(diff) === 1;
+    const isOuter = Math.abs(diff) === 2;
+
+    let xPercent = -50;
+    let xOffsetPx = 0;
+    let rotateY = 0;
+    let scale = 1;
+    let opacity = 1;
+    let zIndex = 10;
+    let brightness = 1;
+
+    if (isCenter) {
+      xOffsetPx = isDragging || touchStartX !== null ? dragOffset * 0.45 : 0;
+      scale = 1.05;
+      rotateY = isDragging || touchStartX !== null ? dragOffset * -0.04 : 0;
+      opacity = 1;
+      zIndex = 30;
+      brightness = 1;
+    } else if (isAdjacent) {
+      const dir = diff > 0 ? 1 : -1;
+      xPercent = -50 + dir * 62;
+      scale = 0.88;
+      rotateY = dir * -16;
+      opacity = 0.72;
+      zIndex = 20;
+      brightness = 0.85;
+    } else if (isOuter) {
+      const dir = diff > 0 ? 1 : -1;
+      xPercent = -50 + dir * 115;
+      scale = 0.72;
+      rotateY = dir * -24;
+      opacity = 0.32;
+      zIndex = 10;
+      brightness = 0.55;
+    } else {
+      const dir = diff > 0 ? 1 : -1;
+      xPercent = -50 + dir * 160;
+      scale = 0.5;
+      rotateY = dir * -30;
+      opacity = 0;
+      zIndex = 1;
+    }
+
+    return {
+      transform: `translateX(${xPercent}%) translateX(${xOffsetPx}px) scale(${scale}) rotateY(${rotateY}deg)`,
+      opacity,
+      zIndex,
+      filter: `brightness(${brightness})`,
+      pointerEvents: (isCenter || isAdjacent) ? 'auto' : 'none',
+      transition: isDragging || touchStartX !== null ? 'none' : 'all 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
+      cursor: 'pointer'
+    };
   };
 
   return (
-    <div className={`${getContainerMaxWidth()} mx-auto w-full ${className}`}>
-      {/* Clean Fluid Masonry: Portrait, square, and landscape photos flow naturally without cropping */}
-      <div className={`${getMasonryColumnsClass()} [column-fill:_balance]`}>
-        {validItems.map((item, idx) => (
-          <div key={item.id || idx} className="break-inside-avoid mb-5">
-            {renderMediaCard(item, idx, "h-auto max-h-[580px]")}
-          </div>
-        ))}
+    <div 
+      className={`relative max-w-6xl mx-auto w-full select-none ${className}`}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => { setIsPaused(false); setIsDragging(false); }}
+    >
+      {/* 3D Stage Container */}
+      <div 
+        className="relative w-full h-[360px] sm:h-[440px] md:h-[500px] lg:h-[540px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
+        style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+      >
+        {/* Ambient Stage Background Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[320px] bg-[radial-gradient(circle_at_50%_50%,rgba(249,176,60,0.14)_0%,transparent_70%)] pointer-events-none blur-3xl" />
+
+        {/* 3D Coverflow Slides */}
+        {validItems.map((item, idx) => {
+          const style = getSlideStyle(idx);
+          const isCenter = getSlideDiff(idx, activeIndex, validItems.length) === 0;
+          const isVid = isMediaVideo(item.url);
+          const parsedImg = parseImageUrl(item.url);
+
+          return (
+            <div
+              key={item.id || idx}
+              style={style}
+              onClick={() => handleCardClick(idx)}
+              className={`absolute top-1/2 left-1/2 w-[270px] sm:w-[380px] md:w-[480px] lg:w-[540px] h-[310px] sm:h-[390px] md:h-[450px] lg:h-[480px] rounded-[24px] sm:rounded-[28px] overflow-hidden transition-all flex items-center justify-center bg-slate-950 ${
+                isCenter 
+                  ? 'border-2 border-[#f9b03c]/90 shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(249,176,60,0.35)]' 
+                  : 'border border-white/15 shadow-[0_15px_35px_rgba(0,0,0,0.7)]'
+              }`}
+              title={isCenter ? "በትልቁ ለማየት ይጫኑ (Click to View Fullscreen)" : "ይህንን ለማየት ይጫኑ (Click to Select)"}
+            >
+              {/* Ambient Blurred Background (fills any shape/orientation) */}
+              <img
+                src={parsedImg}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-45 scale-125 pointer-events-none select-none"
+              />
+              <div className="absolute inset-0 bg-black/25 pointer-events-none" />
+
+              {/* Foreground Photo (Respects true native aspect ratio) */}
+              <img
+                src={parsedImg}
+                alt={item.title || `Community Photo ${idx + 1}`}
+                className="relative z-10 w-full h-full object-contain sm:object-cover rounded-[22px] sm:rounded-[26px] select-none pointer-events-none"
+                loading="lazy"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/assets/about_video_cover.jpg';
+                }}
+              />
+
+              {/* Video Play Indicator */}
+              {isVid && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute -inset-3 rounded-full bg-[#f9b03c]/30 blur-md animate-pulse" />
+                    <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center shadow-lg">
+                      <i className="fa-solid fa-play text-lg sm:text-xl ml-0.5" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Active Center Subtle Title Pill */}
+              {isCenter && item.title && (
+                <div className="absolute inset-x-0 bottom-0 z-20 p-4 sm:p-5 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none">
+                  <p className="text-white text-xs sm:text-sm font-bold tracking-tight truncate drop-shadow-md text-center">
+                    {item.title}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Navigation Arrow Left */}
+        {validItems.length > 1 && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handlePrevSlide(); }}
+            className="absolute left-2 sm:left-6 z-40 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-950/80 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/20 hover:border-[#f9b03c] flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.7)] transition-all duration-300 cursor-pointer backdrop-blur-md group"
+            title="የቀደመው (Previous)"
+            aria-label="Previous Slide"
+          >
+            <i className="fa-solid fa-chevron-left text-sm sm:text-base group-hover:-translate-x-0.5 transition-transform" />
+          </button>
+        )}
+
+        {/* Navigation Arrow Right */}
+        {validItems.length > 1 && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleNextSlide(); }}
+            className="absolute right-2 sm:right-6 z-40 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-950/80 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/20 hover:border-[#f9b03c] flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.7)] transition-all duration-300 cursor-pointer backdrop-blur-md group"
+            title="ቀጣይ (Next)"
+            aria-label="Next Slide"
+          >
+            <i className="fa-solid fa-chevron-right text-sm sm:text-base group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        )}
       </div>
 
+      {/* Pagination Dots */}
+      {validItems.length > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-6 pb-2">
+          {validItems.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setActiveIndex(i)}
+              className={`transition-all duration-300 cursor-pointer ${
+                i === activeIndex
+                  ? 'w-8 sm:w-10 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_rgba(249,176,60,0.6)]'
+                  : 'w-2.5 h-2.5 rounded-full bg-white/25 hover:bg-white/50'
+              }`}
+              title={`ወደ ፎቶ ${i + 1} ሂድ`}
+              aria-label={`Slide ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Fullview Lightbox Modal */}
       {renderLightbox()}
     </div>
   );
-
-  // =========================================================================
-  // HELPER: RENDER INDIVIDUAL MEDIA CARD (CLEAN & MINIMALIST)
-  // =========================================================================
-  function renderMediaCard(item: CommunityMediaItem, idx: number, aspectClass: string) {
-    const isVid = isMediaVideo(item.url);
-    const parsedImg = parseImageUrl(item.url);
-    const isContain = item.fit === 'contain';
-
-    return (
-      <div
-        onClick={() => setActiveLightboxIndex(idx)}
-        style={{
-          background: 'rgba(15, 23, 42, 0.75)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-        }}
-        className={`group relative w-full ${aspectClass} rounded-2xl overflow-hidden cursor-pointer shadow-xl hover:shadow-[0_15px_40px_rgba(249,176,60,0.25)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:-translate-y-1 flex items-center justify-center bg-neutral-950`}
-        title={item.title || (isVid ? "ቪዲዮውን ለማየት ይጫኑ (Click to Play)" : "በትልቁ ለማየት ይጫኑ (Click to View)")}
-      >
-        {/* Ambient Blurred Background (Matches photo colors & fills any ratio seamlessly) */}
-        <img
-          src={parsedImg}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-125 pointer-events-none select-none"
-        />
-        <div className="absolute inset-0 bg-black/25 pointer-events-none" />
-
-        {/* Foreground Media Image (Respects true aspect ratio, never distorted or stretched) */}
-        <img
-          src={parsedImg}
-          alt={item.title || `Community Media ${idx + 1}`}
-          className={`relative z-10 w-full ${aspectClass.includes('h-auto') ? 'h-auto max-h-[560px]' : 'h-full'} ${isContain ? 'object-contain p-2' : 'object-cover'} transition-transform duration-700 ease-out group-hover:scale-105`}
-          loading="lazy"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = '/assets/about_video_cover.jpg';
-          }}
-        />
-
-        {/* Video Overlay Play Icon */}
-        {isVid && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-            <div className="relative flex items-center justify-center">
-              <div className="absolute -inset-3 rounded-full bg-[#f9b03c]/30 blur-md group-hover:bg-[#f9b03c]/50 transition duration-300 animate-pulse" />
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <i className="fa-solid fa-play text-lg sm:text-xl ml-0.5" />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Optional Caption on Hover (Only if admin set a custom title) */}
-        {item.title && (
-          <div className="absolute inset-x-0 bottom-0 z-20 p-3.5 bg-gradient-to-t from-black/85 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-            <p className="text-white text-xs sm:text-sm font-semibold tracking-tight truncate drop-shadow-md">
-              {item.title}
-            </p>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   // =========================================================================
   // HELPER: RENDER LIGHTBOX MODAL
