@@ -18,6 +18,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
   const [message, setMessage] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -305,28 +306,34 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
 
       const trimmedEmail = contactEmail.trim();
       const trimmedName = contactName.trim();
+      const trimmedPhone = contactPhone.trim();
 
-        const isStudentUser = Boolean(user && user.uid && !user.uid.startsWith('guest_'));
-        const userRole = isStudentUser ? 'student' : 'visitor';
+      const isStudentUser = Boolean(user && user.uid && !user.uid.startsWith('guest_') && !user.uid.startsWith('visitor_'));
+      const userRole = isStudentUser ? 'student' : 'visitor';
 
-        const feedbackPayload = {
-          id: feedbackId,
-          category,
-          type: category,
-          rating: Number(rating) || 5,
-          message: message.trim() || (uploadedAudioUrl ? '[የድምፅ መልዕክት ተልኳል]' : ''),
-          audioUrl: uploadedAudioUrl || null,
-          imageUrl: uploadedImageUrl || null,
-          userEmail: trimmedEmail || user?.email || 'visitor@tsehaycampus.com',
-          userName: trimmedName || user?.displayName || (user?.email ? user.email.split('@')[0] : (trimmedEmail ? trimmedEmail.split('@')[0] : (isStudentUser ? 'ተማሪ' : 'እንግዳ ጎብኚ'))),
-          userId: user?.uid || `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-          userRole,
-          role: userRole,
-          pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/',
-          status: 'pending',
-          createdAt: Date.now(),
-          createdAtISO: new Date().toISOString()
-        };
+      const finalUserName = trimmedName || user?.displayName || (user?.email ? user.email.split('@')[0] : (isStudentUser ? 'ተማሪ (Student)' : 'እንግዳ ጎብኚ (Guest Visitor)'));
+      const finalUserEmail = trimmedEmail || user?.email || (trimmedPhone ? `tel:${trimmedPhone}` : (isStudentUser ? 'student@tsehaycampus.com' : 'visitor@tsehaycampus.com'));
+
+      const feedbackPayload = {
+        id: feedbackId,
+        category,
+        type: category,
+        rating: Math.min(5, Math.max(1, Number(rating) || 5)),
+        message: message.trim() || (uploadedAudioUrl ? '[የድምፅ መልዕክት ተልኳል]' : ''),
+        audioUrl: uploadedAudioUrl || null,
+        imageUrl: uploadedImageUrl || null,
+        userName: finalUserName,
+        userEmail: finalUserEmail,
+        userPhone: trimmedPhone || null,
+        phone: trimmedPhone || null,
+        userId: user?.uid || `visitor_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        userRole,
+        role: userRole,
+        pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/',
+        status: 'new',
+        createdAt: Date.now(),
+        createdAtISO: new Date().toISOString()
+      };
 
       // 4. Server API Dispatch with guaranteed persistence
       try {
@@ -465,10 +472,10 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                   </div>
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-[#f9b03c] block">
-                      Tsehay Campus • Student Voice
+                      Tsehay Campus • አስተያየት እና ጥቆማ (Feedback & Voice)
                     </span>
                     <h3 className="text-base sm:text-lg font-black font-heading text-white">
-                      ስለ ፀሐይ ካምፓስ ምን አስተያየት አለዎት?
+                      ስለ ፀሐይ ካምፓስ ምን አስተያየት ወይም ጥቆማ አለዎት?
                     </h3>
                   </div>
                 </div>
@@ -676,23 +683,46 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
 
                   </div>
 
-                  {/* 5. Optional Contact Inputs (For guests) */}
-                  {!user && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={contactName}
-                        onChange={(e) => setContactName(e.target.value)}
-                        placeholder="ስምዎ (አማራጭ)"
-                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9b03c]"
-                      />
-                      <input
-                        type="email"
-                        value={contactEmail}
-                        onChange={(e) => setContactEmail(e.target.value)}
-                        placeholder="ኢሜይል (አማራጭ)"
-                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9b03c]"
-                      />
+                  {/* 5. User Identification Bar */}
+                  {user ? (
+                    <div className="px-3.5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 text-emerald-400 font-bold min-w-0">
+                        <i className="fa-solid fa-graduation-cap text-xs shrink-0" />
+                        <span className="truncate">
+                          እንደ <span className="text-white font-black">{user.displayName || user.email?.split('@')[0]}</span>
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0 bg-emerald-500/20 px-2 py-0.5 rounded-full">
+                        🎓 ተማሪ (Student)
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-black text-[#f9b03c] flex items-center gap-1.5">
+                          <i className="fa-solid fa-user-astronaut" />
+                          <span>እንግዳ ጎብኚ (Guest Visitor)</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+                          መግቢያ (Login) አያስፈልግም
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={contactName}
+                          onChange={(e) => setContactName(e.target.value)}
+                          placeholder="ስምዎ (አማራጭ - ካልተሞላ 'እንግዳ' ይሆናል)"
+                          className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9b03c] transition"
+                        />
+                        <input
+                          type="text"
+                          value={contactEmail}
+                          onChange={(e) => setContactEmail(e.target.value)}
+                          placeholder="ኢሜይል ወይም ስልክ (አማራጭ)"
+                          className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9b03c] transition"
+                        />
+                      </div>
                     </div>
                   )}
 

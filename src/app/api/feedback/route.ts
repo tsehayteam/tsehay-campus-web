@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ const NO_CACHE_HEADERS = {
 
 async function getFeedbacks(): Promise<any[]> {
   try {
-    const { data: row, error } = await supabaseServer
+    const { data: row, error } = await supabaseAdmin
       .from('site_settings')
       .select('data')
       .eq('key', 'user_feedbacks')
@@ -33,7 +33,7 @@ async function getFeedbacks(): Promise<any[]> {
 
 async function saveFeedbacks(feedbacks: any[]) {
   try {
-    await supabaseServer
+    await supabaseAdmin
       .from('site_settings')
       .upsert({
         key: 'user_feedbacks',
@@ -54,26 +54,54 @@ export async function POST(req: NextRequest) {
       body = {};
     }
 
-    const { rating, type, category, message, userId, userName, userEmail, userRole, role, pageUrl, imageUrl, screenshotUrl, audioUrl, voiceNoteUrl } = body;
+    const { 
+      rating, 
+      type, 
+      category, 
+      message, 
+      userId, 
+      userName, 
+      userEmail, 
+      userPhone, 
+      phone, 
+      userRole, 
+      role, 
+      pageUrl, 
+      imageUrl, 
+      screenshotUrl, 
+      audioUrl, 
+      voiceNoteUrl, 
+      status 
+    } = body;
 
     const feedbackId = body.id || `fb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     
     // 🌟 Identify whether feedback is from a registered Student vs casual Visitor
-    const finalUserRole = userRole || role || (
-      userId && !String(userId).startsWith('guest_') && userId !== 'anonymous' 
+    const isExplicitVisitor = userRole === 'visitor' || role === 'visitor';
+    const isExplicitStudent = userRole === 'student' || role === 'student';
+    
+    const finalUserRole = isExplicitVisitor 
+      ? 'visitor' 
+      : isExplicitStudent 
         ? 'student' 
-        : 'visitor'
-    );
+        : (userId && !String(userId).startsWith('guest_') && !String(userId).startsWith('visitor_') && userId !== 'anonymous' 
+            ? 'student' 
+            : 'visitor');
+
+    const contactPhone = (userPhone || phone || '').trim();
+    const finalUserName = (userName || '').trim() || (userEmail ? userEmail.split('@')[0] : (finalUserRole === 'student' ? 'ተማሪ (Student)' : 'እንግዳ ጎብኚ (Guest Visitor)'));
+    const finalUserEmail = (userEmail || '').trim() || (contactPhone ? `tel:${contactPhone}` : (finalUserRole === 'student' ? 'student@tsehaycampus.com' : 'visitor@tsehaycampus.com'));
 
     const payload = {
       id: feedbackId,
-      rating: Number(rating) || 5,
+      rating: Math.min(5, Math.max(1, Number(rating) || 5)),
       type: type || category || 'general',
       category: category || type || 'general',
       message: (message || '').trim() || (audioUrl || voiceNoteUrl ? '🎙️ [የድምፅ መልዕክት]' : ''),
-      userId: userId || 'guest_student',
-      userName: userName || (userEmail ? userEmail.split('@')[0] : (finalUserRole === 'student' ? 'ተማሪ' : 'ጎብኚ')),
-      userEmail: userEmail || (finalUserRole === 'student' ? 'student@tsehaycampus.com' : 'visitor@tsehaycampus.com'),
+      userId: userId || `visitor_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      userName: finalUserName,
+      userEmail: finalUserEmail,
+      userPhone: contactPhone || null,
       userRole: finalUserRole,
       role: finalUserRole,
       pageUrl: pageUrl || '/',
@@ -81,9 +109,9 @@ export async function POST(req: NextRequest) {
       screenshotUrl: screenshotUrl || imageUrl || null,
       audioUrl: audioUrl || voiceNoteUrl || null,
       voiceNoteUrl: voiceNoteUrl || audioUrl || null,
-      status: 'pending',
+      status: status || 'new',
       createdAt: new Date().toISOString(),
-      createdAtClient: new Date().toISOString(),
+      createdAtClient: body.createdAtClient || body.createdAtISO || new Date().toISOString(),
     };
 
     const feedbacks = await getFeedbacks();

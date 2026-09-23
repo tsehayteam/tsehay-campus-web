@@ -477,7 +477,7 @@ export default function AdminDashboard() {
   });
   const [feedbackSearchTerm, setFeedbackSearchTerm] = useState('');
   const [feedbackTypeFilter, setFeedbackTypeFilter] = useState<'all' | 'course' | 'bug' | 'idea' | 'general'>('all');
-  const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+  const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | 'new' | 'reviewed' | 'resolved' | 'archived'>('all');
   const [feedbackRoleFilter, setFeedbackRoleFilter] = useState<'all' | 'student' | 'visitor'>('all');
   const [isUpdatingFeedbackId, setIsUpdatingFeedbackId] = useState<string | null>(null);
   const [isLoadingFeedbacks, setIsLoadingFeedbacks] = useState(false);
@@ -500,7 +500,7 @@ export default function AdminDashboard() {
             localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(data.feedbacks));
           } catch (e) {}
           if (isManual) {
-            showToast(`በአጠቃላይ ${data.feedbacks.length} የተማሪ አስተያየቶች በቅጽበት ተመሳስለዋል!`, 'success');
+            showToast(`በአጠቃላይ ${data.feedbacks.length} የተማሪዎችና የጎብኚዎች አስተያየቶች በቅጽበት ተመሳስለዋል!`, 'success');
           }
         }
       }
@@ -1808,7 +1808,7 @@ export default function AdminDashboard() {
       setCommunityPosts(posts);
     }, 'all');
 
-    // 🌟 Real-time Server API Fetch for Student Feedbacks
+    // 🌟 Real-time Server API Fetch & Supabase Realtime Subscription for Feedbacks
     fetchFeedbacksFromApi();
 
     const handleFeedbackSync = () => {
@@ -1824,12 +1824,40 @@ export default function AdminDashboard() {
       });
     }
 
+    // 🌟 Supabase Real-time Channel for Instant Live Cross-Device Sync
+    let feedbackRealtimeChannel: any = null;
+    try {
+      feedbackRealtimeChannel = supabase
+        .channel('admin_live_feedbacks_channel')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'site_settings' },
+          (payload: any) => {
+            if (payload?.new && (payload.new.key === 'user_feedbacks' || payload.new.setting_key === 'user_feedbacks')) {
+              if (Array.isArray(payload.new.data)) {
+                setFeedbacks(payload.new.data);
+                setLastFeedbackSyncTime(new Date().toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' }));
+                try {
+                  localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(payload.new.data));
+                } catch (e) {}
+                showToast('🔔 አዲስ አስተያየት በቅጽበት ደርሷል! (New Feedback Received)', 'success');
+              } else {
+                fetchFeedbacksFromApi();
+              }
+            }
+          }
+        )
+        .subscribe();
+    } catch (sbErr) {
+      console.warn('Feedback realtime subscription notice:', sbErr);
+    }
+
     // Periodic live sync only when active tab is 'feedbacks' and document is visible
     const feedbackPollInterval = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible' && activeTab === 'feedbacks') {
         fetchFeedbacksFromApi();
       }
-    }, 60000);
+    }, 45000);
 
     return () => {
       unsubscribeAuth();
@@ -1843,6 +1871,9 @@ export default function AdminDashboard() {
       }
       if (eventsBc) eventsBc.close();
       eventsRealtimeChannel.unsubscribe();
+      if (feedbackRealtimeChannel) {
+        try { supabase.removeChannel(feedbackRealtimeChannel); } catch (e) {}
+      }
       clearInterval(eventsPollInterval);
       clearInterval(feedbackPollInterval);
       clearTimeout(safetyTimer);
@@ -1993,29 +2024,32 @@ export default function AdminDashboard() {
     }
   };
 
-  // 🌟 Toggle Feedback Resolved / Pending Status
-  const handleToggleFeedbackStatus = async (feedback: any) => {
-    const nextStatus = feedback.status === 'resolved' ? 'pending' : 'resolved';
+  // 🌟 Update Feedback Status (New, Reviewed, Resolved, Archived)
+  const handleUpdateFeedbackStatus = async (feedback: any, targetStatus: 'new' | 'reviewed' | 'resolved' | 'archived') => {
     setIsUpdatingFeedbackId(feedback.id);
     
     // Optimistic UI update & Local Cache persistence
     setFeedbacks(prev => {
-      const updated = prev.map(f => f.id === feedback.id ? { ...f, status: nextStatus } : f);
+      const updated = prev.map(f => f.id === feedback.id ? { ...f, status: targetStatus } : f);
       try { localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(updated)); } catch (e) {}
       return updated;
     });
     
     try {
-      // 2. Server API Dispatch
-      try {
-        await fetch(`/api/admin/feedback?id=${encodeURIComponent(feedback.id)}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: nextStatus })
-        });
-      } catch (err) {}
+      await fetch(`/api/admin/feedback?id=${encodeURIComponent(feedback.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: targetStatus })
+      });
 
-      showToast(nextStatus === 'resolved' ? 'አስተያየቱ መፍትሄ ተሰጥቶታል ተብሏል (Marked as Resolved)' : 'አስተያየቱ ወደ መጠባበቅ ተመልሷል (Marked as Pending)', 'success');
+      const statusLabels: Record<string, string> = {
+        new: 'አዲስ (New)',
+        reviewed: 'የታየ (Reviewed)',
+        resolved: 'የተስተካከለ (Resolved)',
+        archived: 'የተቀመጠ (Archived)',
+      };
+
+      showToast(`የአስተያየቱ ሁኔታ ወደ "${statusLabels[targetStatus] || targetStatus}" ተቀይሯል!`, 'success');
     } catch (err) {
       console.error("Error updating feedback status:", err);
     } finally {
@@ -2023,9 +2057,15 @@ export default function AdminDashboard() {
     }
   };
 
+  // 🌟 Toggle Feedback Resolved / Pending Status (for quick toggle)
+  const handleToggleFeedbackStatus = async (feedback: any) => {
+    const nextStatus = feedback.status === 'resolved' ? 'new' : 'resolved';
+    await handleUpdateFeedbackStatus(feedback, nextStatus as any);
+  };
+
   // 🌟 Delete Feedback
   const handleDeleteFeedback = async (id: string) => {
-    if (!confirm('ይህንን የተማሪ አስተያየት በእርግጥ መሰረዝ ይፈልጋሉ? (Are you sure you want to delete this feedback?)')) return;
+    if (!confirm('ይህንን አስተያየት በእርግጥ መሰረዝ ይፈልጋሉ? (Are you sure you want to delete this feedback?)')) return;
     
     // Optimistic UI update & Local Cache persistence
     setFeedbacks(prev => {
@@ -9055,7 +9095,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ===================== STUDENT FEEDBACKS INBOX VIEW ===================== */}
+          {/* ===================== STUDENT & VISITOR FEEDBACKS INBOX VIEW ===================== */}
           {activeTab === 'feedbacks' && (
             <div className="space-y-6 animate-in fade-in duration-300">
               
@@ -9066,14 +9106,15 @@ export default function AdminDashboard() {
                     <i className="fa-solid fa-comments"></i>
                   </div>
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-black font-heading text-white tracking-tight flex items-center gap-2">
-                      <span>የተማሪዎች አስተያየት ሳጥን</span>
-                      <span className="text-xs bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 font-black px-2.5 py-0.5 rounded-full">
-                        Live Inbox
+                    <h2 className="text-xl sm:text-2xl font-black font-heading text-white tracking-tight flex items-center gap-2 flex-wrap">
+                      <span>የአስተያየትና ጥቆማ ሳጥን</span>
+                      <span className="text-xs bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 font-black px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping" />
+                        <span>Live Real-Time Sync</span>
                       </span>
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-                      ከተማሪዎች የሚላኩ ጥቆማዎች፣ የኮርስ አስተያየቶች፣ አዳዲስ ሀሳቦች እና የዌብሳይት ችግሮች የሚሰበሰቡበት ማዕከል።
+                      ከተማሪዎች እና ከጎብኚዎች የሚላኩ ጥቆማዎች፣ የኮርስ አስተያየቶች፣ አዳዲስ ሀሳቦች እና የዌብሳይት ክፍተቶች በቅጽበት (Real-Time) የሚሰበሰቡበት ማዕከል።
                     </p>
                   </div>
                 </div>
@@ -9084,7 +9125,7 @@ export default function AdminDashboard() {
                     onClick={() => fetchFeedbacksFromApi(true)}
                     disabled={isLoadingFeedbacks}
                     className="px-4 py-2.5 rounded-xl bg-[#f9b03c]/20 hover:bg-[#f9b03c]/30 border border-[#f9b03c]/40 text-xs font-bold text-[#f9b03c] transition flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95 shadow-sm"
-                    title="አስተያየቶችን ከዳታቤዝ በቀጥታ አመሳስል"
+                    title="አስተያየቶችን ከሰርቨር በቀጥታ አመሳስል"
                   >
                     <i className={`fa-solid fa-arrows-rotate ${isLoadingFeedbacks ? 'fa-spin' : ''}`}></i>
                     <span>{isLoadingFeedbacks ? 'እያመሳሰለ ነው...' : 'ቀጥታ አድስ (Sync Live)'}</span>
@@ -9096,15 +9137,13 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (feedbacks.length > 0) {
-                        const pending = feedbacks.filter(f => f.status !== 'resolved');
-                        alert(`በአጠቃላይ ${feedbacks.length} አስተያየቶች ያሉ ሲሆን ${pending.length} በመጠባበቅ ላይ ይገኛሉ።`);
-                      }
+                      const newOnes = feedbacks.filter(f => !f.status || f.status === 'new' || f.status === 'pending');
+                      alert(`በአጠቃላይ ${feedbacks.length} አስተያየቶች ያሉ ሲሆን ${newOnes.length} አዳዲስ በመጠባበቅ ላይ ይገኛሉ።`);
                     }}
                     className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 transition flex items-center gap-2 cursor-pointer"
                   >
                     <i className="fa-solid fa-bell text-[#f9b03c]"></i>
-                    <span>ያልተመለሱ: {feedbacks.filter(f => f.status !== 'resolved').length}</span>
+                    <span>አዲስ: {feedbacks.filter(f => !f.status || f.status === 'new' || f.status === 'pending').length}</span>
                   </button>
                 </div>
               </div>
@@ -9112,8 +9151,12 @@ export default function AdminDashboard() {
               {/* 4 Stats Cards */}
               {(() => {
                 const totalCount = feedbacks.length;
-                const pendingCount = feedbacks.filter(f => f.status !== 'resolved').length;
+                const newCount = feedbacks.filter(f => !f.status || f.status === 'new' || f.status === 'pending').length;
+                const reviewedCount = feedbacks.filter(f => f.status === 'reviewed').length;
                 const resolvedCount = feedbacks.filter(f => f.status === 'resolved').length;
+                const archivedCount = feedbacks.filter(f => f.status === 'archived').length;
+                const visitorCount = feedbacks.filter(f => f.userRole === 'visitor' || f.role === 'visitor' || (f.userId && (String(f.userId).startsWith('guest_') || String(f.userId).startsWith('visitor_')))).length;
+                const studentCount = totalCount - visitorCount;
                 const avgRating = totalCount > 0 
                   ? (feedbacks.reduce((acc, f) => acc + (Number(f.rating) || 5), 0) / totalCount).toFixed(1)
                   : '5.0';
@@ -9127,6 +9170,9 @@ export default function AdminDashboard() {
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">ጠቅላላ አስተያየቶች</p>
                         <h4 className="text-2xl font-black text-dark dark:text-white font-heading mt-0.5">{totalCount}</h4>
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                          🎓 {studentCount} ተማሪ • 👤 {visitorCount} ጎብኚ
+                        </p>
                       </div>
                     </div>
 
@@ -9140,16 +9186,18 @@ export default function AdminDashboard() {
                           <h4 className="text-2xl font-black text-dark dark:text-white font-heading">{avgRating}</h4>
                           <span className="text-xs text-yellow-400 font-black">/ 5.0</span>
                         </div>
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">የኮከብ ደረጃ</p>
                       </div>
                     </div>
 
                     <div className="bg-white dark:bg-slate-800/80 p-5 rounded-3xl border border-gray-100 dark:border-slate-700/80 shadow-xs flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center text-xl font-black shrink-0">
-                        <i className="fa-solid fa-clock-rotate-left"></i>
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-[#f9b03c] flex items-center justify-center text-xl font-black shrink-0">
+                        <i className="fa-solid fa-bell"></i>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">በመጠባበቅ ላይ ያሉ</p>
-                        <h4 className="text-2xl font-black text-red-500 font-heading mt-0.5">{pendingCount}</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">አዲስ አስተያየቶች (New)</p>
+                        <h4 className="text-2xl font-black text-[#f9b03c] font-heading mt-0.5">{newCount}</h4>
+                        <p className="text-[11px] text-blue-400 font-medium mt-0.5">👀 {reviewedCount} የታዩ</p>
                       </div>
                     </div>
 
@@ -9160,6 +9208,7 @@ export default function AdminDashboard() {
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">የተስተካከሉ (Resolved)</p>
                         <h4 className="text-2xl font-black text-emerald-500 font-heading mt-0.5">{resolvedCount}</h4>
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">📦 {archivedCount} የተቀመጡ</p>
                       </div>
                     </div>
                   </div>
@@ -9167,17 +9216,17 @@ export default function AdminDashboard() {
               })()}
 
               {/* Filters Toolbar */}
-              <div className="bg-white dark:bg-slate-800/80 p-4 sm:p-5 rounded-3xl border border-gray-100 dark:border-slate-700/80 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+              <div className="bg-white dark:bg-slate-800/80 p-4 sm:p-5 rounded-3xl border border-gray-100 dark:border-slate-700/80 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
                 
                 {/* Search Input */}
-                <div className="relative flex-1">
+                <div className="relative flex-1 min-w-[220px]">
                   <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
                   <input
                     type="text"
                     value={feedbackSearchTerm}
                     onChange={(e) => setFeedbackSearchTerm(e.target.value)}
-                    placeholder="በተማሪ ስም፣ ኢሜይል ወይም ጽሑፍ ፈልግ..."
-                    className="w-full bg-gray-50 dark:bg-slate-900/80 border border-gray-200 dark:border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                    placeholder="በስም፣ ኢሜይል፣ ስልክ ወይም ጽሑፍ ፈልግ..."
+                    className="w-full bg-gray-50 dark:bg-slate-900/80 border border-gray-200 dark:border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
                   />
                   {feedbackSearchTerm && (
                     <button
@@ -9193,11 +9242,11 @@ export default function AdminDashboard() {
                 {/* Type Filter Pills */}
                 <div className="flex flex-wrap items-center gap-1.5">
                   {[
-                    { id: 'all', label: 'ሁሉም' },
-                    { id: 'course', label: 'ኮርስ' },
-                    { id: 'bug', label: 'ችግር' },
-                    { id: 'idea', label: 'ሀሳብ' },
-                    { id: 'general', label: 'አጠቃላይ' },
+                    { id: 'all', label: 'ሁሉም አይነት' },
+                    { id: 'course', label: '📚 ኮርስ' },
+                    { id: 'bug', label: '🐞 ችግር' },
+                    { id: 'idea', label: '💡 ሀሳብ' },
+                    { id: 'general', label: '💬 አጠቃላይ' },
                   ].map((cat) => (
                     <button
                       key={cat.id}
@@ -9214,18 +9263,20 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
-                {/* Status Toggle */}
-                <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-900/80 p-1 rounded-xl border border-gray-200 dark:border-slate-700/60 self-start md:self-auto">
+                {/* Status Filter */}
+                <div className="flex flex-wrap items-center gap-1 bg-gray-100 dark:bg-slate-900/80 p-1 rounded-xl border border-gray-200 dark:border-slate-700/60 self-start lg:self-auto">
                   {[
-                    { id: 'all', label: 'ሁሉም' },
-                    { id: 'pending', label: '⏳ ያልተስተካከለ' },
-                    { id: 'resolved', label: 'ተስተካክሏል' },
+                    { id: 'all', label: 'ሁሉም ሁኔታ' },
+                    { id: 'new', label: '🆕 አዲስ' },
+                    { id: 'reviewed', label: '👀 የታየ' },
+                    { id: 'resolved', label: '✅ የተስተካከለ' },
+                    { id: 'archived', label: '📦 ማህደር' },
                   ].map((st) => (
                     <button
                       key={st.id}
                       type="button"
                       onClick={() => setFeedbackStatusFilter(st.id as any)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                         feedbackStatusFilter === st.id
                           ? 'bg-white dark:bg-slate-800 text-dark dark:text-white shadow-xs font-black'
                           : 'text-gray-500 hover:text-dark dark:hover:text-white'
@@ -9236,18 +9287,18 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
-                {/* 🌟 Role Filter: ተማሪ (Student) vs ተራ ጎብኚ (Visitor) */}
-                <div className="flex items-center bg-gray-100 dark:bg-slate-900/90 p-1 rounded-xl border border-gray-200 dark:border-slate-700/60">
+                {/* Role Filter: ተማሪ (Student) vs ተራ ጎብኚ (Visitor) */}
+                <div className="flex items-center bg-gray-100 dark:bg-slate-900/90 p-1 rounded-xl border border-gray-200 dark:border-slate-700/60 self-start lg:self-auto">
                   {[
-                    { id: 'all', label: 'ሁሉም ተጠቃሚ' },
-                    { id: 'student', label: '🎓 ተማሪ (Student)' },
-                    { id: 'visitor', label: '👤 ተራ ጎብኚ (Visitor)' },
+                    { id: 'all', label: 'ሁሉም' },
+                    { id: 'student', label: '🎓 ተማሪ' },
+                    { id: 'visitor', label: '👤 ጎብኚ' },
                   ].map((rf) => (
                     <button
                       key={rf.id}
                       type="button"
                       onClick={() => setFeedbackRoleFilter(rf.id as any)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                         feedbackRoleFilter === rf.id
                           ? 'bg-white dark:bg-slate-800 text-dark dark:text-white shadow-xs font-black'
                           : 'text-gray-500 hover:text-dark dark:hover:text-white'
@@ -9263,11 +9314,12 @@ export default function AdminDashboard() {
               {/* Feedback Cards List */}
               {(() => {
                 const filtered = feedbacks.filter(item => {
-                  const matchType = feedbackTypeFilter === 'all' || item.type === feedbackTypeFilter;
+                  const matchType = feedbackTypeFilter === 'all' || item.type === feedbackTypeFilter || item.category === feedbackTypeFilter;
+                  const itemStatus = item.status || 'new';
                   const matchStatus = feedbackStatusFilter === 'all' || 
-                    (feedbackStatusFilter === 'resolved' && item.status === 'resolved') ||
-                    (feedbackStatusFilter === 'pending' && item.status !== 'resolved');
-                  const isVisitor = item.userRole === 'visitor' || item.role === 'visitor' || (item.userId && String(item.userId).startsWith('guest_'));
+                    (feedbackStatusFilter === 'new' && (itemStatus === 'new' || itemStatus === 'pending')) ||
+                    (feedbackStatusFilter === itemStatus);
+                  const isVisitor = item.userRole === 'visitor' || item.role === 'visitor' || (item.userId && String(item.userId).startsWith('guest_')) || (item.userId && String(item.userId).startsWith('visitor_'));
                   const matchRole = feedbackRoleFilter === 'all' ||
                     (feedbackRoleFilter === 'visitor' && isVisitor) ||
                     (feedbackRoleFilter === 'student' && !isVisitor);
@@ -9275,6 +9327,7 @@ export default function AdminDashboard() {
                   const matchSearch = !q || 
                     (item.userName || '').toLowerCase().includes(q) ||
                     (item.userEmail || '').toLowerCase().includes(q) ||
+                    (item.userPhone || '').toLowerCase().includes(q) ||
                     (item.message || '').toLowerCase().includes(q);
                   return matchType && matchStatus && matchRole && matchSearch;
                 });
@@ -9287,7 +9340,7 @@ export default function AdminDashboard() {
                       </div>
                       <h4 className="text-lg font-black text-dark dark:text-white mb-1">አስተያየቶችን እያመጣ ነው...</h4>
                       <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                        የተማሪዎችን አስተያየት ከሰርቨር እያመሳሰለ ነው፣ እባክዎ ትንሽ ይጠብቁ...
+                        የተማሪዎችና የጎብኚዎች አስተያየት ከሰርቨር እያመሳሰለ ነው፣ እባክዎ ትንሽ ይጠብቁ...
                       </p>
                     </div>
                   );
@@ -9301,7 +9354,7 @@ export default function AdminDashboard() {
                       </div>
                       <h4 className="text-lg font-black text-dark dark:text-white mb-1">ምንም አስተያየት አልተገኘም</h4>
                       <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                        በተመረጠው ማጣሪያ መሰረት የተገኘ የተማሪ አስተያየት የለም።
+                        በተመረጠው ማጣሪያ መሰረት የተገኘ አስተያየት የለም።
                       </p>
                     </div>
                   );
@@ -9310,49 +9363,85 @@ export default function AdminDashboard() {
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                     {filtered.map((item) => {
-                      const isResolved = item.status === 'resolved';
+                      const itemStatus = item.status || 'new';
+                      const isResolved = itemStatus === 'resolved';
+                      const isNew = itemStatus === 'new' || itemStatus === 'pending';
+                      const isReviewed = itemStatus === 'reviewed';
+                      const isArchived = itemStatus === 'archived';
                       const isUpdating = isUpdatingFeedbackId === item.id;
-                      const dateDisplay = item.createdAtClient 
-                        ? new Date(item.createdAtClient).toLocaleString('am-ET', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                        : (item.createdAt?.toDate ? item.createdAt.toDate().toLocaleString('am-ET', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'አሁን');
+                      const isVisitor = item.userRole === 'visitor' || item.role === 'visitor' || (item.userId && (String(item.userId).startsWith('guest_') || String(item.userId).startsWith('visitor_')));
+
+                      // Accurate timestamp
+                      const rawDate = item.createdAtClient || item.createdAtISO || item.createdAt;
+                      const dateDisplay = rawDate 
+                        ? new Date(rawDate?.toDate ? rawDate.toDate() : rawDate).toLocaleString('am-ET', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })
+                        : 'አሁን';
 
                       return (
                         <div 
                           key={item.id}
                           className={`bg-white dark:bg-slate-800/90 rounded-3xl p-5 sm:p-6 border transition-all duration-200 flex flex-col justify-between gap-4 shadow-sm hover:shadow-md ${
                             isResolved 
-                              ? 'border-emerald-500/30 opacity-80 hover:opacity-100' 
-                              : 'border-amber-400/40 hover:border-[#f9b03c]'
+                              ? 'border-emerald-500/30 bg-emerald-500/[0.02]' 
+                              : isReviewed
+                                ? 'border-blue-500/30 bg-blue-500/[0.02]'
+                                : isArchived
+                                  ? 'border-slate-500/20 opacity-75'
+                                  : 'border-[#f9b03c]/40 hover:border-[#f9b03c]'
                           }`}
                         >
                           <div>
                             {/* Top User Header */}
                             <div className="flex items-start justify-between gap-3 mb-3">
                               <div className="flex items-center gap-3 min-w-0">
-                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#f9b03c]/20 to-amber-500/20 text-[#f9b03c] flex items-center justify-center font-black text-sm shrink-0 border border-[#f9b03c]/30">
-                                  {(item.userName || 'ተ')[0].toUpperCase()}
+                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 border ${
+                                  isVisitor 
+                                    ? 'bg-purple-500/15 text-purple-400 border-purple-500/30' 
+                                    : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                }`}>
+                                  {(item.userName || (isVisitor ? 'G' : 'S'))[0].toUpperCase()}
                                 </div>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h4 className="font-black text-sm text-dark dark:text-white truncate">
-                                      {item.userName || (item.userRole === 'visitor' ? 'ጎብኚ' : 'ተማሪ')}
+                                      {item.userName || (isVisitor ? 'እንግዳ ጎብኚ' : 'ተማሪ')}
                                     </h4>
-                                    {/* 🏷️ Student vs Visitor Role Badge */}
-                                    {(item.userRole === 'visitor' || item.role === 'visitor' || (item.userId && String(item.userId).startsWith('guest_'))) ? (
-                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 flex items-center gap-1 shrink-0">
-                                        <i className="fa-solid fa-user text-[9px]" />
+                                    
+                                    {/* 🏷️ User Status: Student vs Visitor */}
+                                    {isVisitor ? (
+                                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center gap-1 shrink-0">
+                                        <i className="fa-solid fa-user-astronaut text-[9px]" />
                                         <span>ተራ ጎብኚ (Visitor)</span>
                                       </span>
                                     ) : (
-                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1 shrink-0">
+                                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 shrink-0">
                                         <i className="fa-solid fa-graduation-cap text-[9px]" />
                                         <span>ተማሪ (Student)</span>
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">
-                                    {item.userEmail || 'student@tsehaycampus.com'}
-                                  </p>
+
+                                  {/* Contact Information (Email & Phone) */}
+                                  <div className="flex items-center gap-2 flex-wrap mt-0.5 text-[11px] text-gray-500 dark:text-slate-400">
+                                    {item.userEmail && !item.userEmail.startsWith('tel:') && (
+                                      <span className="truncate flex items-center gap-1">
+                                        <i className="fa-regular fa-envelope text-[10px]" />
+                                        <span>{item.userEmail}</span>
+                                      </span>
+                                    )}
+                                    {(item.userPhone || item.phone) && (
+                                      <span className="text-[#f9b03c] font-mono flex items-center gap-1 shrink-0">
+                                        <i className="fa-solid fa-phone text-[9px]" />
+                                        <span>{item.userPhone || item.phone}</span>
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
 
@@ -9360,14 +9449,34 @@ export default function AdminDashboard() {
                               <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 border shrink-0 ${
                                 isResolved
                                   ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                                  : 'bg-amber-500/15 text-[#f9b03c] border-[#f9b03c]/30'
+                                  : isReviewed
+                                    ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                                    : isArchived
+                                      ? 'bg-slate-500/15 text-slate-400 border-slate-500/30'
+                                      : 'bg-amber-500/15 text-[#f9b03c] border-[#f9b03c]/40'
                               }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${isResolved ? 'bg-emerald-400' : 'bg-[#f9b03c] animate-pulse'}`}></span>
-                                <span>{isResolved ? 'ተስተካክሏል' : 'በመጠባበቅ ላይ'}</span>
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  isResolved 
+                                    ? 'bg-emerald-400' 
+                                    : isReviewed 
+                                      ? 'bg-blue-400' 
+                                      : isArchived 
+                                        ? 'bg-slate-400' 
+                                        : 'bg-[#f9b03c] animate-ping'
+                                }`} />
+                                <span>
+                                  {isResolved 
+                                    ? 'ተስተካክሏል' 
+                                    : isReviewed 
+                                      ? 'የታየ' 
+                                      : isArchived 
+                                        ? 'የተቀመጠ' 
+                                        : 'አዲስ (New)'}
+                                </span>
                               </span>
                             </div>
 
-                            {/* Stars Rating & Feedback Type Row */}
+                            {/* Stars Rating & Category Row */}
                             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                               {/* 5-Star Display */}
                               <div className="flex items-center gap-1">
@@ -9382,20 +9491,20 @@ export default function AdminDashboard() {
                                   />
                                 ))}
                                 <span className="text-xs font-black text-dark dark:text-[#f9b03c] ml-1">
-                                  {Number(item.rating) || 5}/5
+                                  {Number(item.rating) || 5}.0/5.0
                                 </span>
                               </div>
 
-                              {/* Type Badge */}
-                              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border ${
-                                item.type === 'course' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
-                                item.type === 'bug' ? 'bg-red-500/10 text-red-400 border-red-500/30' :
-                                item.type === 'idea' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
+                              {/* Category Badge */}
+                              <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-lg border ${
+                                item.category === 'course' || item.type === 'course' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
+                                item.category === 'bug' || item.type === 'bug' ? 'bg-red-500/10 text-red-400 border-red-500/30' :
+                                item.category === 'idea' || item.type === 'idea' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
                                 'bg-amber-500/10 text-amber-400 border-amber-500/30'
                               }`}>
-                                {item.type === 'course' ? 'የኮርስ አስተያየት' :
-                                 item.type === 'bug' ? 'የዌብሳይት ችግር' :
-                                 item.type === 'idea' ? 'አዲስ ሀሳብ' : 'አጠቃላይ'}
+                                {item.category === 'course' || item.type === 'course' ? '📚 የኮርስ አስተያየት' :
+                                 item.category === 'bug' || item.type === 'bug' ? '🐞 የዌብሳይት ችግር' :
+                                 item.category === 'idea' || item.type === 'idea' ? '💡 አዲስ ሀሳብ' : '💬 አጠቃላይ'}
                               </span>
                             </div>
 
@@ -9404,12 +9513,12 @@ export default function AdminDashboard() {
                               "{item.message}"
                             </div>
 
-                            {/* ️ Voice Recording Audio Player */}
+                            {/* Voice Recording Audio Player */}
                             {(item.audioUrl || item.voiceNoteUrl) && (
                               <div className="mt-3 p-3 rounded-2xl bg-amber-500/10 border border-[#f9b03c]/30">
                                 <div className="text-[11px] font-black text-[#f9b03c] mb-1.5 flex items-center gap-1.5">
                                   <i className="fa-solid fa-microphone-lines animate-pulse"></i>
-                                  <span>የተማሪው የድምፅ መልዕክት (Voice Recording)</span>
+                                  <span>የድምፅ መልዕክት (Voice Recording)</span>
                                 </div>
                                 <audio controls src={item.audioUrl || item.voiceNoteUrl} className="w-full h-8 rounded-lg" />
                               </div>
@@ -9441,62 +9550,84 @@ export default function AdminDashboard() {
                             )}
                           </div>
 
-                          {/* Footer Action Bar */}
-                          <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
-                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                              <i className="fa-regular fa-clock text-[10px]"></i>
-                              <span>{dateDisplay}</span>
-                            </span>
+                          {/* Footer: Timestamp, Status Selector, and Actions */}
+                          <div className="pt-3 border-t border-gray-100 dark:border-white/5 space-y-2.5">
+                            
+                            {/* Row 1: Timestamp & Direct Reply */}
+                            <div className="flex items-center justify-between gap-2 text-[10px] text-gray-400">
+                              <span className="flex items-center gap-1">
+                                <i className="fa-regular fa-clock text-[10px]"></i>
+                                <span>{dateDisplay}</span>
+                              </span>
 
-                            <div className="flex items-center gap-2">
-                              {/* Direct Email Reply */}
-                              {item.userEmail && (
-                                <a
-                                  href={`mailto:${item.userEmail}?subject=${encodeURIComponent('Re: Tsehay Campus Feedback Response')}`}
-                                  className="px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                                  title="በኢሜይል መልስ ስጥ"
-                                >
-                                  <i className="fa-solid fa-reply text-[10px]"></i>
-                                  <span>መልስ ስጥ</span>
-                                </a>
-                              )}
-
-                              {/* Toggle Resolved */}
-                              <button
-                                type="button"
-                                disabled={isUpdating}
-                                onClick={() => handleToggleFeedbackStatus(item)}
-                                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 ${
-                                  isResolved
-                                    ? 'bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-600 dark:text-gray-300'
-                                    : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-xs'
-                                }`}
-                              >
-                                {isUpdating ? (
-                                  <i className="fa-solid fa-spinner fa-spin text-xs"></i>
-                                ) : isResolved ? (
-                                  <>
-                                    <i className="fa-solid fa-rotate-left text-[10px]"></i>
-                                    <span>እንደገና ክፈት</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <i className="fa-solid fa-check text-xs"></i>
-                                    <span>ተስተካክሏል (Resolve)</span>
-                                  </>
+                              <div className="flex items-center gap-1.5">
+                                {item.userEmail && !item.userEmail.startsWith('visitor@') && (
+                                  <a
+                                    href={`mailto:${item.userEmail}?subject=${encodeURIComponent('Re: Tsehay Campus Feedback Response')}`}
+                                    className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                                    title="በኢሜይል መልስ ስጥ"
+                                  >
+                                    <i className="fa-solid fa-reply text-[9px]"></i>
+                                    <span>መልስ ስጥ</span>
+                                  </a>
                                 )}
-                              </button>
-
-                              {/* Delete */}
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteFeedback(item.id)}
-                                className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400 flex items-center justify-center text-xs transition cursor-pointer"
-                                title="አስተያየቱን ሰርዝ"
-                              >
-                                <i className="fa-solid fa-trash-can"></i>
-                              </button>
+                                {(item.userPhone || item.phone) && (
+                                  <a
+                                    href={`tel:${item.userPhone || item.phone}`}
+                                    className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                                    title="በስልክ ደውል"
+                                  >
+                                    <i className="fa-solid fa-phone text-[9px]"></i>
+                                    <span>ደውል</span>
+                                  </a>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteFeedback(item.id)}
+                                  className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400 flex items-center justify-center text-xs transition cursor-pointer"
+                                  title="አስተያየቱን ሰርዝ"
+                                >
+                                  <i className="fa-solid fa-trash-can text-[10px]"></i>
+                                </button>
+                              </div>
                             </div>
+
+                            {/* Row 2: 🌟 Lifecycle Status Control (New, Reviewed, Resolved, Archived) */}
+                            <div className="p-1.5 rounded-xl bg-gray-100 dark:bg-slate-900/90 border border-gray-200 dark:border-white/5 flex items-center justify-between gap-1">
+                              <span className="text-[10px] font-bold text-slate-400 pl-1 shrink-0">ሁኔታ ቀይር:</span>
+                              <div className="grid grid-cols-4 gap-1 flex-1">
+                                {[
+                                  { id: 'new', label: '🆕 አዲስ', color: 'hover:bg-amber-500/20 hover:text-[#f9b03c]' },
+                                  { id: 'reviewed', label: '👀 የታየ', color: 'hover:bg-blue-500/20 hover:text-blue-400' },
+                                  { id: 'resolved', label: '✅ ተስተካክሏል', color: 'hover:bg-emerald-500/20 hover:text-emerald-400' },
+                                  { id: 'archived', label: '📦 ማህደር', color: 'hover:bg-slate-500/20 hover:text-slate-300' },
+                                ].map((stOption) => {
+                                  const isActive = itemStatus === stOption.id || (stOption.id === 'new' && itemStatus === 'pending');
+                                  return (
+                                    <button
+                                      key={stOption.id}
+                                      type="button"
+                                      disabled={isUpdating}
+                                      onClick={() => handleUpdateFeedbackStatus(item, stOption.id as any)}
+                                      className={`py-1 px-1 rounded-lg text-[10px] font-black transition cursor-pointer text-center truncate ${stOption.color} ${
+                                        isActive
+                                          ? stOption.id === 'new'
+                                            ? 'bg-amber-500 text-slate-950 shadow-xs'
+                                            : stOption.id === 'reviewed'
+                                              ? 'bg-blue-500 text-white shadow-xs'
+                                              : stOption.id === 'resolved'
+                                                ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                                                : 'bg-slate-600 text-white shadow-xs'
+                                          : 'text-gray-500 dark:text-slate-400 hover:text-white'
+                                      }`}
+                                    >
+                                      {stOption.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
                           </div>
 
                         </div>

@@ -49,7 +49,7 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
       userEmail: user?.email || (isStudentUser ? 'student@tsehaycampus.com' : 'visitor@tsehaycampus.com'),
       userRole,
       role: userRole,
-      status: 'pending',
+      status: 'new',
       createdAt: new Date().toISOString(),
       createdAtClient: new Date().toISOString()
     };
