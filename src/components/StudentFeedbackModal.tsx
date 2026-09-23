@@ -23,6 +23,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [hasClickedRecord, setHasClickedRecord] = useState(false);
 
   // 📷 Image/Screenshot Attachment State
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -109,6 +110,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
   useEffect(() => {
     setError(null);
     setAudioError(null);
+    setHasClickedRecord(false);
   }, [isOpen]);
 
   // Global Event Listener to open feedback modal from any component/page
@@ -119,6 +121,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
       }
       setError(null);
       setAudioError(null);
+      setHasClickedRecord(false);
       setIsOpen(true);
     };
 
@@ -195,16 +198,21 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // 🎙️ Voice Recording Handlers (Executed ONLY on explicit button click, never on modal open)
+  // 🎙️ Voice Recording Handlers (Executed ONLY on explicit user click, NEVER automatically on mount or open)
   const startRecording = async () => {
+    setHasClickedRecord(true);
+    setAudioError(null);
+
     try {
       if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setAudioError('ይህ ብሮውዘር ድምፅ መቅረፅን አይደግፍም።');
-        setTimeout(() => setAudioError(null), 3500);
+        setTimeout(() => {
+          setAudioError(null);
+          setHasClickedRecord(false);
+        }, 3500);
         return;
       }
 
-      setAudioError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
 
@@ -233,6 +241,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
       recorder.start(100);
       setIsRecording(true);
       setRecordingSeconds(0);
+      setAudioError(null);
 
       recordingTimerRef.current = setInterval(() => {
         setRecordingSeconds((prev) => {
@@ -246,7 +255,10 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     } catch (err: any) {
       console.warn('Audio recording permission notice:', err);
       setAudioError('ማይክሮፎን አልተገኘም ወይም ፈቃድ አልተሰጠም።');
-      setTimeout(() => setAudioError(null), 4000);
+      setTimeout(() => {
+        setAudioError(null);
+        setHasClickedRecord(false);
+      }, 4000);
     }
   };
 
@@ -267,6 +279,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     stopRecording();
     setError(null);
     setAudioError(null);
+    setHasClickedRecord(false);
     setIsOpen(false);
   };
 
@@ -423,6 +436,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
               if (!hasMovedRef.current) {
                 setError(null);
                 setAudioError(null);
+                setHasClickedRecord(false);
                 setIsOpen(true);
               }
             }}
@@ -620,7 +634,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                             <i className="fa-solid fa-microphone"></i>
                             <span>ድምፅ ቅረጽ (Record)</span>
                           </button>
-                          {audioError && (
+                          {hasClickedRecord && audioError && (
                             <span className="text-[10px] text-amber-400 font-bold block mt-1.5 text-center animate-in fade-in">
                               {audioError}
                             </span>
