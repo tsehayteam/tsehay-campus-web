@@ -22,6 +22,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   // 📷 Image/Screenshot Attachment State
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -104,12 +105,20 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     }
   }, [user]);
 
+  // Automatically reset all error banners whenever modal opens or closes
+  useEffect(() => {
+    setError(null);
+    setAudioError(null);
+  }, [isOpen]);
+
   // Global Event Listener to open feedback modal from any component/page
   useEffect(() => {
     const handleOpenModal = (event: any) => {
       if (event?.detail?.category) {
         setCategory(event.detail.category);
       }
+      setError(null);
+      setAudioError(null);
       setIsOpen(true);
     };
 
@@ -186,15 +195,16 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // 🎙️ Voice Recording Handlers
+  // 🎙️ Voice Recording Handlers (Executed ONLY on explicit button click, never on modal open)
   const startRecording = async () => {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError('ይህ ብሮውዘር ድምፅ መቅረፅን አይደግፍም።');
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setAudioError('ይህ ብሮውዘር ድምፅ መቅረፅን አይደግፍም።');
+        setTimeout(() => setAudioError(null), 3500);
         return;
       }
 
-      setError(null);
+      setAudioError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
 
@@ -208,12 +218,16 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
       };
 
       recorder.onstop = () => {
-        const mimeType = recorder.mimeType || 'audio/webm';
-        const blob = new Blob(audioChunksRef.current, { type: mimeType });
-        setAudioBlob(blob);
-        const audioUrl = URL.createObjectURL(blob);
-        setAudioPreviewUrl(audioUrl);
-        stream.getTracks().forEach((track) => track.stop());
+        try {
+          const mimeType = recorder.mimeType || 'audio/webm';
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          setAudioBlob(blob);
+          const audioUrl = URL.createObjectURL(blob);
+          setAudioPreviewUrl(audioUrl);
+          stream.getTracks().forEach((track) => track.stop());
+        } catch (stopErr) {
+          console.warn('Audio onstop handler error:', stopErr);
+        }
       };
 
       recorder.start(100);
@@ -230,20 +244,30 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
         });
       }, 1000);
     } catch (err: any) {
-      console.error('Audio recording error:', err);
-      setError('የማይክሮፎን ፈቃድ አልተሰጠም። እባክዎ ማይክሮፎን ይፍቀዱ።');
+      console.warn('Audio recording permission notice:', err);
+      setAudioError('ማይክሮፎን አልተገኘም ወይም ፈቃድ አልተሰጠም።');
+      setTimeout(() => setAudioError(null), 4000);
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {}
       setIsRecording(false);
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
         recordingTimerRef.current = null;
       }
     }
+  };
+
+  const closeModal = () => {
+    stopRecording();
+    setError(null);
+    setAudioError(null);
+    setIsOpen(false);
   };
 
   const handleRemoveAudio = () => {
@@ -306,13 +330,16 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
 
       const trimmedEmail = contactEmail.trim();
       const trimmedName = contactName.trim();
-      const trimmedPhone = contactPhone.trim();
+      const isPhoneInput = /^[+0-9\s-]{9,15}$/.test(trimmedEmail);
+      const trimmedPhone = contactPhone.trim() || (isPhoneInput ? trimmedEmail : '');
 
       const isStudentUser = Boolean(user && user.uid && !user.uid.startsWith('guest_') && !user.uid.startsWith('visitor_'));
       const userRole = isStudentUser ? 'student' : 'visitor';
 
       const finalUserName = trimmedName || user?.displayName || (user?.email ? user.email.split('@')[0] : (isStudentUser ? 'ተማሪ (Student)' : 'እንግዳ ጎብኚ (Guest Visitor)'));
-      const finalUserEmail = trimmedEmail || user?.email || (trimmedPhone ? `tel:${trimmedPhone}` : (isStudentUser ? 'student@tsehaycampus.com' : 'visitor@tsehaycampus.com'));
+      const finalUserEmail = trimmedEmail 
+        ? (isPhoneInput ? `tel:${trimmedEmail}` : trimmedEmail) 
+        : (user?.email || (trimmedPhone ? `tel:${trimmedPhone}` : (isStudentUser ? 'student@tsehaycampus.com' : 'visitor@tsehaycampus.com')));
 
       const feedbackPayload = {
         id: feedbackId,
@@ -393,7 +420,11 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
             onMouseDown={handleLauncherDragStart}
             onTouchStart={handleLauncherDragStart}
             onClick={() => {
-              if (!hasMovedRef.current) setIsOpen(true);
+              if (!hasMovedRef.current) {
+                setError(null);
+                setAudioError(null);
+                setIsOpen(true);
+              }
             }}
             className="group relative flex items-center justify-center w-12 h-12 sm:w-auto sm:h-auto sm:px-4 sm:py-2.5 rounded-full bg-[#0d1527] hover:bg-[#13203f] border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white shadow-[0_10px_30px_rgba(0,0,0,0.85),0_0_20px_rgba(249,176,60,0.25)] hover:shadow-[0_0_35px_rgba(249,176,60,0.5)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing select-none"
             title="አስተያየት ይስጡ (Give Feedback)"
@@ -425,7 +456,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
-            onClick={() => setIsOpen(false)}
+            onClick={closeModal}
           />
 
           {/* Modal Card */}
@@ -440,7 +471,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
             {/* Close Button */}
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
+              onClick={closeModal}
               className="absolute top-4 right-4 sm:top-5 sm:right-5 w-9 h-9 rounded-full bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer z-20 border border-white/10"
               title="ዝጋ (Close)"
             >
@@ -580,14 +611,21 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                       </div>
 
                       {!isRecording && !audioPreviewUrl && (
-                        <button
-                          type="button"
-                          onClick={startRecording}
-                          className="w-full py-2 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-[#f9b03c]/40 text-[#f9b03c] text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95"
-                        >
-                          <i className="fa-solid fa-microphone"></i>
-                          <span>ድምፅ ቅረጽ (Record)</span>
-                        </button>
+                        <div>
+                          <button
+                            type="button"
+                            onClick={startRecording}
+                            className="w-full py-2 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-[#f9b03c]/40 text-[#f9b03c] text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95"
+                          >
+                            <i className="fa-solid fa-microphone"></i>
+                            <span>ድምፅ ቅረጽ (Record)</span>
+                          </button>
+                          {audioError && (
+                            <span className="text-[10px] text-amber-400 font-bold block mt-1.5 text-center animate-in fade-in">
+                              {audioError}
+                            </span>
+                          )}
+                        </div>
                       )}
 
                       {isRecording && (
