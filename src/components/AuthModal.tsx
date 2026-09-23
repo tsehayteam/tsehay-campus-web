@@ -226,7 +226,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     if (pendingGoogleAuth || (isSignupMode && signupStep > 1)) {
       try {
         const cachedPhone = typeof window !== 'undefined' ? localStorage.getItem('tsehay_user_phone') : null;
-        if (!cachedPhone) {
+        const isRegistered = typeof window !== 'undefined' ? localStorage.getItem('tsehay_user_registered') === 'true' : false;
+        if (!cachedPhone && !isRegistered) {
           await supabase.auth.signOut();
         }
       } catch (e) {}
@@ -382,7 +383,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
-  // Google Authentication Flow via Direct Domain OAuth
+  // Google Authentication Flow
   const handleGoogleAuth = async () => {
     setError("");
     setLoading(true);
@@ -394,7 +395,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           currentOrigin = path;
         }
       }
-      initiateGoogleLogin(currentOrigin);
+      await initiateGoogleLogin(currentOrigin);
     } catch (err: any) {
       console.error("Google Auth Error:", err);
       setError(getFriendlyErrorMessage(err));

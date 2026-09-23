@@ -17,13 +17,27 @@ function LoginContent() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => searchParams.get('error') || null);
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setError(errorParam);
+    }
+  }, [searchParams]);
 
   // If already logged in, redirect directly to dashboard
   useEffect(() => {
     if (user) {
       const returnUrl = searchParams.get('returnUrl') || '/dashboard';
       router.replace(returnUrl);
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const returnUrl = searchParams.get('returnUrl') || '/dashboard';
+          router.replace(returnUrl);
+        }
+      });
     }
   }, [user, router, searchParams]);
 
@@ -75,7 +89,7 @@ function LoginContent() {
     setLoading(true);
     try {
       const returnUrl = searchParams.get('returnUrl') || '/dashboard';
-      initiateGoogleLogin(returnUrl);
+      await initiateGoogleLogin(returnUrl);
     } catch (err: any) {
       setError(err?.message || 'በ Google መግባት አልተቻለም።');
       setLoading(false);

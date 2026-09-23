@@ -17,18 +17,23 @@ function getAppOrigin(req: NextRequest): string {
 
 export async function GET(req: NextRequest) {
   try {
+    const appOrigin = getAppOrigin(req);
+    const returnUrl = req.nextUrl.searchParams.get('returnUrl') || '/dashboard';
     const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-    if (!clientId) {
-      console.error('[Google OAuth] GOOGLE_CLIENT_ID is not configured in environment variables.');
-      return NextResponse.redirect(
-        new URL('/login?error=' + encodeURIComponent('የ Google ማረጋገጫ አልተዋቀረም (GOOGLE_CLIENT_ID አልተገኘም)።'), req.url)
-      );
+    // If custom Google credentials are not configured on the server, gracefully delegate to Supabase Auth
+    if (!clientId || !clientSecret) {
+      console.info('[Google OAuth] Custom credentials not configured. Gracefully delegating to Supabase OAuth endpoint.');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jzxgmikliwilyfpixskm.supabase.co';
+      const callbackUrl = `${appOrigin}/auth/callback?returnUrl=${encodeURIComponent(returnUrl)}`;
+      const supabaseAuthUrl = new URL(`${supabaseUrl.replace(/\/$/, '')}/auth/v1/authorize`);
+      supabaseAuthUrl.searchParams.set('provider', 'google');
+      supabaseAuthUrl.searchParams.set('redirect_to', callbackUrl);
+      return NextResponse.redirect(supabaseAuthUrl.toString(), 302);
     }
 
-    const appOrigin = getAppOrigin(req);
     const redirectUri = `${appOrigin}/api/auth/callback/google`;
-    const returnUrl = req.nextUrl.searchParams.get('returnUrl') || '/dashboard';
 
     // Generate cryptographic nonce for CSRF protection
     const nonce = crypto.randomBytes(16).toString('hex');

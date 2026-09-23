@@ -19,14 +19,16 @@ export async function POST(req: NextRequest) {
     let resolvedProfile: any = null;
     const db = supabaseAdmin || supabaseServer;
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cleanUid);
+
     // 1. Check profiles table by UID or Email
     try {
       let query = db.from('profiles').select('*');
-      if (cleanUid && cleanEmail) {
+      if (isUuid && cleanEmail) {
         query = query.or(`id.eq.${cleanUid},email.ilike.${cleanEmail}`);
-      } else if (cleanUid) {
+      } else if (isUuid) {
         query = query.eq('id', cleanUid);
-      } else {
+      } else if (cleanEmail) {
         query = query.ilike('email', cleanEmail);
       }
 
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
         resolvedProfile = found;
 
         // If the profile was found by email but has a different ID or empty ID, sync the UID
-        if (cleanUid && found.id !== cleanUid) {
+        if (isUuid && found.id !== cleanUid) {
           try {
             await db
               .from('profiles')
@@ -55,12 +57,12 @@ export async function POST(req: NextRequest) {
 
     // 2. Check enrollments table if not already confirmed
     try {
-      let enrQuery = db.from('enrollments').select('id, user_id, user_email, course_id, course_title');
+      let enrQuery = db.from('enrollments').select('id, user_id, user_email, course_id');
       if (cleanUid && cleanEmail) {
         enrQuery = enrQuery.or(`user_id.eq.${cleanUid},user_email.ilike.${cleanEmail}`);
       } else if (cleanUid) {
         enrQuery = enrQuery.eq('user_id', cleanUid);
-      } else {
+      } else if (cleanEmail) {
         enrQuery = enrQuery.ilike('user_email', cleanEmail);
       }
 
@@ -126,21 +128,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // A student is considered an existing student ONLY if:
-    // 1) They have a verified phone number (>= 7 digits) in profiles/users, OR
-    // 2) They already have active course enrollments.
-    // Otherwise, they are a VISITOR who must complete onboarding!
+    // An existing student is anyone who:
+    // 1) Already has a record in profiles table
+    // 2) OR already has a record in users table
+    // 3) OR already has active course enrollments
+    // 4) OR has completed onboarding (has phone number)
     const phone = resolvedProfile?.phone || resolvedProfile?.phone_number || '';
     const digitsOnlyPhone = String(phone).trim().replace(/[^0-9]/g, '');
     const hasValidPhone = Boolean(digitsOnlyPhone.length >= 7);
 
-    const isStudent = (isRegistered && hasValidPhone) || hasEnrollments;
+    const isStudent = Boolean(isRegistered || resolvedProfile || hasEnrollments || hasValidPhone);
     const isVisitor = !isStudent;
 
     // Format safe profile response
     const profileResponse = resolvedProfile ? {
       id: resolvedProfile.id || cleanUid,
-      name: resolvedProfile.full_name || resolvedProfile.name || resolvedProfile.displayName || '',
+      name: resolvedProfile.display_name || resolvedProfile.full_name || resolvedProfile.name || '',
       displayName: resolvedProfile.display_name || resolvedProfile.full_name || resolvedProfile.name || '',
       email: resolvedProfile.email || cleanEmail,
       phone: resolvedProfile.phone || resolvedProfile.phone_number || '',
@@ -153,11 +156,11 @@ export async function POST(req: NextRequest) {
       isRegistered: isStudent,
       isStudent,
       isVisitor,
-      hasAccount: isRegistered,
+      hasAccount: Boolean(isRegistered || resolvedProfile),
       hasValidPhone,
       hasEnrollments,
       profile: profileResponse,
-      suggestedName: resolvedProfile?.full_name || resolvedProfile?.name || resolvedProfile?.display_name || '',
+      suggestedName: resolvedProfile?.display_name || resolvedProfile?.full_name || resolvedProfile?.name || '',
       email: cleanEmail,
       uid: cleanUid
     });

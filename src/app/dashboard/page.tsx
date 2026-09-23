@@ -137,6 +137,11 @@ function StudentDashboardContent() {
     // Admins are always authorized
     if (user.email && isEmailAdmin(user.email)) return;
 
+    // Fast check: If this user was already verified as registered, grant immediate access
+    if (typeof window !== 'undefined' && localStorage.getItem('tsehay_user_registered') === 'true') {
+      return;
+    }
+
     // Check if student profile is complete (phone number verified or active enrollments)
     const cachedPhone = (typeof window !== 'undefined' && (localStorage.getItem('tsehay_user_phone') || (user as any).phone)) || '';
     const cleanDigits = String(cachedPhone).replace(/[^0-9]/g, '');
@@ -157,7 +162,14 @@ function StudentDashboardContent() {
       })
         .then(res => res.json())
         .then(data => {
-          if (data && !data.isStudent && !data.hasEnrollments && !data.hasValidPhone) {
+          if (data && (data.isStudent || data.isRegistered || data.hasAccount || data.hasEnrollments)) {
+            try {
+              localStorage.setItem('tsehay_user_registered', 'true');
+              document.cookie = 'tc_session=1; path=/; SameSite=Lax; max-age=604800';
+            } catch (e) {}
+            return;
+          }
+          if (data && data.isVisitor && !data.isStudent && !data.hasAccount && !data.hasEnrollments && !data.hasValidPhone) {
             console.warn('[Dashboard Guard] Incomplete onboarding detected. Directing to onboarding.');
             if (typeof window !== 'undefined') {
               window.location.replace('/auth/callback');

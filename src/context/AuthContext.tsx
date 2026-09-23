@@ -25,6 +25,11 @@ export const clearUserSessionData = (previousUid?: string) => {
     localStorage.removeItem('tsehay_user_role');
     localStorage.removeItem('adminAuth');
     localStorage.removeItem('adminEmail');
+    localStorage.removeItem('tsehay_user_registered');
+    localStorage.removeItem('tsehay_user_phone');
+    try {
+      document.cookie = 'tc_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    } catch (e) {}
     sessionStorage.removeItem('tsehay_pending_course_action');
     sessionStorage.removeItem('tsehay_pending_action');
     sessionStorage.removeItem('tsehay_admin_verified');
@@ -186,6 +191,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(formatted));
           localStorage.setItem('tsehay_auth_is_admin', userIsAdmin ? 'true' : 'false');
+          document.cookie = 'tc_session=1; path=/; SameSite=Lax; max-age=604800';
         } catch (e) {}
       } else {
         const sessionAdmin = typeof window !== 'undefined' && (
@@ -208,6 +214,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(formatted));
           localStorage.setItem('tsehay_auth_is_admin', userIsAdmin ? 'true' : 'false');
+          document.cookie = 'tc_session=1; path=/; SameSite=Lax; max-age=604800';
         } catch (e) {}
       } else {
         const sessionAdmin = typeof window !== 'undefined' && (
@@ -218,6 +225,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsAdmin(sessionAdmin);
         try {
           localStorage.removeItem('tsehay_auth_user_cache');
+          localStorage.removeItem('tsehay_user_registered');
+          localStorage.removeItem('tsehay_user_phone');
+          document.cookie = 'tc_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
           if (!sessionAdmin) {
             localStorage.removeItem('tsehay_auth_is_admin');
             localStorage.removeItem('adminAuth');

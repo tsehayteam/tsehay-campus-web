@@ -27,6 +27,19 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Redirect authenticated students visiting /login directly to /dashboard (or returnUrl)
+  if (request.nextUrl.pathname === '/login') {
+    const hasTcSession = request.cookies.get('tc_session')?.value === '1';
+    const hasSbSession = request.cookies.getAll().some(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'));
+    if (hasTcSession || hasSbSession) {
+      const rawReturnUrl = request.nextUrl.searchParams.get('returnUrl');
+      const targetUrl = (rawReturnUrl && rawReturnUrl.startsWith('/') && !rawReturnUrl.startsWith('/login')) 
+        ? rawReturnUrl 
+        : '/dashboard';
+      return NextResponse.redirect(new URL(targetUrl, request.url));
+    }
+  }
+
   const response = NextResponse.next();
 
   // Defense-in-depth security headers

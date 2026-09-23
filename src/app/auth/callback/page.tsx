@@ -134,9 +134,11 @@ function AuthCallbackHandler() {
       // =========================================================================
       try {
         // Step 1: Check instant local cache for this specific user ONLY
+        let isUserCachedAsRegistered = false;
         let verifiedCachedPhone = '';
         try {
           const cachedUserRaw = localStorage.getItem('tsehay_auth_user_cache');
+          const isMarkedRegistered = localStorage.getItem('tsehay_user_registered') === 'true';
           if (cachedUserRaw) {
             const parsed = JSON.parse(cachedUserRaw);
             // STRICT MATCH: Only trust cache if it belongs to this specific email or UID
@@ -144,13 +146,18 @@ function AuthCallbackHandler() {
             const matchesUid = Boolean(parsed?.uid && parsed.uid === formatted.uid);
             if (matchesEmail || matchesUid) {
               verifiedCachedPhone = parsed.phone || parsed.phoneNumber || parsed.phone_number || '';
+              if (isMarkedRegistered || parsed.isRegistered || verifiedCachedPhone) {
+                isUserCachedAsRegistered = true;
+              }
             }
           }
         } catch (e) {}
 
-        const cleanCachedDigits = String(verifiedCachedPhone).trim().replace(/[^0-9]/g, '');
-        if (cleanCachedDigits.length >= 7) {
+        if (isUserCachedAsRegistered) {
           // Confirmed returning student with complete profile in own cache
+          try {
+            document.cookie = 'tc_session=1; path=/; SameSite=Lax; max-age=604800';
+          } catch (e) {}
           setStatus('redirecting');
           navigatePostAuth();
           return;
@@ -193,9 +200,9 @@ function AuthCallbackHandler() {
           }
         })();
 
-        // 2500ms safety timeout: prevents false onboarding triggers on slow connections
+        // 3500ms safety timeout: prevents dead network hanging
         const timeoutPromise = new Promise<{ isTimeout: boolean }>(resolve => {
-          setTimeout(() => resolve({ isTimeout: true }), 2500);
+          setTimeout(() => resolve({ isTimeout: true }), 3500);
         });
 
         const raceResult = await Promise.race([
@@ -215,17 +222,21 @@ function AuthCallbackHandler() {
 
         const resolvedProfile = serverCheck?.profile || clientProfile;
         const profilePhone = resolvedProfile?.phone || resolvedProfile?.phone_number || '';
-        const cleanProfilePhone = String(profilePhone).trim().replace(/[^0-9]/g, '');
-        const hasValidPhone = cleanProfilePhone.length >= 7;
         const hasEnrollments = enrollmentsCount > 0 || Boolean(serverCheck?.hasEnrollments);
-        const isServerStudent = Boolean(serverCheck?.isStudent || (serverCheck?.isRegistered && serverCheck?.hasValidPhone));
 
         // =========================================================================
         // 🌟 DECISION: EXISTING STUDENT vs NEW VISITOR
         // 1. Existing Student -> Detected! Pass through immediately (Zero forms)
         // 2. New Visitor -> Detected! Make them enter full info (Full Onboarding)
         // =========================================================================
-        const isStudent = isServerStudent || hasValidPhone || hasEnrollments;
+        const isStudent = Boolean(
+          resolvedProfile || 
+          clientProfile || 
+          serverCheck?.isStudent || 
+          serverCheck?.isRegistered || 
+          serverCheck?.hasAccount || 
+          hasEnrollments
+        );
 
         if (isStudent) {
           // 🎓 EXISTING STUDENT -> AUTOMATIC PASS
@@ -237,15 +248,25 @@ function AuthCallbackHandler() {
           };
 
           try {
-            localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(finalUser));
+            localStorage.setItem('tsehay_auth_user_cache', JSON.stringify({ ...finalUser, isRegistered: true }));
+            localStorage.setItem('tsehay_user_registered', 'true');
             if (profilePhone) {
               localStorage.setItem('tsehay_user_phone', profilePhone);
             }
+            document.cookie = 'tc_session=1; path=/; SameSite=Lax; max-age=604800';
           } catch (e) {}
 
           window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: finalUser }));
           window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: finalUser }));
 
+          setStatus('redirecting');
+          navigatePostAuth();
+          return;
+        }
+
+        // If timeout fired on a slow connection, allow entry to dashboard instead of false onboarding
+        if (raceResult && typeof raceResult === 'object' && 'isTimeout' in raceResult) {
+          console.warn('[Auth Callback] Profile check timed out. Proceeding to dashboard.');
           setStatus('redirecting');
           navigatePostAuth();
           return;
@@ -275,14 +296,20 @@ function AuthCallbackHandler() {
       }
     };
 
-    // A. Check for OAuth error in URL parameters immediately
+    // A. Check for OAuth error in URL parameters or hash immediately
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-    const oAuthError = searchParams?.get('error') || urlParams?.get('error');
-    const oAuthErrorDesc = searchParams?.get('error_description') || urlParams?.get('error_description');
+    const hashParams = typeof window !== 'undefined' && window.location.hash ? parseHashTokens(window.location.hash) : {};
+    const oAuthError = searchParams?.get('error') || urlParams?.get('error') || hashParams.error;
+    const oAuthErrorDesc = searchParams?.get('error_description') || urlParams?.get('error_description') || hashParams.errorDescription;
 
     if (oAuthError) {
       setStatus('error');
-      setErrorMessage(oAuthErrorDesc || 'የGoogle መግቢያ ተሰርዟል ወይም አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።');
+      const isCancelled = oAuthError === 'access_denied';
+      setErrorMessage(
+        isCancelled 
+          ? 'የ Google መግቢያ ተሰርዟል።' 
+          : (oAuthErrorDesc || 'የGoogle መግቢያ ተሰርዟል ወይም አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።')
+      );
       return;
     }
 
@@ -476,8 +503,10 @@ function AuthCallbackHandler() {
         displayName: cleanName,
       };
       try {
-        localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(updatedUser));
+        localStorage.setItem('tsehay_auth_user_cache', JSON.stringify({ ...updatedUser, isRegistered: true }));
+        localStorage.setItem('tsehay_user_registered', 'true');
         localStorage.setItem('tsehay_user_phone', cleanPhone);
+        document.cookie = 'tc_session=1; path=/; SameSite=Lax; max-age=604800';
       } catch (e) {}
 
       window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: updatedUser }));
