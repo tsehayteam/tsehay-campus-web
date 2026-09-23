@@ -8,6 +8,7 @@ import { validateEmailForSignup } from "@/lib/disposableEmailBlocker";
 import { recordReferralUsage } from "@/lib/referralService";
 import { getStoredReferrerUid, clearStoredReferrerUid } from "@/lib/referralTrackingService";
 import { generateOtpCode, saveOtpForEmail, verifyOtpForEmail } from "@/lib/otpService";
+import { initiateGoogleLogin } from "@/lib/googleAuth";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -381,31 +382,19 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
-  // Google Authentication Flow via Supabase OAuth
+  // Google Authentication Flow via Direct Domain OAuth
   const handleGoogleAuth = async () => {
     setError("");
     setLoading(true);
     try {
+      let currentOrigin = '/dashboard';
       if (typeof window !== 'undefined') {
-        try {
-          sessionStorage.setItem('tsehay_preloader_shown', 'true');
-          sessionStorage.setItem('tsehay_preloader_seen', 'true');
-          document.documentElement.classList.remove('tsehay-loading');
-
-          const currentOrigin = window.location.pathname + window.location.search + window.location.hash;
-          if (currentOrigin && !currentOrigin.startsWith('/auth')) {
-            sessionStorage.setItem('tsehay_auth_return_url', currentOrigin);
-          }
-        } catch (e) {}
-      }
-
-      const { error: oAuthErr } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined
+        const path = window.location.pathname + window.location.search + window.location.hash;
+        if (path && !path.startsWith('/auth')) {
+          currentOrigin = path;
         }
-      });
-      if (oAuthErr) throw oAuthErr;
+      }
+      initiateGoogleLogin(currentOrigin);
     } catch (err: any) {
       console.error("Google Auth Error:", err);
       setError(getFriendlyErrorMessage(err));

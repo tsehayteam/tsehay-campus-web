@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { initiateGoogleLogin } from '@/lib/googleAuth';
 
 function LoginContent() {
   const router = useRouter();
@@ -74,20 +75,7 @@ function LoginContent() {
     setLoading(true);
     try {
       const returnUrl = searchParams.get('returnUrl') || '/dashboard';
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('tsehay_auth_return_url', returnUrl);
-        sessionStorage.setItem('tsehay_preloader_shown', 'true');
-        sessionStorage.setItem('tsehay_preloader_seen', 'true');
-        document.documentElement.classList.remove('tsehay-loading');
-      }
-
-      const { error: oAuthErr } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
-        },
-      });
-      if (oAuthErr) throw oAuthErr;
+      initiateGoogleLogin(returnUrl);
     } catch (err: any) {
       setError(err?.message || 'በ Google መግባት አልተቻለም።');
       setLoading(false);

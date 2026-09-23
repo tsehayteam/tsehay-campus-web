@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { formatSupabaseUser, User, clearUserSessionData } from '@/context/AuthContext';
 import { getStoredReferrerUid, clearStoredReferrerUid } from '@/lib/referralTrackingService';
+import { parseHashTokens } from '@/lib/googleAuth';
 
 function AuthCallbackHandler() {
   const router = useRouter();
@@ -90,7 +91,10 @@ function AuthCallbackHandler() {
 
     // 2. Smart Return-to-Origin Navigation:
     try {
-      const returnUrl = sessionStorage.getItem('tsehay_auth_return_url');
+      const paramReturn = searchParams?.get('returnUrl');
+      const returnUrl = (paramReturn && !paramReturn.startsWith('/auth'))
+        ? paramReturn 
+        : sessionStorage.getItem('tsehay_auth_return_url');
       if (returnUrl && !returnUrl.startsWith('/auth') && returnUrl !== '/auth/callback') {
         sessionStorage.removeItem('tsehay_auth_return_url');
         window.location.replace(returnUrl);
@@ -306,6 +310,23 @@ function AuthCallbackHandler() {
       }).catch((e) => {
         console.warn("Code exchange notice:", e);
       });
+    }
+
+    // D2. If #access_token= is in URL hash, parse tokens and set Supabase session
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hashTokens = parseHashTokens(window.location.hash);
+      if (hashTokens.accessToken) {
+        supabase.auth.setSession({
+          access_token: hashTokens.accessToken,
+          refresh_token: hashTokens.refreshToken || ''
+        }).then(({ data, error }) => {
+          if (!error && data?.session?.user && isMounted && !hasResolved) {
+            evaluateProfile(data.session.user);
+          }
+        }).catch((e) => {
+          console.warn("Hash session set notice:", e);
+        });
+      }
     }
 
     // E. Fast Polling fallback: check every 100ms for up to 6.0s
