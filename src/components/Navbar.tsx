@@ -309,21 +309,40 @@ export default function Navbar() {
       {!isCurtainOpen && (
         <div 
           id="tsehay-navbar-capsule"
-          className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-50 animate-in fade-in"
-          title="ዋና ማውጫ / Menu"
+          className="fixed top-3 sm:top-4 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-[9990] animate-in fade-in"
+          title={lang === 'en' ? 'Main Menu / Open' : 'ዋና ማውጫ / ክፈት'}
         >
-          {/* Subtle #f9b03c ambient breathing glow */}
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#f9b03c]/40 via-[#3268ba]/30 to-[#f9b03c]/40 blur-md pointer-events-none animate-pulse" />
+          {/* Prominent #f9b03c ambient breathing aura */}
+          <div className="absolute -inset-1.5 sm:-inset-2 rounded-full bg-gradient-to-r from-[#f9b03c]/50 via-[#f9b03c]/70 to-[#f9b03c]/50 blur-lg sm:blur-xl pointer-events-none menu-aura-breathe" />
 
           {/* Main Menu Capsule Button */}
           <button
             type="button"
             onClick={openCurtain}
-            className="relative pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)] touch-manipulation"
+            aria-label={lang === 'en' ? 'Open Main Menu' : 'ዋና ማውጫ ክፈት'}
+            className="relative pointer-events-auto px-4 sm:px-6 py-2 sm:py-2.5 rounded-full flex items-center gap-2 sm:gap-2.5 group transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-gradient-to-b from-[#141822]/95 via-black/95 to-[#0b0e14]/95 border border-[#f9b03c]/70 hover:border-[#f9b03c] ring-1 ring-[#f9b03c]/30 hover:ring-[#f9b03c]/80 menu-capsule-glow touch-manipulation hover:shadow-[0_12px_32px_rgba(0,0,0,0.95),0_0_30px_rgba(249,176,60,0.85),inset_0_0_18px_rgba(249,176,60,0.35)]"
           >
-            <span className="text-xs sm:text-[13px] font-black tracking-wide whitespace-nowrap flex items-center gap-1.5 font-heading text-white group-hover:text-[#f9b03c] transition-colors">
-              ዋና ማውጫ ▾
+            {/* Top Specular Glass Highlight */}
+            <span className="absolute inset-x-4 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#f9b03c]/70 to-transparent pointer-events-none" />
+
+            {/* Glowing Accent Live Beacon */}
+            <span className="relative flex h-2 w-2 flex-shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-80" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f9b03c] shadow-[0_0_6px_#f9b03c]" />
             </span>
+
+            {/* Menu Hamburger Icon */}
+            <span className="flex items-center justify-center text-[#f9b03c] drop-shadow-[0_0_8px_rgba(249,176,60,0.7)] group-hover:rotate-90 group-hover:scale-110 transition-all duration-300 flex-shrink-0">
+              <Menu className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+            </span>
+
+            {/* Menu Label Text */}
+            <span className="text-xs sm:text-[13px] font-black tracking-wider whitespace-nowrap font-heading text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] group-hover:text-[#f9b03c] transition-colors">
+              {lang === 'en' ? 'Main Menu' : 'ዋና ማውጫ'}
+            </span>
+
+            {/* Downward Indicator */}
+            <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#f9b03c] drop-shadow-[0_0_6px_rgba(249,176,60,0.7)] stroke-[2.5] group-hover:translate-y-0.5 transition-transform duration-300 flex-shrink-0" />
           </button>
         </div>
       )}
@@ -761,10 +780,13 @@ export default function Navbar() {
           <button 
             type="button"
             onClick={closeCurtain}
-            className="pointer-events-auto bg-black/95 text-white border-x border-b border-[#f9b03c]/40 hover:border-[#f9b03c] text-xs font-black font-heading px-6 py-2 rounded-b-2xl shadow-[0_12px_25px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.95),0_0_25px_rgba(249,176,60,0.45)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
-            title="ዋና ማውጫ ዝጋ / Close Menu"
+            aria-label={lang === 'en' ? 'Close Main Menu' : 'ዋና ማውጫ ዝጋ'}
+            className="pointer-events-auto bg-gradient-to-b from-black/95 to-[#0b0e14]/95 text-white border-x border-b border-[#f9b03c]/60 hover:border-[#f9b03c] ring-1 ring-[#f9b03c]/25 hover:ring-[#f9b03c]/70 text-xs font-black font-heading px-6 py-2 rounded-b-2xl shadow-[0_12px_25px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.35)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.95),0_0_25px_rgba(249,176,60,0.6)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-2 whitespace-nowrap group"
+            title={lang === 'en' ? 'Close Menu' : 'ዋና ማውጫ ዝጋ'}
           >
-            <span>ዋና ማውጫ ዝጋ ▴</span>
+            <X className="w-3.5 h-3.5 text-[#f9b03c] drop-shadow-[0_0_6px_rgba(249,176,60,0.7)] group-hover:rotate-90 transition-transform duration-300 flex-shrink-0" />
+            <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] group-hover:text-[#f9b03c] transition-colors">{lang === 'en' ? 'Close Menu' : 'ዋና ማውጫ ዝጋ'}</span>
+            <span className="text-[#f9b03c] text-xs">▴</span>
           </button>
         </div>
       )}
