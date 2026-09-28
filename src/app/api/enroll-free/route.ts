@@ -33,9 +33,17 @@ export async function POST(request: Request) {
     }
 
     if (!authenticatedUserId && userId) {
-      authenticatedUserId = String(userId).trim();
-      userEmail = bodyEmail || null;
-      userName = bodyName || null;
+      const { data: existingProfile } = await db
+        .from('profiles')
+        .select('id, email, full_name, display_name')
+        .eq('id', String(userId).trim())
+        .maybeSingle();
+
+      if (existingProfile) {
+        authenticatedUserId = existingProfile.id;
+        userEmail = existingProfile.email || null;
+        userName = existingProfile.full_name || existingProfile.display_name || bodyName || null;
+      }
     }
 
     if (!authenticatedUserId) {

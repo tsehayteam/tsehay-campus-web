@@ -89,15 +89,23 @@ function AuthCallbackHandler() {
       }
     } catch (e) {}
 
-    // 2. Smart Return-to-Origin Navigation:
+    // 2. Smart Return-to-Origin Navigation (Strict Open Redirect Guard):
     try {
       const paramReturn = searchParams?.get('returnUrl');
-      const returnUrl = (paramReturn && !paramReturn.startsWith('/auth'))
+      const candidateUrl = (paramReturn && !paramReturn.startsWith('/auth'))
         ? paramReturn 
         : sessionStorage.getItem('tsehay_auth_return_url');
-      if (returnUrl && !returnUrl.startsWith('/auth') && returnUrl !== '/auth/callback') {
+
+      if (
+        candidateUrl && 
+        candidateUrl.startsWith('/') && 
+        !candidateUrl.startsWith('//') && 
+        !candidateUrl.startsWith('/\\') && 
+        !candidateUrl.startsWith('/auth') && 
+        candidateUrl !== '/auth/callback'
+      ) {
         sessionStorage.removeItem('tsehay_auth_return_url');
-        window.location.replace(returnUrl);
+        window.location.replace(candidateUrl);
         return;
       }
     } catch (e) {}

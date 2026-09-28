@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     }
 
     const expectedCode = String(otpData.code || '').trim();
-    const isCodeValid = expectedCode === cleanCode || otpData.verified === true;
+    const isCodeValid = expectedCode.length > 0 && expectedCode === cleanCode;
 
     if (!isCodeValid) {
       await supabaseServer
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Error in reset-password API route:', error);
     return NextResponse.json({ 
-      error: error?.message || 'የይለፍ ቃል መቀየር አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።' 
+      error: 'የይለፍ ቃል መቀየር አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።' 
     }, { status: 500 });
   }
 }

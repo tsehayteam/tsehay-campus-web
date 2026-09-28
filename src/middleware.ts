@@ -19,8 +19,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/maintenance', request.url));
   }
 
-  // Protect sensitive admin subroutes like /admin/seed from unauthenticated direct access
-  if (request.nextUrl.pathname.startsWith('/admin/seed')) {
+  // Protect sensitive admin subroutes from unauthenticated direct access
+  if (
+    request.nextUrl.pathname.startsWith('/admin/seed') ||
+    request.nextUrl.pathname.startsWith('/admin/scanner') ||
+    request.nextUrl.pathname.startsWith('/admin/events')
+  ) {
     const adminSessionCookie = request.cookies.get('tc_admin_session')?.value;
     if (!adminSessionCookie) {
       return NextResponse.redirect(new URL('/admin', request.url));
@@ -48,6 +52,8 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  response.headers.set('X-DNS-Prefetch-Control', 'on');
 
   return response;
 }

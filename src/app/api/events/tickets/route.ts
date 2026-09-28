@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, count: tickets.length, tickets }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error fetching tickets:', error);
-    return NextResponse.json({ success: true, tickets: [], error: error.message }, { headers: NO_CACHE_HEADERS });
+    return NextResponse.json({ success: true, tickets: [] }, { headers: NO_CACHE_HEADERS });
   }
 }
 
@@ -173,7 +173,7 @@ export async function DELETE(req: NextRequest) {
     }, { headers: NO_CACHE_HEADERS });
   } catch (err: any) {
     console.error('Error deleting ticket:', err);
-    return NextResponse.json({ success: false, error: err.message || 'Failed to delete ticket' }, { status: 500, headers: NO_CACHE_HEADERS });
+    return NextResponse.json({ success: false, error: 'ትኬቱን መሰረዝ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።' }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 
@@ -236,16 +236,18 @@ export async function PATCH(req: NextRequest) {
       await saveTickets(updatedTickets);
 
       // Atomic seat release with Floor Guard on target event
-      const eventId = targetTicket.eventId;
+      const rawEventId = targetTicket.eventId;
+      const cleanEventId = String(rawEventId || '').trim().replace(/[^a-zA-Z0-9_-]/g, '');
+      const eventId = cleanEventId;
       let updatedEventData: any = null;
 
-      if (eventId) {
+      if (cleanEventId) {
         // 1. Update PostgreSQL events table
         try {
           const { data: dbEvent } = await supabaseAdmin
             .from('events')
             .select('id, slug, registered_count, capacity')
-            .or(`id.eq.${eventId},slug.eq.${eventId}`)
+            .or(`id.eq.${cleanEventId},slug.eq.${cleanEventId}`)
             .maybeSingle();
 
           if (dbEvent) {
@@ -323,7 +325,7 @@ export async function PATCH(req: NextRequest) {
   } catch (err: any) {
     console.error('Error in PATCH /api/events/tickets:', err);
     return NextResponse.json(
-      { success: false, error: err.message || 'Failed to update ticket' },
+      { success: false, error: 'ትኬቱን ማሻሻል አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።' },
       { status: 500, headers: NO_CACHE_HEADERS }
     );
   }

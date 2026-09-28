@@ -210,14 +210,8 @@ export async function POST(request: Request) {
       } catch (e) {}
     }
 
-    if (appliedDiscountPercent === 0 && body.discountPercent && Number(body.discountPercent) > 0) {
-      appliedDiscountPercent = Number(body.discountPercent);
-    }
-
     if (appliedDiscountPercent > 0) {
       numericPrice = Math.max(0, Math.round(basePrice * (1 - appliedDiscountPercent / 100)));
-    } else if (body.price && Number(body.price) > 0 && Number(body.price) <= basePrice) {
-      numericPrice = Number(body.price);
     } else {
       numericPrice = basePrice;
     }
@@ -525,6 +519,6 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error("Payment API Error:", error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'የክፍያ ሂደቱን ማስጀመር አልተቻለም። እባክዎ ጥቂት ቆይተው እንደገና ይሞክሩ።' }, { status: 500 });
   }
 }

@@ -80,18 +80,10 @@ export async function verifyAdminRequest(req: Request): Promise<{
             .maybeSingle();
 
           if (sessionRow?.data && Date.now() < (sessionRow.data.expiresAt || 0)) {
-            return { authorized: true, email: sessionRow.data.email };
-          }
-
-          // Emergency Master Pin or Dashboard verified session token fast-path
-          if (
-            token.startsWith('TC-ADM-') ||
-            token.startsWith('TC-') ||
-            token.startsWith('master_') ||
-            token.startsWith('otp_token_') ||
-            token.startsWith('admin_')
-          ) {
-            return { authorized: true, email: 'eyobsahle@gmail.com' };
+            const sessionEmail = sessionRow.data.email;
+            if (isAuthorizedAdminEmail(sessionEmail)) {
+              return { authorized: true, email: sessionEmail };
+            }
           }
         }
       }
@@ -100,10 +92,6 @@ export async function verifyAdminRequest(req: Request): Promise<{
     // 2. Check x-admin-token custom header
     const customHeader = req.headers.get('x-admin-token');
     if (customHeader) {
-      if (customHeader.startsWith('master_token_') || customHeader.startsWith('TC-ADM-AUTH-') || customHeader.startsWith('otp_token_')) {
-        return { authorized: true, email: 'eyobsahle@gmail.com' };
-      }
-
       const { data: sessionRow } = await supabaseAdmin
         .from('site_settings')
         .select('data')
@@ -111,17 +99,10 @@ export async function verifyAdminRequest(req: Request): Promise<{
         .maybeSingle();
 
       if (sessionRow?.data && Date.now() < (sessionRow.data.expiresAt || 0)) {
-        return { authorized: true, email: sessionRow.data.email };
-      }
-
-      if (
-        customHeader.startsWith('TC-ADM-') ||
-        customHeader.startsWith('TC-') ||
-        customHeader.startsWith('master_') ||
-        customHeader.startsWith('otp_token_') ||
-        customHeader.startsWith('admin_')
-      ) {
-        return { authorized: true, email: 'eyobsahle@gmail.com' };
+        const sessionEmail = sessionRow.data.email;
+        if (isAuthorizedAdminEmail(sessionEmail)) {
+          return { authorized: true, email: sessionEmail };
+        }
       }
     }
 
@@ -131,10 +112,6 @@ export async function verifyAdminRequest(req: Request): Promise<{
     if (cookieMatches && cookieMatches[1]) {
       const cookieToken = decodeURIComponent(cookieMatches[1].trim());
       if (cookieToken) {
-        if (cookieToken.startsWith('master_token_') || cookieToken.startsWith('TC-ADM-AUTH-') || cookieToken.startsWith('otp_token_')) {
-          return { authorized: true, email: 'eyobsahle@gmail.com' };
-        }
-
         const { data: sessionRow } = await supabaseAdmin
           .from('site_settings')
           .select('data')
@@ -142,24 +119,12 @@ export async function verifyAdminRequest(req: Request): Promise<{
           .maybeSingle();
 
         if (sessionRow?.data && Date.now() < (sessionRow.data.expiresAt || 0)) {
-          return { authorized: true, email: sessionRow.data.email };
-        }
-
-        if (
-          cookieToken.startsWith('TC-ADM-') ||
-          cookieToken.startsWith('TC-') ||
-          cookieToken.startsWith('master_') ||
-          cookieToken.startsWith('otp_token_') ||
-          cookieToken.startsWith('admin_')
-        ) {
-          return { authorized: true, email: 'eyobsahle@gmail.com' };
+          const sessionEmail = sessionRow.data.email;
+          if (isAuthorizedAdminEmail(sessionEmail)) {
+            return { authorized: true, email: sessionEmail };
+          }
         }
       }
-    }
-
-    // 4. Check explicit admin verified flag
-    if (req.headers.get('x-admin-verified') === 'true') {
-      return { authorized: true, email: 'eyobsahle@gmail.com' };
     }
 
     return { authorized: false, error: 'Unauthorized: Valid Admin credentials or 2FA session required.' };

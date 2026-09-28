@@ -345,11 +345,20 @@ export async function POST(req: Request) {
   // 🔒 CORS validation
   const origin = req.headers.get('origin');
   if (origin) {
-    const isAllowed = 
-      origin.includes('tsehaycampus.com') || 
-      origin.includes('vercel.app') || 
-      origin.includes('localhost') || 
-      origin.includes('127.0.0.1');
+    let isAllowed = false;
+    try {
+      const parsed = new URL(origin);
+      const host = parsed.hostname.toLowerCase();
+      isAllowed = 
+        host === 'tsehaycampus.com' ||
+        host === 'www.tsehaycampus.com' ||
+        host.endsWith('.tsehaycampus.com') ||
+        host === 'localhost' ||
+        host === '127.0.0.1' ||
+        (host.endsWith('.vercel.app') && (host.includes('tsehay') || host.includes('vibe')));
+    } catch (e) {
+      isAllowed = false;
+    }
     if (!isAllowed) {
       return NextResponse.json({ error: 'Forbidden Origin' }, { status: 403 });
     }

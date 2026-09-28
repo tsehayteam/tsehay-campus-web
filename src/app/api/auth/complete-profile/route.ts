@@ -92,6 +92,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('[complete-profile] Server error:', error);
-    return NextResponse.json({ success: false, error: error?.message || 'Server error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'የመገለጫ መረጃውን ማዘመን አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።' }, { status: 500 });
   }
 }

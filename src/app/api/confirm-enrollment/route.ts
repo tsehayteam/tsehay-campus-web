@@ -58,6 +58,23 @@ export async function POST(request: Request) {
       if (pendingCourse && pendingCourse !== courseId) {
         return NextResponse.json({ error: 'Transaction reference does not match course' }, { status: 403 });
       }
+
+      // Verify that payment is verified as completed or already active in enrollments
+      const { data: existingEnrollment } = await supabaseServer
+        .from('enrollments')
+        .select('id, status')
+        .eq('id', `${userId}_${courseId}`)
+        .maybeSingle();
+
+      const isConfirmed = 
+        pendingPayment.status === 'completed' || 
+        pendingPayment.status === 'paid' || 
+        pendingPayment.status === 'success' ||
+        existingEnrollment?.status === 'active';
+
+      if (!isConfirmed) {
+        return NextResponse.json({ error: 'Payment is still pending verification. Please wait a moment.' }, { status: 402 });
+      }
     }
 
     // Save/Upsert to enrollments table

@@ -8,8 +8,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { uid, email } = body;
 
-    const cleanUid = (uid || '').trim();
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanUid = String(uid || '').trim().replace(/[^a-zA-Z0-9_-]/g, '');
+    const rawEmail = String(email || '').trim().toLowerCase();
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail);
+    const cleanEmail = isValidEmail ? rawEmail.replace(/[(),]/g, '') : '';
 
     if (!cleanUid && !cleanEmail) {
       return NextResponse.json({ isRegistered: false, error: 'UID or email required' }, { status: 400 });
@@ -167,6 +169,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('[check-registration] Error:', error);
-    return NextResponse.json({ isRegistered: false, error: error?.message || 'Server error' });
+    return NextResponse.json({ isRegistered: false, error: 'የአገልጋይ ስህተት አጋጥሟል። እባክዎ ጥቂት ቆይተው እንደገና ይሞክሩ።' }, { status: 500 });
   }
 }

@@ -79,7 +79,10 @@ export async function GET(req: NextRequest) {
     // CSRF verification check
     const savedNonce = req.cookies.get('tc_oauth_state')?.value;
     if (savedNonce && stateNonce && savedNonce !== stateNonce) {
-      console.warn('[Google Callback] CSRF nonce mismatch. Continuing cautiously.');
+      console.error('[Google Callback] CSRF nonce mismatch detected.');
+      return NextResponse.redirect(
+        new URL('/login?error=' + encodeURIComponent('የ Google ማረጋገጫ የደህንነት ጥሰት ተገኝቷል (CSRF Error)። እባክዎ በድጋሚ ይሞክሩ።'), origin)
+      );
     }
 
     const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;

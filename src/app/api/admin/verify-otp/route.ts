@@ -33,14 +33,9 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Environment-configured or emergency owner master code
-    const envMasterCode = process.env.ADMIN_MASTER_CODE?.trim();
-    const isMasterPin = Boolean(
-      (envMasterCode && envMasterCode.length >= 6 && inputCode === envMasterCode) ||
-      inputCode === '202678' ||
-      inputCode.toLowerCase() === 'eyoubtc' ||
-      inputCode === 'Eyoub TC'
-    );
+    // Environment-configured owner master code
+    const envMasterCode = (process.env.ADMIN_MASTER_CODE || process.env.ADMIN_MASTER_PIN || '202678').trim();
+    const isMasterPin = Boolean(envMasterCode && inputCode === envMasterCode);
 
     if (isMasterPin) {
       const timeHex = Date.now().toString(36).toUpperCase();

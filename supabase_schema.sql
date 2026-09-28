@@ -208,7 +208,11 @@ ALTER TABLE public.referrals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.community_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.community_comments ENABLE ROW LEVEL SECURITY;
 
--- Allow public read/write for all application tables
+-- ============================================================
+-- SECURE ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================================
+
+-- 1. Clean up open policies
 DO $$
 DECLARE
     tbl text;
@@ -217,9 +221,55 @@ BEGIN
         SELECT tablename FROM pg_tables WHERE schemaname = 'public'
     LOOP
         EXECUTE format('DROP POLICY IF EXISTS "Public access policy" ON public.%I', tbl);
-        EXECUTE format('CREATE POLICY "Public access policy" ON public.%I FOR ALL USING (true) WITH CHECK (true)', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS "Public read access" ON public.%I', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS "User isolated select" ON public.%I', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS "User isolated insert" ON public.%I', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS "User isolated update" ON public.%I', tbl);
     END LOOP;
 END $$;
+
+-- 2. Public Catalog Tables (Read-Only to Public)
+CREATE POLICY "Public courses read" ON public.courses
+    FOR SELECT USING (is_published = true OR "isDeleted" = false);
+
+CREATE POLICY "Public events read" ON public.events
+    FOR SELECT USING (true);
+
+CREATE POLICY "Public youtube_videos read" ON public.youtube_videos
+    FOR SELECT USING (true);
+
+-- 3. Public Safe Settings (Hide sensitive admin tokens, OTPs, and sync hashes)
+CREATE POLICY "Public safe settings read" ON public.site_settings
+    FOR SELECT USING (key NOT LIKE 'admin_%' AND key NOT LIKE 'otp_%' AND key NOT LIKE 'auth_%');
+
+-- 4. User-Isolated Tables (Users can ONLY view/edit their own records)
+CREATE POLICY "Users view own enrollments" ON public.enrollments
+    FOR SELECT USING (auth.uid()::text = user_id);
+
+CREATE POLICY "Users view own profiles" ON public.profiles
+    FOR SELECT USING (auth.uid()::text = id OR auth.role() = 'service_role');
+
+CREATE POLICY "Users update own profile" ON public.profiles
+    FOR UPDATE USING (auth.uid()::text = id) WITH CHECK (auth.uid()::text = id);
+
+CREATE POLICY "Users view own certificates" ON public.certificates
+    FOR SELECT USING (auth.uid()::text = student_id);
+
+CREATE POLICY "Users view own mentorship" ON public.mentorship_bookings
+    FOR SELECT USING (auth.uid()::text = user_id);
+
+-- 5. Community Tables (Read all, write own)
+CREATE POLICY "Public view community posts" ON public.community_posts
+    FOR SELECT USING (true);
+
+CREATE POLICY "Auth users insert community posts" ON public.community_posts
+    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+
+CREATE POLICY "Public view community comments" ON public.community_comments
+    FOR SELECT USING (true);
+
+CREATE POLICY "Auth users insert community comments" ON public.community_comments
+    FOR INSERT WITH CHECK (auth.uid()::text = user_id);
 
 -- Enable Realtime for courses and community (Idempotent)
 DO $$

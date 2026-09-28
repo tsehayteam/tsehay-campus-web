@@ -236,6 +236,13 @@ export async function handleLakiPayWebhook(request: Request): Promise<Response> 
             created_at: new Date().toISOString()
           });
 
+          try {
+            await supabaseAdmin
+              .from('pending_payments')
+              .update({ status: 'completed', updated_at: new Date().toISOString() })
+              .eq('id', tx_ref);
+          } catch (stErr) {}
+
           console.log(`LakiPay Webhook: Successfully granted course ${courseId} access to user ${userId}`);
 
           // 📧 Send Course Enrollment Confirmation Email

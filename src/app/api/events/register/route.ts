@@ -4,6 +4,7 @@ import { EventTicket, DEFAULT_EVENTS, isEventPassed } from '@/lib/eventCache';
 import { sendTicketEmail } from '@/lib/ticketEmailService';
 import { loadPersistedEvents } from '@/lib/memoryStore';
 import { invalidateEventsCache } from '@/app/api/events/route';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -150,6 +151,15 @@ export async function POST(req: NextRequest) {
         success: false,
         expired: true,
         error: `ይቅርታ፣ የዚህ ዝግጅት (${eventTitle}) ቀን ስላለፈ አዲስ ምዝገባ ተዘግቷል! (Registration closed - Event has passed)`
+      }, { status: 400, headers: NO_CACHE_HEADERS });
+    }
+
+    // 🌟 Paid Event Gate: Ensure paid events cannot be registered via direct 'free' method
+    const isFreeEvent = matchedEvent?.isFree === true || Number(matchedEvent?.price || 0) === 0;
+    if (!isFreeEvent && paymentMethod === 'free') {
+      return NextResponse.json({
+        success: false,
+        error: 'ይህ ዝግጅት የክፍያ ትኬት የሚጠይቅ በመሆኑ በነፃ መመዝገብ አይቻልም። እባክዎ ክፍያውን ያጠናቁ።'
       }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
@@ -324,6 +334,19 @@ export async function GET(req: NextRequest) {
     const email = searchParams.get('email');
     const userId = searchParams.get('userId');
 
+    // Security Gate: Bulk dump without specific user filter is strictly admin-only
+    if (!userId && !email) {
+      const auth = await verifyAdminRequest(req);
+      if (!auth.authorized) {
+        return NextResponse.json({
+          success: false,
+          count: 0,
+          registrations: [],
+          error: 'Unauthorized: Admin authentication required.'
+        }, { status: 401, headers: NO_CACHE_HEADERS });
+      }
+    }
+
     let tickets = await getTickets();
 
     if (eventId) {
@@ -338,6 +361,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, count: tickets.length, registrations: tickets }, { headers: NO_CACHE_HEADERS });
   } catch (err: any) {
-    return NextResponse.json({ success: true, count: 0, registrations: [], error: err.message }, { headers: NO_CACHE_HEADERS });
+    return NextResponse.json({ success: false, count: 0, registrations: [], error: 'Internal Server Error' }, { headers: NO_CACHE_HEADERS });
   }
 }
