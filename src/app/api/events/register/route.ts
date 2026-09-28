@@ -153,9 +153,18 @@ export async function POST(req: NextRequest) {
       }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
+    // 🌟 Strict 1-Ticket Per Account & User Isolation Check
+    const existingTickets = await getTickets();
+    const actualRealTicketsCount = existingTickets.filter(t => 
+      t.eventId === eventId || 
+      (eventSlug && (t.eventSlug === eventSlug || t.eventId === eventSlug)) || 
+      (matchedEvent?.id && t.eventId === matchedEvent.id) ||
+      (matchedEvent?.slug && (t.eventSlug === matchedEvent.slug || t.eventId === matchedEvent.slug))
+    ).length;
+
     // 🌟 Live Inventory Stock Validation & Decrement Check
     const capacity = Number(matchedEvent?.capacity) || 100;
-    const currentRegistered = Number(matchedEvent?.registeredCount ?? matchedEvent?.registered_count) || 0;
+    const currentRegistered = actualRealTicketsCount;
     const remainingSeats = Math.max(0, capacity - currentRegistered);
 
     if (remainingSeats <= 0) {
@@ -166,8 +175,6 @@ export async function POST(req: NextRequest) {
       }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
-    // 🌟 Strict 1-Ticket Per Account & User Isolation Check
-    const existingTickets = await getTickets();
     const alreadyRegistered = existingTickets.find(t => {
       const matchEvent = t.eventId === eventId || (eventSlug && t.eventSlug === eventSlug);
       if (!matchEvent) return false;

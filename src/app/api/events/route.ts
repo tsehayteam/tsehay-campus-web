@@ -193,14 +193,20 @@ async function getSupabaseEvents(forceFresh = false): Promise<any[]> {
       const tickets: any[] = ticketRow.data;
       mergedList = mergedList.map(ev => {
         const matchingTickets = tickets.filter((t: any) => 
-          t && t.status !== 'cancelled' && (t.eventId === ev.id || t.eventId === ev.slug || (t.eventSlug && (t.eventSlug === ev.slug || t.eventSlug === ev.id)))
+          t && t.status !== 'cancelled' && (
+            t.eventId === ev.id || 
+            t.eventId === ev.slug || 
+            (ev.slug && t.eventSlug === ev.slug) ||
+            (ev.id && t.eventSlug === ev.id)
+          )
         );
-        const rawReg = ev.registeredCount !== undefined ? ev.registeredCount : ev.registered_count;
-        const storedCount = Number(rawReg);
-        const liveCount = !isNaN(storedCount) ? Math.max(0, storedCount) : matchingTickets.length;
-        const liveRemaining = Math.max(0, (Number(ev.capacity) || 100) - liveCount);
+        // Real count of confirmed tickets booked for this event
+        const liveCount = matchingTickets.length;
+        const cap = Number(ev.capacity || ev.seatCapacity) || 50;
+        const liveRemaining = Math.max(0, cap - liveCount);
         return {
           ...ev,
+          capacity: cap,
           registeredCount: liveCount,
           registered_count: liveCount,
           availableSeats: liveRemaining,
@@ -209,6 +215,7 @@ async function getSupabaseEvents(forceFresh = false): Promise<any[]> {
           availableTickets: liveRemaining
         };
       });
+
     }
   } catch (syncErr) {
     console.warn('Dynamic live ticket count sync notice:', syncErr);

@@ -112,18 +112,41 @@ export function generateEventSlug(title: string, fallbackId?: string): string {
   return slug;
 }
 
+export interface EventCountdownInfo {
+  isPassed: boolean;
+  isLiveNow: boolean;
+  isSoldOut: boolean;
+  remainingSeats: number;
+  capacity: number;
+  registeredCount: number;
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  diffMs: number;
+  countdownText: string;
+  badgeText: string;
+  badgeType: 'upcoming' | 'live' | 'passed' | 'sold_out';
+  buttonText: string;
+  canBook: boolean;
+}
+
 /**
  * Parses any event date & time string into a valid JavaScript Date object.
  * Handles:
- * - Dates with English in parentheses: "መስከረም 10, 2019 (Sept 20, 2026)"
- * - Standard Gregorian / ISO dates: "2026-09-20", "Sept 20, 2026"
- * - Amharic Ethiopian calendar dates: "መስከረም 10, 2019", "ጥቅምት 15, 2017"
- * - End time from time strings: "ከቀኑ 8:00 - 12:00 (02:00 PM - 06:00 PM)"
+ * - Dates with English in parentheses: "መስከረም 10, 2019 (Sept 20, 2026)" or "(Oct 15, 2026)"
+ * - Standard Gregorian / ISO dates: "2026-10-15", "Oct 15, 2026"
+ * - Amharic Ethiopian calendar dates: "መስከረም 22, 2017 ዓ.ም", "መስከረም 22, 2019", "ጥቅምት 15"
+ * - Time strings in 12hr AM/PM: "05:00 PM (ከምሽቱ 11:00 ሰዓት)", "02:00 PM - 05:00 PM"
+ * - Ethiopian cycle times: "ከምሽቱ 11:00 ሰዓት", "ከጧቱ 12:00", "ከሰዓት 8:00"
  */
 export function parseEventDate(rawDate?: string, rawTime?: string): Date | null {
   if (!rawDate || typeof rawDate !== 'string') return null;
   const trimmedDate = rawDate.trim();
   if (!trimmedDate) return null;
+
+  const now = new Date();
+  const currentGregYear = now.getFullYear();
 
   let parsed: Date | null = null;
 
@@ -137,22 +160,14 @@ export function parseEventDate(rawDate?: string, rawTime?: string): Date | null 
     }
   }
 
-  // 2. Direct Date.parse for ISO or standard date formats
+  // 2. Search for English month names within the string (e.g. "Sept 20, 2026" or "20 Oct 2026")
   if (!parsed) {
-    const d = new Date(trimmedDate);
-    if (!isNaN(d.getTime())) {
-      parsed = d;
-    }
-  }
-
-  // 3. Search for English month names within the string (e.g. "Sept 20, 2026" or "20 Sept 2026")
-  if (!parsed) {
-    const monthRegex = /(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})/i;
+    const monthRegex = /(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})?/i;
     const match = trimmedDate.match(monthRegex);
     if (match) {
       const monthStr = match[1];
       const dayStr = match[2];
-      const yearStr = match[3];
+      const yearStr = match[3] || String(currentGregYear);
       const d = new Date(`${monthStr} ${dayStr}, ${yearStr}`);
       if (!isNaN(d.getTime())) {
         parsed = d;
@@ -160,7 +175,15 @@ export function parseEventDate(rawDate?: string, rawTime?: string): Date | null 
     }
   }
 
-  // 4. Handle Amharic Ethiopian Calendar dates (e.g. "መስከረም 10, 2019" or "ጥቅምት 15, 2017")
+  // 3. Direct Date.parse for ISO formats (e.g. "2026-10-15")
+  if (!parsed && /^\d{4}-\d{2}-\d{2}/.test(trimmedDate)) {
+    const d = new Date(trimmedDate);
+    if (!isNaN(d.getTime())) {
+      parsed = d;
+    }
+  }
+
+  // 4. Handle Amharic Ethiopian Calendar dates (e.g. "መስከረም 22, 2017 ዓ.ም", "መስከረም 22, 2019", "ጥቅምት 15")
   if (!parsed) {
     const amharicMonths: Record<string, { baseDay: number; baseMonth: number }> = {
       'መስከረም': { baseDay: 11, baseMonth: 8 },  // September
@@ -188,9 +211,20 @@ export function parseEventDate(rawDate?: string, rawTime?: string): Date | null 
         const dayMatch = trimmedDate.match(new RegExp(`${mName}\\s*(\\d{1,2})`));
         const yearMatch = trimmedDate.match(/(\d{4})/);
         const day = dayMatch ? parseInt(dayMatch[1], 10) : 1;
-        const ethYear = yearMatch ? parseInt(yearMatch[1], 10) : 2017;
-        const gregYear = ethYear < 2020 ? (mInfo.baseMonth >= 8 ? ethYear + 7 : ethYear + 8) : ethYear;
-        const approxDate = new Date(gregYear, mInfo.baseMonth, mInfo.baseDay + (day - 1));
+        
+        let targetGregYear = currentGregYear;
+        if (yearMatch) {
+          const rawYear = parseInt(yearMatch[1], 10);
+          if (rawYear >= 2024) {
+            targetGregYear = rawYear;
+          } else {
+            // E.g. 2017, 2018, 2019 in Ethiopian calendar
+            const computed = mInfo.baseMonth >= 8 ? rawYear + 7 : rawYear + 8;
+            targetGregYear = Math.max(currentGregYear, computed);
+          }
+        }
+
+        const approxDate = new Date(targetGregYear, mInfo.baseMonth, mInfo.baseDay + (day - 1));
         if (!isNaN(approxDate.getTime())) {
           parsed = approxDate;
           break;
@@ -201,21 +235,41 @@ export function parseEventDate(rawDate?: string, rawTime?: string): Date | null 
 
   if (!parsed) return null;
 
-  // Extract end time or start time if rawTime is available
+  // Extract time if rawTime is available
   if (rawTime && typeof rawTime === 'string') {
     const timeClean = rawTime.trim();
-    const times = Array.from(timeClean.matchAll(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/gi));
-    if (times.length > 0) {
-      // Pick last time in string (i.e. event end time) so event stays active until it concludes
-      const targetMatch = times[times.length - 1];
+
+    // 1. English AM/PM time matching (take last if range e.g. '02:00 PM - 05:00 PM')
+    const ampmRegex = /(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/gi;
+    const ampmMatches = Array.from(timeClean.matchAll(ampmRegex));
+    if (ampmMatches.length > 0) {
+      const targetMatch = ampmMatches[ampmMatches.length - 1];
       let hours = parseInt(targetMatch[1], 10);
       const minutes = targetMatch[2] ? parseInt(targetMatch[2], 10) : 0;
-      const meridiem = targetMatch[3]?.toUpperCase();
-
+      const meridiem = targetMatch[3].toUpperCase();
       if (meridiem === 'PM' && hours < 12) hours += 12;
       if (meridiem === 'AM' && hours === 12) hours = 0;
+      
+      const isRange = ampmMatches.length > 1 || timeClean.includes('-');
+      const finalHours = (!isRange && hours <= 20) ? hours + 3 : hours;
 
-      parsed.setHours(hours, minutes, 0, 0);
+      parsed.setHours(finalHours, minutes, 0, 0);
+      return parsed;
+    }
+
+    // 2. Ethiopian time format matching (e.g. 'ከምሽቱ 11:00', 'ከጧቱ 12:00', 'ከሰዓት 8:00')
+    const ethTimeRegex = /(ከጧቱ|ከጠዋቱ|ከቀኑ|ከሰዓት|ከምሽቱ|ማታ)\s*(\d{1,2})(?::(\d{2}))?/gi;
+    const ethMatches = Array.from(timeClean.matchAll(ethTimeRegex));
+    if (ethMatches.length > 0) {
+      const target = ethMatches[ethMatches.length - 1];
+      const period = target[1];
+      const rawH = parseInt(target[2], 10);
+      const m = target[3] ? parseInt(target[3], 10) : 0;
+      let westernH = (rawH % 12) + 6;
+      if (period.includes('ከሰዓት') || period.includes('ቀኑ') || period.includes('ምሽቱ') || period.includes('ማታ')) {
+        if (westernH < 12) westernH += 12;
+      }
+      parsed.setHours(westernH, m, 0, 0);
       return parsed;
     }
   }
@@ -226,12 +280,124 @@ export function parseEventDate(rawDate?: string, rawTime?: string): Date | null 
 }
 
 /**
+ * Returns complete countdown calculation & status for an event.
+ */
+export function getEventCountdown(event: TsehayEvent | any, now: Date = new Date()): EventCountdownInfo {
+  const cap = Number(event?.capacity || event?.seatCapacity) || 50;
+  const reg = Number(event?.registeredCount !== undefined ? event?.registeredCount : event?.registered_count) || 0;
+  const remaining = Math.max(0, cap - reg);
+  const isSoldOut = remaining <= 0;
+
+  const st = (event?.status || '').toLowerCase().trim();
+  const explicitPassed = st === 'passed' || st === 'completed' || st === 'expired';
+
+  const dateStr = event?.date || event?.eventDate || event?.event_date || '';
+  const timeStr = event?.time || event?.eventTime || event?.event_time || '';
+  const targetDate = parseEventDate(dateStr, timeStr);
+
+  if (explicitPassed) {
+    return {
+      isPassed: true,
+      isLiveNow: false,
+      isSoldOut,
+      remainingSeats: remaining,
+      capacity: cap,
+      registeredCount: reg,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      diffMs: 0,
+      countdownText: 'ክስተቱ አልፏል',
+      badgeText: 'ኩነት አልፏል (EVENT PASSED)',
+      badgeType: 'passed',
+      buttonText: 'ምዝገባ ተዘግቷል / Registration Closed',
+      canBook: false
+    };
+  }
+
+  // If event has valid end date and that date is in the past
+  if (targetDate && targetDate.getTime() < now.getTime()) {
+    return {
+      isPassed: true,
+      isLiveNow: false,
+      isSoldOut,
+      remainingSeats: remaining,
+      capacity: cap,
+      registeredCount: reg,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      diffMs: 0,
+      countdownText: 'ክስተቱ አልፏል',
+      badgeText: 'ኩነት አልፏል (EVENT PASSED)',
+      badgeType: 'passed',
+      buttonText: 'ምዝገባ ተዘግቷል / Registration Closed',
+      canBook: false
+    };
+  }
+
+  const diffMs = targetDate ? targetDate.getTime() - now.getTime() : 1000 * 60 * 60 * 24 * 7;
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+  let countdownText = '';
+  const dStr = days > 0 ? `${days} ቀን ` : '';
+  const hStr = (days > 0 || hours > 0) ? `${hours} ሰዓት ` : '';
+  const mStr = `${minutes} ደቂቃ `;
+  const sStr = `${seconds} ሰከንድ`;
+  countdownText = `${dStr}${hStr}${mStr}${sStr} ቀርቷል`.trim();
+
+  if (isSoldOut) {
+    return {
+      isPassed: false,
+      isLiveNow: false,
+      isSoldOut: true,
+      remainingSeats: 0,
+      capacity: cap,
+      registeredCount: reg,
+      days,
+      hours,
+      minutes,
+      seconds,
+      diffMs,
+      countdownText,
+      badgeText: 'ሙሉ በሙሉ ተይዟል (Sold Out)',
+      badgeType: 'sold_out',
+      buttonText: 'ተይዞ አልቋል (Sold Out)',
+      canBook: false
+    };
+  }
+
+  return {
+    isPassed: false,
+    isLiveNow: false,
+    isSoldOut: false,
+    remainingSeats: remaining,
+    capacity: cap,
+    registeredCount: reg,
+    days,
+    hours,
+    minutes,
+    seconds,
+    diffMs,
+    countdownText,
+    badgeText: `⏳ ${countdownText}`,
+    badgeType: 'upcoming',
+    buttonText: (event?.isFree || event?.price === 0) ? 'በነፃ ይመዝገቡ (RSVP Free)' : `ትኬት ይቁረጡ (${Number(event?.price || 0).toLocaleString()} ብር)`,
+    canBook: true
+  };
+}
+
+/**
  * Automatically determines whether an event has passed by comparing eventDate & eventTime with new Date().
  */
 export function isEventPassed(eventOrDate: any, rawTime?: string): boolean {
   if (!eventOrDate) return false;
 
-  // If status is explicitly set to passed / completed / expired
   if (typeof eventOrDate === 'object') {
     const st = (eventOrDate.status || '').toLowerCase().trim();
     if (st === 'passed' || st === 'completed' || st === 'expired') {
@@ -270,14 +436,14 @@ export const DEFAULT_EVENTS: TsehayEvent[] = [
     title: "የዩቲዩብ ስኬት እና AI የቀጥታ ልዩ ወርክሾፕ (Live YouTube & AI Masterclass)",
     titleEn: "Live YouTube Mastery & AI Creation Workshop",
     description: "በአካል በመገኘት ፊት ሳያሳዩ (Faceless) በ AI በመታገዝ በወር ከ $1,000+ በላይ የሚያስገኙ የዩቲዩብ ቻናሎችን የመገንባት፣ የሞኒታይዜሽን እና የዶላር ገቢ ማውጫ የቀጥታ ተግባራዊ ስልጠና።",
-    date: "መስከረም 10, 2019 (Sept 20, 2026)",
+    date: "ጥቅምት 12, 2019 (Oct 22, 2026)",
     time: "ከቀኑ 8:00 - 12:00 (02:00 PM - 06:00 PM)",
     location: "ቦሌ፣ አዲስ አበባ (Bole, Skylight Hotel Conference Hall)",
     isOnline: false,
     mapsUrl: "https://maps.google.com/?q=Ethiopian+Skylight+Hotel+Addis+Ababa",
-    capacity: 120,
-    registeredCount: 84,
-    remainingSeats: 36,
+    capacity: 100,
+    registeredCount: 0,
+    remainingSeats: 100,
     price: 1500,
     isFree: false,
     speaker: "ኢዮብ ሳህሌ (Eyoub Sahle)",
@@ -295,14 +461,14 @@ export const DEFAULT_EVENTS: TsehayEvent[] = [
     title: "የሼን እና ዓለም አቀፍ ኢምፖርት ቢዝነስ ሴሚናር (E-Commerce & Shein Import)",
     titleEn: "Shein Import & E-Commerce Live Seminar",
     description: "ከሼን እና ከአሊባባ በቀጥታ እቃዎችን በማስመጣት በኢትዮጵያ ውስጥ በከፍተኛ ትርፍ የመሸጥ፣ የካርጎ፣ የጉምሩክ እና የኦንላይን ካርድ ክፍያ ተግባራዊ አሰራር።",
-    date: "መስከረም 25, 2019 (Oct 05, 2026)",
+    date: "ጥቅምት 20, 2019 (Oct 30, 2026)",
     time: "ከቀኑ 8:30 - 11:30 (02:30 PM - 05:30 PM)",
     location: "ቦሌ ሩዋንዳ፣ አዲስ አበባ (Tsehay Campus Main Hall)",
     isOnline: false,
     mapsUrl: "https://maps.google.com/?q=Bole+Rwanda+Addis+Ababa",
-    capacity: 80,
-    registeredCount: 52,
-    remainingSeats: 28,
+    capacity: 60,
+    registeredCount: 0,
+    remainingSeats: 60,
     price: 1200,
     isFree: false,
     speaker: "ኢዮብ ሳህሌ & የኢምፖርት ባለሙያዎች",
@@ -320,14 +486,14 @@ export const DEFAULT_EVENTS: TsehayEvent[] = [
     title: "የዲጂታል ማርኬቲንግ እና የማህበራዊ ሚዲያ ሽያጭ የቀጥታ ዌቢናር (Free Live Webinar)",
     titleEn: "Digital Marketing & Social Media Sales Masterclass",
     description: "በ Meta Ads (Facebook & Instagram) ማስታወቂያዎች ደንበኞችን የማብዛት እና የኦንላይን ገበያን የመቆጣጠር ነፃ የቀጥታ ስልጠና እና የጥያቄና መልስ መድረክ።",
-    date: "ጥቅምት 02, 2019 (Oct 12, 2026)",
+    date: "ጥቅምት 28, 2019 (Nov 07, 2026)",
     time: "ምሽት 2:00 - 4:00 (08:00 PM - 10:00 PM)",
     location: "Online Google Meet (የቀጥታ ስብሰባ)",
     isOnline: true,
     meetingLink: "https://meet.google.com/tsehay-live-marketing",
     capacity: 500,
-    registeredCount: 395,
-    remainingSeats: 105,
+    registeredCount: 0,
+    remainingSeats: 500,
     price: 0,
     isFree: true,
     speaker: "ኢዮብ ሳህሌ (Eyoub Sahle)",
@@ -487,19 +653,11 @@ export function getEventBySlugOrId(slugOrId: string, eventsList: TsehayEvent[] =
 
 export function getRemainingSeats(event: TsehayEvent): number {
   if (!event) return 0;
-  if (event.remainingSeats !== undefined && typeof event.remainingSeats === 'number') {
-    return Math.max(0, event.remainingSeats);
-  }
-  if (event.seatsLeft !== undefined && typeof event.seatsLeft === 'number') {
-    return Math.max(0, event.seatsLeft);
-  }
-  if (event.availableTickets !== undefined && typeof event.availableTickets === 'number') {
-    return Math.max(0, event.availableTickets);
-  }
-  const cap = Number(event.capacity) || 100;
-  const reg = Number(event.registeredCount) || 0;
+  const cap = Number(event.capacity || event.seatCapacity) || 50;
+  const reg = Number(event.registeredCount !== undefined ? event.registeredCount : event.registered_count) || 0;
   return Math.max(0, cap - reg);
 }
+
 
 export const USER_TICKETS_CACHE_KEY = 'tsehay_user_event_tickets';
 

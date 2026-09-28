@@ -15,14 +15,17 @@ import {
   saveCachedUserTicket,
   getDeletedEventIds,
   recordDeletedEventId,
-  isEventPassed
+  isEventPassed,
+  getEventCountdown
 } from '@/lib/eventCache';
+
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import TwoStageEventBookingModal from '@/components/TwoStageEventBookingModal';
 import { Ban } from 'lucide-react';
 import { parseVideoEmbedUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
+import EventLiveCountdown from '@/components/EventLiveCountdown';
 
 export default function UpcomingEventsSection() {
   const { user } = useAuth();
@@ -675,14 +678,13 @@ export default function UpcomingEventsSection() {
         {/* Event Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {events.map((event) => {
-            const isPassed = isEventPassed(event);
-            const capacity = Number(event.capacity) || 100;
+            const countdownInfo = getEventCountdown(event);
+            const isPassed = countdownInfo.isPassed;
+            const capacity = Number(event.capacity || event.seatCapacity) || 50;
             const liveRegCount = (registrationsCountByEvent[event.id] || (event.slug ? registrationsCountByEvent[event.slug] : 0) || 0);
             const baseReg = Number(event.registeredCount) || 0;
             const totalReg = Math.max(baseReg, liveRegCount);
-            const remainingSeats = typeof event.availableSeats === 'number'
-              ? Math.min(event.availableSeats, Math.max(0, capacity - totalReg))
-              : Math.max(0, capacity - totalReg);
+            const remainingSeats = Math.max(0, capacity - totalReg);
             const isSoldOut = remainingSeats <= 0;
             const percentTaken = Math.min(100, Math.round((totalReg / capacity) * 100));
 
@@ -730,7 +732,7 @@ export default function UpcomingEventsSection() {
                       {isPassed ? (
                         <span className="px-3 py-1 rounded-full bg-red-600/90 backdrop-blur-md text-white border border-red-500 text-xs font-black shadow-lg flex items-center gap-1.5 animate-pulse">
                           <i className="fa-solid fa-clock-rotate-left text-[11px]"></i>
-                          <span>ክስተቱ አልፏል (EVENT PASSED)</span>
+                          <span>ኩነት አልፏል (EVENT PASSED)</span>
                         </span>
                       ) : (
                         <span className="px-3 py-1 rounded-full bg-[#3268ba]/80 backdrop-blur-md text-white border border-[#3268ba] text-xs font-black shadow-md flex items-center gap-1.5">
@@ -749,6 +751,11 @@ export default function UpcomingEventsSection() {
                           <Ban className="w-3 h-3 text-white" aria-hidden="true" />
                           <span>አልቋል (Sold Out)</span>
                         </span>
+                      ) : !isPassed ? (
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                          <span>ክፍት ነው (Open)</span>
+                        </span>
                       ) : null}
                     </div>
 
@@ -760,16 +767,23 @@ export default function UpcomingEventsSection() {
                     </div>
                   </Link>
 
-                  {/* Date & Time Capsule */}
-                  <div className="flex items-center gap-2.5 text-xs text-slate-300 mb-3.5 font-semibold">
-                    <div className="flex items-center gap-1.5 bg-[#f9b03c]/10 border border-[#f9b03c]/30 px-3 py-1.5 rounded-xl text-[#f9b03c] font-black">
-                      <i className="fa-regular fa-calendar text-[#f9b03c]"></i>
-                      <span>{event.date}</span>
+                  {/* Date & Time Capsule & Live Countdown */}
+                  <div className="space-y-2 mb-3.5">
+                    <div className="flex items-center gap-2.5 text-xs text-slate-300 font-semibold flex-wrap">
+                      <div className="flex items-center gap-1.5 bg-[#f9b03c]/10 border border-[#f9b03c]/30 px-3 py-1.5 rounded-xl text-[#f9b03c] font-black">
+                        <i className="fa-regular fa-calendar text-[#f9b03c]"></i>
+                        <span>{event.date}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-slate-200">
+                        <i className="fa-regular fa-clock text-[#f9b03c]"></i>
+                        <span>{event.time}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-slate-200">
-                      <i className="fa-regular fa-clock text-[#f9b03c]"></i>
-                      <span>{event.time}</span>
-                    </div>
+
+                    {/* Accurate Live Countdown Timer (Days, Hours, Minutes, Seconds) */}
+                    {!isPassed && (
+                      <EventLiveCountdown event={event} variant="card" />
+                    )}
                   </div>
 
                   {/* Title */}
@@ -809,9 +823,9 @@ export default function UpcomingEventsSection() {
                       <span className="text-slate-300">ክፍት ቦታ፦</span>
                       <span>
                         <span className="text-emerald-400 font-bold">
-                          {Math.max(0, (event.seatCapacity || event.capacity || 50) - (event.registeredCount || 0))}
+                          {remainingSeats}
                         </span>
-                        {" "}ከ {event.seatCapacity || event.capacity || 50}
+                        {" "}ከ {capacity}
                       </span>
                     </div>
 
@@ -820,7 +834,7 @@ export default function UpcomingEventsSection() {
                       {isPassed ? (
                         <span className="text-red-400 font-black flex items-center gap-1">
                           <i className="fa-solid fa-lock text-[10px]"></i>
-                          <span>ክስተቱ ተጠናቋል (Event Closed)</span>
+                          <span>ኩነት ተዘግቷል (Event Closed)</span>
                         </span>
                       ) : isSoldOut ? (
                         <span className="text-red-400 font-black">ትኬቱ ሙሉ በሙሉ አልቋል!</span>
@@ -873,7 +887,7 @@ export default function UpcomingEventsSection() {
                         className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 bg-red-950/40 text-red-400 border border-red-500/40 cursor-not-allowed shadow-[0_0_15px_rgba(239,68,68,0.2)] opacity-80"
                       >
                         <i className="fa-solid fa-ban text-xs text-red-400"></i>
-                        <span>አልቋል (Sold Out)</span>
+                        <span>ተይዞ አልቋል (Sold Out)</span>
                       </button>
                     ) : !user ? (
                       <button
@@ -881,8 +895,8 @@ export default function UpcomingEventsSection() {
                         onClick={() => handleOpenBooking(event)}
                         className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 active:scale-95 shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_40px_rgba(249,176,60,0.6)]"
                       >
-                        <i className="fa-solid fa-right-to-bracket text-xs"></i>
-                        <span>ይግቡና ትኬት ይቁረጡ (Login)</span>
+                        <i className="fa-solid fa-ticket text-xs"></i>
+                        <span>{event.price === 0 || event.isFree ? 'በነፃ ይመዝገቡ (RSVP Free)' : `ትኬት ይቁረጡ (${Number(event.price).toLocaleString()} ብር)`}</span>
                       </button>
                     ) : (
                       <button
@@ -890,8 +904,8 @@ export default function UpcomingEventsSection() {
                         onClick={() => handleOpenBooking(event)}
                         className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 active:scale-95 shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_40px_rgba(249,176,60,0.6)]"
                       >
-                        <span>{event.price === 0 || event.isFree ? 'በነፃ ይመዝገቡ' : 'ትኬት ይቁረጡ'}</span>
                         <i className="fa-solid fa-ticket text-xs"></i>
+                        <span>{event.price === 0 || event.isFree ? 'በነፃ ይመዝገቡ (RSVP Free)' : `ትኬት ይቁረጡ (${Number(event.price).toLocaleString()} ብር)`}</span>
                       </button>
                     )}
 

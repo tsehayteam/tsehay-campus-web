@@ -22,11 +22,13 @@ import {
   formatDriveImageUrl,
   getCachedUserTickets,
   saveCachedUserTicket,
-  isEventPassed
+  isEventPassed,
+  getEventCountdown
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { parseVideoEmbedUrl, parseImageUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
+import EventLiveCountdown from '@/components/EventLiveCountdown';
 
 export default function EventDetailClient() {
   const params = useParams();
@@ -371,7 +373,8 @@ export default function EventDetailClient() {
     e.preventDefault();
     if (!event) return;
 
-    if (isEventPassed(event)) {
+    const countdownInfo = getEventCountdown(event);
+    if (countdownInfo.isPassed) {
       setBookingError('ይቅርታ፣ ይህ ክስተት ቀኑ ስላለፈ አዲስ ምዝገባ ተዘግቷል (Registration closed - Event has passed)።');
       return;
     }
@@ -509,14 +512,15 @@ export default function EventDetailClient() {
     );
   }
 
+  const countdownInfo = getEventCountdown(event);
+  const isPassed = countdownInfo.isPassed;
+  const capacity = Number(event.capacity || event.seatCapacity) || 100;
   const remainingSeats = getRemainingSeats(event);
-  const capacity = Number(event.capacity) || 100;
   const effectiveRegCount = Math.max(
     Number(event.registeredCount) || 0,
     capacity - remainingSeats
   );
   const isSoldOut = remainingSeats <= 0;
-  const isPassed = isEventPassed(event);
   const percentTaken = Math.min(100, Math.round((effectiveRegCount / capacity) * 100));
 
   return (
@@ -564,6 +568,10 @@ export default function EventDetailClient() {
                 </span>
               )}
 
+              {!isPassed && (
+                <EventLiveCountdown event={event} variant="compact" />
+              )}
+
               <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-bold inline-flex items-center gap-1.5">
                 {event.isOnline ? (
                   <>
@@ -604,6 +612,11 @@ export default function EventDetailClient() {
                 <p className="text-slate-300 text-sm sm:text-base leading-relaxed font-body">
                   {event.description}
                 </p>
+
+                {/* Live Countdown Hero Stage (Days, Hours, Minutes, Seconds) */}
+                {!isPassed && (
+                  <EventLiveCountdown event={event} variant="hero" />
+                )}
 
                 {/* Key Event Badges Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -684,9 +697,9 @@ export default function EventDetailClient() {
                       <span className="text-slate-300">ክፍት ቦታ፦</span>
                       <span>
                         <span className="text-emerald-500 font-bold">
-                          {Math.max(0, (event.seatCapacity || event.capacity || 50) - (event.registeredCount || 0))}
+                          {remainingSeats}
                         </span>
-                        {" "}ከ {event.seatCapacity || event.capacity || 50}
+                        {" "}ከ {capacity}
                       </span>
                     </div>
 

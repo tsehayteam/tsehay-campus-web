@@ -20,11 +20,13 @@ import {
   saveCachedUserTicket,
   getDeletedEventIds,
   recordDeletedEventId,
-  isEventPassed
+  isEventPassed,
+  getEventCountdown
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { parseVideoEmbedUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
+import EventLiveCountdown from '@/components/EventLiveCountdown';
 
 export default function EventsClient() {
   const { user } = useAuth();
@@ -342,7 +344,8 @@ export default function EventsClient() {
       return;
     }
 
-    if (isEventPassed(event)) {
+    const countdownInfo = getEventCountdown(event);
+    if (countdownInfo.isPassed) {
       alert('ይቅርታ፣ ይህ ክስተት ቀኑ ስላለፈ አዲስ ምዝገባ ተዘግቷል (This event has passed and registration is closed)።');
       return;
     }
@@ -499,9 +502,11 @@ export default function EventsClient() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((evt) => {
+              const countdownInfo = getEventCountdown(evt);
+              const isPassed = countdownInfo.isPassed;
+              const capacity = Number(evt.capacity || evt.seatCapacity) || 50;
               const remaining = getRemainingSeats(evt);
               const isSoldOut = remaining <= 0;
-              const isPassed = isEventPassed(evt);
               const cleanVid = (evt.videoUrl || '').trim();
               const hasVideo = Boolean(cleanVid && cleanVid !== 'none' && cleanVid !== 'yelewim');
               const effectiveVideoUrl = hasVideo ? cleanVid : '';
@@ -542,10 +547,20 @@ export default function EventsClient() {
 
                       {/* Badges */}
                       <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20 pointer-events-none">
-                        {isPassed && (
+                        {isPassed ? (
                           <div className="px-3 py-1 rounded-full bg-red-600/90 text-white font-black text-[10px] tracking-wider uppercase shadow-[0_0_15px_rgba(239,68,68,0.5)] border border-red-400/40 backdrop-blur-md flex items-center gap-1">
                             <i className="fa-solid fa-clock-rotate-left text-[9px]" />
-                            <span>ክስተቱ አልፏል</span>
+                            <span>ኩነት አልፏል</span>
+                          </div>
+                        ) : isSoldOut ? (
+                          <div className="px-3 py-1 rounded-full bg-red-600/90 text-white font-black text-[10px] tracking-wider uppercase shadow-[0_0_15px_rgba(239,68,68,0.5)] border border-red-400/40 backdrop-blur-md flex items-center gap-1">
+                            <i className="fa-solid fa-lock text-[9px]" />
+                            <span>አልቋል (Sold Out)</span>
+                          </div>
+                        ) : (
+                          <div className="px-2.5 py-1 rounded-full bg-emerald-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md border border-emerald-400/40 backdrop-blur-md flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                            <span>ክፍት ነው (Open)</span>
                           </div>
                         )}
                         <div className={`px-3 py-1 rounded-full font-black text-[11px] ${
@@ -560,17 +575,22 @@ export default function EventsClient() {
 
                     {/* Content Body */}
                     <div className="p-5 space-y-3">
-                      {/* Date & Time Row */}
-                      <div className="flex items-center gap-3 text-[11px] font-bold">
-                        <span className={`flex items-center gap-1 ${isPassed ? 'text-red-400' : 'text-[#f9b03c]'}`}>
-                          <i className="fa-regular fa-calendar" />
-                          <span>{evt.date}</span>
-                        </span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1 text-slate-300">
-                          <i className="fa-regular fa-clock" />
-                          <span>{evt.time}</span>
-                        </span>
+                      {/* Date & Time Row & Live Countdown */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-3 text-[11px] font-bold">
+                          <span className={`flex items-center gap-1 ${isPassed ? 'text-red-400' : 'text-[#f9b03c]'}`}>
+                            <i className="fa-regular fa-calendar" />
+                            <span>{evt.date}</span>
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1 text-slate-300">
+                            <i className="fa-regular fa-clock" />
+                            <span>{evt.time}</span>
+                          </span>
+                        </div>
+                        {!isPassed && (
+                          <EventLiveCountdown event={evt} variant="card" className="mt-2" />
+                        )}
                       </div>
 
                       {/* Title */}
@@ -615,13 +635,18 @@ export default function EventsClient() {
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                             ክስተቱ ተጠናቋል (Passed)
                           </span>
+                        ) : isSoldOut ? (
+                          <span className="text-red-400 font-bold flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                            ቦታ አልቋል (Sold Out)
+                          </span>
                         ) : (
                           <>
                             ክፍት ቦታ፦{" "}
                             <span className="text-emerald-500 font-bold">
-                              {Math.max(0, (evt.seatCapacity || evt.capacity || 50) - (evt.registeredCount || 0))}
+                              {remaining}
                             </span>
-                            {" "}ከ {evt.seatCapacity || evt.capacity || 50}
+                            {" "}ከ {capacity}
                           </>
                         )}
                       </div>
