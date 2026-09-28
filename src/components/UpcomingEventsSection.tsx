@@ -768,7 +768,7 @@ export default function UpcomingEventsSection() {
                   </Link>
 
                   {/* Date & Time Capsule & Live Countdown */}
-                  <div className="space-y-2 mb-3.5">
+                  <div className="space-y-2.5 mb-4">
                     <div className="flex items-center gap-2.5 text-xs text-slate-300 font-semibold flex-wrap">
                       <div className="flex items-center gap-1.5 bg-[#f9b03c]/10 border border-[#f9b03c]/30 px-3 py-1.5 rounded-xl text-[#f9b03c] font-black">
                         <i className="fa-regular fa-calendar text-[#f9b03c]"></i>
@@ -782,7 +782,7 @@ export default function UpcomingEventsSection() {
 
                     {/* Accurate Live Countdown Timer (Days, Hours, Minutes, Seconds) */}
                     {!isPassed && (
-                      <EventLiveCountdown event={event} variant="card" />
+                      <EventLiveCountdown event={event} variant="card" className="pt-0.5 pb-0.5" />
                     )}
                   </div>
 

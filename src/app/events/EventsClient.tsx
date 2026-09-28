@@ -576,7 +576,7 @@ export default function EventsClient() {
                     {/* Content Body */}
                     <div className="p-5 space-y-3">
                       {/* Date & Time Row & Live Countdown */}
-                      <div className="space-y-1.5">
+                      <div className="space-y-2.5">
                         <div className="flex items-center gap-3 text-[11px] font-bold">
                           <span className={`flex items-center gap-1 ${isPassed ? 'text-red-400' : 'text-[#f9b03c]'}`}>
                             <i className="fa-regular fa-calendar" />
@@ -589,7 +589,7 @@ export default function EventsClient() {
                           </span>
                         </div>
                         {!isPassed && (
-                          <EventLiveCountdown event={evt} variant="card" className="mt-2" />
+                          <EventLiveCountdown event={evt} variant="card" className="pt-0.5 pb-0.5" />
                         )}
                       </div>
 

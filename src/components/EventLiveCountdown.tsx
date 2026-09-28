@@ -42,7 +42,7 @@ export default function EventLiveCountdown({
 
   if (info.isPassed) {
     return (
-      <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-bold ${className}`}>
+      <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold ${className}`}>
         <i className="fa-solid fa-clock-rotate-left text-[11px]" />
         <span>ክስተቱ አልፏል (Event Passed)</span>
       </div>
@@ -55,10 +55,10 @@ export default function EventLiveCountdown({
   // Compact Pill Display
   if (variant === 'compact') {
     return (
-      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-amber-500/15 border border-[#f9b03c]/40 text-[#f9b03c] text-xs font-black shadow-[0_0_15px_rgba(249,176,60,0.15)] font-mono ${className}`}>
-        <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping" />
+      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-[#f9b03c] text-xs font-bold font-mono backdrop-blur-sm ${className}`}>
+        <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse" />
         <span className="tracking-wider">
-          {formatNum(info.days)}ቀ : {formatNum(info.hours)}ሰ : {formatNum(info.minutes)}ደ : <span className="text-white animate-pulse">{formatNum(info.seconds)}ሰከንድ</span>
+          {formatNum(info.days)}ቀ : {formatNum(info.hours)}ሰ : {formatNum(info.minutes)}ደ : {formatNum(info.seconds)}ሰ
         </span>
       </div>
     );
@@ -67,60 +67,45 @@ export default function EventLiveCountdown({
   // Hero / Detail Page Display
   if (variant === 'hero') {
     return (
-      <div className={`w-full p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-black/80 via-[#0a0e17]/90 to-amber-950/20 border border-amber-500/30 shadow-[0_0_35px_rgba(249,176,60,0.12)] backdrop-blur-xl ${className}`}>
-        <div className="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400"></span>
-            </span>
-            <span className="text-xs sm:text-sm font-black text-amber-300 font-heading tracking-wide">
-              የቀጥታ ሰዓት ቆጣሪ (Live Countdown)
-            </span>
-          </div>
-          <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
-            ዝግጅቱ እስኪጀመር ድረስ
-          </span>
-        </div>
-
-        <div className="grid grid-cols-4 gap-2 sm:gap-3 text-center font-mono">
+      <div className={`w-full py-1.5 ${className}`}>
+        <div className="grid grid-cols-4 gap-2.5 sm:gap-4 text-center font-mono">
           {/* Days */}
-          <div className="relative group rounded-2xl p-2.5 sm:p-3 bg-black/70 border border-white/10 shadow-inner flex flex-col items-center justify-center">
-            <span className="text-2xl sm:text-4xl font-black text-white tracking-tight drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
+          <div className="rounded-2xl p-3 sm:p-4 bg-white/[0.04] border border-white/10 backdrop-blur-md flex flex-col items-center justify-center transition-colors hover:border-[#f9b03c]/40">
+            <span className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-none font-mono">
               {formatNum(info.days)}
             </span>
-            <span className="text-[10px] sm:text-xs font-sans font-bold text-slate-400 uppercase mt-0.5">
-              ቀናት (Days)
+            <span className="text-[11px] sm:text-xs font-sans text-neutral-400 font-medium tracking-wider mt-1.5">
+              ቀናት
             </span>
           </div>
 
           {/* Hours */}
-          <div className="relative group rounded-2xl p-2.5 sm:p-3 bg-black/70 border border-white/10 shadow-inner flex flex-col items-center justify-center">
-            <span className="text-2xl sm:text-4xl font-black text-[#f9b03c] tracking-tight drop-shadow-[0_2px_10px_rgba(249,176,60,0.3)]">
+          <div className="rounded-2xl p-3 sm:p-4 bg-white/[0.04] border border-white/10 backdrop-blur-md flex flex-col items-center justify-center transition-colors hover:border-[#f9b03c]/40">
+            <span className="text-2xl sm:text-4xl font-black text-[#f9b03c] tracking-tight leading-none font-mono">
               {formatNum(info.hours)}
             </span>
-            <span className="text-[10px] sm:text-xs font-sans font-bold text-slate-400 uppercase mt-0.5">
-              ሰዓት (Hours)
+            <span className="text-[11px] sm:text-xs font-sans text-neutral-400 font-medium tracking-wider mt-1.5">
+              ሰዓታት
             </span>
           </div>
 
           {/* Minutes */}
-          <div className="relative group rounded-2xl p-2.5 sm:p-3 bg-black/70 border border-white/10 shadow-inner flex flex-col items-center justify-center">
-            <span className="text-2xl sm:text-4xl font-black text-white tracking-tight drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)]">
+          <div className="rounded-2xl p-3 sm:p-4 bg-white/[0.04] border border-white/10 backdrop-blur-md flex flex-col items-center justify-center transition-colors hover:border-[#f9b03c]/40">
+            <span className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-none font-mono">
               {formatNum(info.minutes)}
             </span>
-            <span className="text-[10px] sm:text-xs font-sans font-bold text-slate-400 uppercase mt-0.5">
-              ደቂቃ (Mins)
+            <span className="text-[11px] sm:text-xs font-sans text-neutral-400 font-medium tracking-wider mt-1.5">
+              ደቂቃዎች
             </span>
           </div>
 
-          {/* Seconds - Pulsing */}
-          <div className="relative group rounded-2xl p-2.5 sm:p-3 bg-amber-500/15 border-2 border-amber-400/60 shadow-[0_0_20px_rgba(249,176,60,0.3)] flex flex-col items-center justify-center animate-pulse">
-            <span className="text-2xl sm:text-4xl font-black text-amber-300 tracking-tight drop-shadow-[0_0_15px_rgba(249,176,60,0.6)]">
+          {/* Seconds */}
+          <div className="rounded-2xl p-3 sm:p-4 bg-white/[0.04] border border-white/10 backdrop-blur-md flex flex-col items-center justify-center transition-colors hover:border-[#f9b03c]/40">
+            <span className="text-2xl sm:text-4xl font-black text-[#f9b03c] tracking-tight leading-none font-mono">
               {formatNum(info.seconds)}
             </span>
-            <span className="text-[10px] sm:text-xs font-sans font-black text-amber-300 uppercase mt-0.5">
-              ሰከንድ (Secs)
+            <span className="text-[11px] sm:text-xs font-sans text-neutral-400 font-medium tracking-wider mt-1.5">
+              ሰከንዶች
             </span>
           </div>
         </div>
@@ -128,40 +113,48 @@ export default function EventLiveCountdown({
     );
   }
 
-  // Card Variant (Default) - Fits perfectly inside Event Cards
+  // Card Variant (Default) - Clean, Minimalist, Sleek Grid without redundant labels
   return (
-    <div className={`w-full bg-[#060a12]/95 border border-amber-500/30 rounded-2xl p-2.5 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.6)] ${className}`}>
-      <div className="flex items-center justify-between text-[11px] mb-1.5 px-0.5">
-        <span className="flex items-center gap-1.5 font-bold text-amber-300 text-[11px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-          <span>የቀረው ጊዜ (Live Countdown)፦</span>
-        </span>
-        <span className="text-[9px] text-amber-400/80 font-mono font-bold tracking-wider">LIVE</span>
-      </div>
-
-      <div className="grid grid-cols-4 gap-1.5 text-center font-mono">
+    <div className={`w-full py-0.5 ${className}`}>
+      <div className="grid grid-cols-4 gap-2 text-center font-mono">
         {/* Days */}
-        <div className="bg-black/70 border border-white/10 rounded-xl py-1 px-1 shadow-inner">
-          <div className="text-base sm:text-lg font-black text-white">{formatNum(info.days)}</div>
-          <div className="text-[9px] text-slate-400 font-sans font-bold">ቀን</div>
+        <div className="flex flex-col items-center justify-center py-2 sm:py-2.5 px-1 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:bg-white/[0.07]">
+          <span className="text-lg sm:text-xl font-black font-mono text-white tracking-tight leading-none">
+            {formatNum(info.days)}
+          </span>
+          <span className="text-[10px] sm:text-xs text-neutral-400 font-sans font-medium tracking-wide mt-1">
+            ቀን
+          </span>
         </div>
 
         {/* Hours */}
-        <div className="bg-black/70 border border-white/10 rounded-xl py-1 px-1 shadow-inner">
-          <div className="text-base sm:text-lg font-black text-[#f9b03c]">{formatNum(info.hours)}</div>
-          <div className="text-[9px] text-slate-400 font-sans font-bold">ሰዓት</div>
+        <div className="flex flex-col items-center justify-center py-2 sm:py-2.5 px-1 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:bg-white/[0.07]">
+          <span className="text-lg sm:text-xl font-black font-mono text-[#f9b03c] tracking-tight leading-none">
+            {formatNum(info.hours)}
+          </span>
+          <span className="text-[10px] sm:text-xs text-neutral-400 font-sans font-medium tracking-wide mt-1">
+            ሰዓት
+          </span>
         </div>
 
         {/* Minutes */}
-        <div className="bg-black/70 border border-white/10 rounded-xl py-1 px-1 shadow-inner">
-          <div className="text-base sm:text-lg font-black text-white">{formatNum(info.minutes)}</div>
-          <div className="text-[9px] text-slate-400 font-sans font-bold">ደቂቃ</div>
+        <div className="flex flex-col items-center justify-center py-2 sm:py-2.5 px-1 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:bg-white/[0.07]">
+          <span className="text-lg sm:text-xl font-black font-mono text-white tracking-tight leading-none">
+            {formatNum(info.minutes)}
+          </span>
+          <span className="text-[10px] sm:text-xs text-neutral-400 font-sans font-medium tracking-wide mt-1">
+            ደቂቃ
+          </span>
         </div>
 
         {/* Seconds */}
-        <div className="bg-amber-500/15 border border-amber-400/50 rounded-xl py-1 px-1 shadow-[0_0_12px_rgba(249,176,60,0.25)]">
-          <div className="text-base sm:text-lg font-black text-amber-300 animate-pulse">{formatNum(info.seconds)}</div>
-          <div className="text-[9px] text-amber-300 font-sans font-black">ሰከንድ</div>
+        <div className="flex flex-col items-center justify-center py-2 sm:py-2.5 px-1 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:bg-white/[0.07]">
+          <span className="text-lg sm:text-xl font-black font-mono text-[#f9b03c] tracking-tight leading-none">
+            {formatNum(info.seconds)}
+          </span>
+          <span className="text-[10px] sm:text-xs text-neutral-400 font-sans font-medium tracking-wide mt-1">
+            ሰከንድ
+          </span>
         </div>
       </div>
     </div>
