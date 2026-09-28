@@ -122,6 +122,7 @@ export default function AdminDashboard() {
     meetingLink: '',
     mapsUrl: '',
     capacity: 100,
+    registeredCount: 0,
     price: 0,
     isFree: false,
     speaker: 'ኢዮብ ሳህሌ (Eyoub Sahle)',
@@ -159,7 +160,7 @@ export default function AdminDashboard() {
 
   // 🪑 Admin Manual Seat Adjustment / Decrement States (Option B)
   const [isAdjustSeatsModalOpen, setIsAdjustSeatsModalOpen] = useState(false);
-  const [seatAdjustmentMode, setSeatAdjustmentMode] = useState<'deduct' | 'release'>('deduct');
+  const [seatAdjustmentMode, setSeatAdjustmentMode] = useState<'deduct' | 'release' | 'reduce_registered' | 'decrement'>('reduce_registered');
   const [selectedEventForAdjustment, setSelectedEventForAdjustment] = useState<TsehayEvent | null>(null);
   const [seatsDeductionCount, setSeatsDeductionCount] = useState<number>(1);
   const [seatsDeductionNote, setSeatsDeductionNote] = useState<string>('');
@@ -1232,14 +1233,88 @@ export default function AdminDashboard() {
     }
   };
 
-  // 🪑 Option B: Open Adjust Seats / Bulk Deduct Modal (Deduct Available Seats)
+  // 🪑 Option B: Open Adjust Seats / Bulk Deduct Modal (Deduct Registered Count or Available Seats)
   const openAdjustSeatsModal = (targetEvent?: TsehayEvent) => {
     const defaultEv = targetEvent || (events && events.length > 0 ? events[0] : null);
     setSelectedEventForAdjustment(defaultEv || null);
     setSeatsDeductionCount(1);
-    setSeatAdjustmentMode('deduct');
-    setSeatsDeductionNote('Admin Manual Offline Seat Deduction');
+    setSeatAdjustmentMode('reduce_registered');
+    setSeatsDeductionNote('Admin Manual Seat Deduction');
     setIsAdjustSeatsModalOpen(true);
+  };
+
+  // ⚡ Quick 1-Click Registered Count Deduction / Adjustment Directly From Table
+  const handleQuickAdjustRegistered = async (event: TsehayEvent, change: number) => {
+    const currentReg = Number(event.registeredCount !== undefined ? event.registeredCount : event.registered_count) || 0;
+    const cap = Number(event.capacity || event.seatCapacity) || 100;
+    const newReg = Math.max(0, Math.min(cap, currentReg + change));
+    if (newReg === currentReg) return;
+    const newRem = Math.max(0, cap - newReg);
+
+    // 1. Instant optimistic update in local state
+    const updated = events.map(ev => {
+      if (ev.id === event.id || (ev.slug && ev.slug === event.slug)) {
+        return {
+          ...ev,
+          registeredCount: newReg,
+          registered_count: newReg,
+          remainingSeats: newRem,
+          availableSeats: newRem,
+          seatsLeft: newRem,
+          availableTickets: newRem
+        };
+      }
+      return ev;
+    });
+    setEvents(updated);
+    saveCachedEvents(updated);
+
+    try {
+      localStorage.setItem('tsehay_events_cache', JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updated } }));
+      const bc = new BroadcastChannel('tsehay_events_sync');
+      bc.postMessage({ type: 'SEATS_ADJUSTED', eventId: event.id, events: updated });
+      setTimeout(() => bc.close(), 300);
+    } catch (_) {}
+
+    try {
+      const authHeaders = getAdminAuthHeaders({ 'Content-Type': 'application/json' });
+      const res = await fetch('/api/events/adjust-seats', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({
+          eventId: event.id,
+          newRegisteredCount: newReg,
+          newCount: newReg,
+          mode: change < 0 ? 'reduce_registered' : 'deduct_seats',
+          countToDeduct: Math.abs(change),
+          note: `Quick 1-click registered count ${change < 0 ? 'deduction (-' + Math.abs(change) + ')' : 'increment (+' + change + ')'}`
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+
+      // Mirror to site_settings 'events' array for lifetime persistence
+      try {
+        await fetch('/api/admin/site-settings', {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({
+            settingKey: 'events',
+            data: updated
+          })
+        });
+      } catch (_) {}
+
+      showToast(
+        change < 0 
+          ? `የተመዘገቡ ሰዎች ቁጥር በ ${Math.abs(change)} ተቀንሷል! (አሁን: ${newReg}/${cap}, ክፍት: ${newRem})` 
+          : `የተመዘገቡ ሰዎች ቁጥር በ ${change} ጨምሯል! (አሁን: ${newReg}/${cap}, ክፍት: ${newRem})`,
+        'success'
+      );
+    } catch (err: any) {
+      console.error('Quick seat adjust error:', err);
+      showToast('መቀመጫውን ማስተካከል አልተቻለም', 'error');
+    }
   };
 
   // 🪑 Option B: Save Adjust Seats / Bulk Seat Decrement (Live Sync with Silent Refresh)
@@ -1265,7 +1340,7 @@ export default function AdminDashboard() {
         countToDeduct: count,
         deductCount: count,
         mode: seatAdjustmentMode,
-        note: seatsDeductionNote.trim() || (seatAdjustmentMode === 'deduct' ? 'In-person offline attendees seat deduction' : 'Manual seat release'),
+        note: seatsDeductionNote.trim() || (seatAdjustmentMode === 'reduce_registered' ? 'Admin manual registered attendee reduction' : 'In-person offline attendees seat deduction'),
         adminToken: authHeaders['x-admin-token'],
         isSuperAdmin: true,
         adminRole: 'super_admin'
@@ -1309,7 +1384,7 @@ export default function AdminDashboard() {
 
       if (res.ok && data.success) {
         showToast(
-          data.message || (seatAdjustmentMode === 'deduct' ? 'ክፍት መቀመጫዎች በተሳካ ሁኔታ ተቀንሰዋል!' : 'መቀመጫዎች በተሳካ ሁኔታ ተለቀዋል!'), 
+          data.message || (seatAdjustmentMode === 'reduce_registered' ? 'የተመዘገቡ ሰዎች ቁጥር በተሳካ ሁኔታ ተቀንሷል!' : 'ክፍት መቀመጫዎች በተሳካ ሁኔታ ተቀንሰዋል!'), 
           'success'
         );
 
@@ -1322,13 +1397,14 @@ export default function AdminDashboard() {
         }
 
         // Update target event in state with Seats Math
+        const isReduce = seatAdjustmentMode === 'reduce_registered' || seatAdjustmentMode === 'release' || seatAdjustmentMode === 'decrement';
         const updatedEvents = events.map(ev => {
           if (ev.id === selectedEventForAdjustment.id || ev.slug === selectedEventForAdjustment.slug) {
             const cap = Number(ev.capacity || ev.seatCapacity) || 100;
             const currentR = Number(ev.registeredCount ?? ev.registered_count) || 0;
             const newReg = data.newCount !== undefined 
               ? data.newCount 
-              : (seatAdjustmentMode === 'deduct' ? (currentR + count) : Math.max(0, currentR - count));
+              : (isReduce ? Math.max(0, currentR - count) : Math.min(cap, currentR + count));
             const newRem = data.availableSeats !== undefined 
               ? data.availableSeats 
               : Math.max(0, cap - newReg);
@@ -1351,7 +1427,18 @@ export default function AdminDashboard() {
         setEvents(updatedEvents);
         saveCachedEvents(updatedEvents);
         setIsAdjustSeatsModalOpen(false);
-        router.refresh();
+
+        // Mirror to site_settings 'events' so fetchEventsData() polling never reverts it!
+        try {
+          await fetch('/api/admin/site-settings', {
+            method: 'POST',
+            headers: authHeaders,
+            body: JSON.stringify({
+              settingKey: 'events',
+              data: updatedEvents
+            })
+          });
+        } catch (_) {}
 
         try {
           localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
@@ -1698,14 +1785,17 @@ export default function AdminDashboard() {
               .filter((apiEv: TsehayEvent) => apiEv && apiEv.id && !isDeleted(apiEv))
               .map((apiEv: TsehayEvent) => {
                 const matchCount = loadedTickets.filter((t: any) => 
-                  t && (t.eventId === apiEv.id || t.eventId === apiEv.slug || (t.eventSlug && (t.eventSlug === apiEv.slug || t.eventSlug === apiEv.id)))
+                  t && t.status !== 'cancelled' && (t.eventId === apiEv.id || t.eventId === apiEv.slug || (t.eventSlug && (t.eventSlug === apiEv.slug || t.eventSlug === apiEv.id)))
                 ).length;
-                const reg = Math.max(Number(apiEv.registeredCount) || 0, matchCount);
-                const cap = Number(apiEv.capacity) || 100;
+                const dbReg = Number(apiEv.registeredCount !== undefined ? apiEv.registeredCount : apiEv.registered_count);
+                const reg = !isNaN(dbReg) ? Math.max(0, dbReg) : matchCount;
+                const cap = Number(apiEv.capacity || apiEv.seatCapacity) || 100;
                 return {
                   ...apiEv,
                   registeredCount: reg,
+                  registered_count: reg,
                   remainingSeats: Math.max(0, cap - reg),
+                  availableSeats: Math.max(0, cap - reg),
                   image: formatDriveImageUrl(apiEv.image) || apiEv.image || DEFAULT_EVENT_BANNER
                 };
               });
@@ -3971,6 +4061,7 @@ export default function AdminDashboard() {
       meetingLink: '',
       mapsUrl: '',
       capacity: 100,
+      registeredCount: 0,
       price: 0,
       isFree: false,
       speaker: 'ኢዮብ ሳህሌ (Eyoub Sahle)',
@@ -4003,6 +4094,7 @@ export default function AdminDashboard() {
       meetingLink: event.meetingLink || '',
       mapsUrl: event.mapsUrl || '',
       capacity: event.capacity || 100,
+      registeredCount: event.registeredCount ?? 0,
       price: event.price || 0,
       isFree: event.isFree || event.price === 0,
       speaker: event.speaker || 'ኢዮብ ሳህሌ',
@@ -4161,7 +4253,7 @@ export default function AdminDashboard() {
         meetingLink: (eventForm.meetingLink || '').trim(),
         mapsUrl: (eventForm.mapsUrl || '').trim(),
         capacity: Number(eventForm.capacity) || 100,
-        registeredCount: editingEvent ? (editingEvent.registeredCount || 0) : 0,
+        registeredCount: Number(eventForm.registeredCount !== undefined ? eventForm.registeredCount : (editingEvent ? (editingEvent.registeredCount || 0) : 0)) || 0,
         price: eventForm.isFree ? 0 : Number(eventForm.price) || 0,
         isFree: Boolean(eventForm.isFree),
         speaker: (eventForm.speaker || '').trim(),
@@ -4327,36 +4419,64 @@ export default function AdminDashboard() {
   };
 
   const handleToggleActiveBanner = async (event: TsehayEvent) => {
-    const isCurrentlyActive = event.status === 'active';
+    const isCurrentlyActive = event.status === 'active' || event.isFeatured === true;
     const newStatus = isCurrentlyActive ? 'upcoming' : 'active';
+    const isFeatured = !isCurrentlyActive;
     
-    // Optimistic state update
+    // 1. Optimistic state update: Highlight star immediately without lag
     const updated = events.map(e => {
-      if (e.id === event.id) return { ...e, status: newStatus as any };
-      if (newStatus === 'active') return { ...e, status: (e.status === 'active' ? 'upcoming' : e.status) as any };
+      const isTarget = e.id === event.id || (e.slug && e.slug === event.slug);
+      if (isTarget) {
+        return { ...e, status: newStatus as any, isFeatured };
+      }
+      if (newStatus === 'active') {
+        // Only one active banner at a time
+        return { ...e, status: (e.status === 'active' ? 'upcoming' : e.status) as any, isFeatured: false };
+      }
       return e;
     });
     setEvents(updated);
     saveCachedEvents(updated);
 
     try {
-      await fetch('/api/events/banner', {
+      localStorage.setItem('tsehay_events_cache', JSON.stringify(updated));
+    } catch (_) {}
+
+    try {
+      // 2. Persist to /api/events/banner with JSON headers
+      const res = await fetch('/api/events/banner', {
         method: 'POST',
-        headers: getAdminAuthHeaders(),
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           eventId: event.id,
-          active: !isCurrentlyActive,
+          active: isFeatured,
           status: newStatus,
-          banner: { ...event, status: newStatus }
+          isFeatured,
+          banner: { ...event, status: newStatus, isFeatured }
         })
       });
+
+      // 3. Mirror to site_settings 'events' array so fetchEventsData() polling never reverts the active star!
+      try {
+        await fetch('/api/admin/site-settings', {
+          method: 'POST',
+          headers: getAdminAuthHeaders(),
+          body: JSON.stringify({
+            settingKey: 'events',
+            data: updated
+          })
+        });
+      } catch (mirrorErr) {
+        console.warn('Events mirror notice in banner toggle:', mirrorErr);
+      }
       
+      // 4. Dispatch events & broadcast cross-tab
       window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updated } }));
       window.dispatchEvent(new CustomEvent('tsehay_banner_updated'));
       try {
         const bc = new BroadcastChannel('tsehay_events_sync');
-        bc.postMessage({ type: 'BANNER_SYNC', events: updated });
-        bc.close();
+        bc.postMessage({ type: 'BANNER_SYNC', events: updated, activeEventId: isFeatured ? event.id : null });
+        setTimeout(() => bc.close(), 300);
       } catch (_) {}
       
       showToast(isCurrentlyActive ? 'የኢቨንት ባነሩ ከዋናው ገጽ ተነስቷል' : 'ክስተቱ በዋናው ገጽ ባነር ላይ ተሰይሟል!', 'success');
@@ -4991,10 +5111,11 @@ export default function AdminDashboard() {
                       }
                       if (evData.events && Array.isArray(evData.events)) {
                         setEvents(evData.events.map((e: any) => {
-                          const matching = loadedTickets.filter((t: any) => t && (t.eventId === e.id || t.eventId === e.slug || (t.eventSlug && (t.eventSlug === e.slug || t.eventSlug === e.id))));
-                          const reg = Math.max(Number(e.registeredCount) || 0, matching.length);
-                          const cap = Number(e.capacity) || 100;
-                          return { ...e, registeredCount: reg, remainingSeats: Math.max(0, cap - reg) };
+                          const matching = loadedTickets.filter((t: any) => t && t.status !== 'cancelled' && (t.eventId === e.id || t.eventId === e.slug || (t.eventSlug && (t.eventSlug === e.slug || t.eventSlug === e.id))));
+                          const dbReg = Number(e.registeredCount !== undefined ? e.registeredCount : e.registered_count);
+                          const reg = !isNaN(dbReg) ? Math.max(0, dbReg) : matching.length;
+                          const cap = Number(e.capacity || e.seatCapacity) || 100;
+                          return { ...e, registeredCount: reg, registered_count: reg, remainingSeats: Math.max(0, cap - reg), availableSeats: Math.max(0, cap - reg) };
                         }));
                       }
                     }),
@@ -5744,8 +5865,28 @@ export default function AdminDashboard() {
                                 </span>
                                 {" "}ከ {event.seatCapacity || event.capacity || 50}
                               </div>
-                              <div className="flex justify-between text-[10px] text-gray-400 mb-1 font-bold">
-                                <span>ተመዝግቧል፦ {event.registeredCount || 0}</span>
+                              <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1 font-bold">
+                                <span className="flex items-center gap-1.5">
+                                  <span>ተመዝግቧል፦ <strong className="text-slate-800 dark:text-slate-200">{event.registeredCount || 0}</strong></span>
+                                  <span className="inline-flex items-center gap-0.5 ml-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickAdjustRegistered(event, -1)}
+                                      title="የተመዘገበ ቁጥር 1 ቀንስ (Deduct 1 attendee)"
+                                      className="w-5 h-5 rounded bg-red-100 dark:bg-red-950/60 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 font-black text-[11px] flex items-center justify-center transition-all active:scale-75 shadow-sm"
+                                    >
+                                      -
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickAdjustRegistered(event, 1)}
+                                      title="የተመዘገበ ቁጥር 1 ጨምር (Add 1 attendee)"
+                                      className="w-5 h-5 rounded bg-emerald-100 dark:bg-emerald-950/60 hover:bg-emerald-500 hover:text-white text-emerald-600 dark:text-emerald-400 font-black text-[11px] flex items-center justify-center transition-all active:scale-75 shadow-sm"
+                                    >
+                                      +
+                                    </button>
+                                  </span>
+                                </span>
                                 <span className="text-[#f9b03c]">{remaining} ቀርቷል</span>
                               </div>
                               <div className="w-28 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -5764,20 +5905,20 @@ export default function AdminDashboard() {
                                 <button
                                   type="button"
                                   onClick={() => handleToggleActiveBanner(event)}
-                                  className={`w-8 h-8 rounded-lg transition flex items-center justify-center cursor-pointer ${
-                                    event.status === 'active'
-                                      ? 'bg-amber-500 text-slate-950 shadow-[0_0_12px_rgba(249,176,60,0.6)] font-bold'
+                                  className={`w-8 h-8 rounded-lg transition-all active:scale-90 flex items-center justify-center cursor-pointer ${
+                                    (event.status === 'active' || event.isFeatured === true)
+                                      ? 'bg-amber-500 text-slate-950 shadow-[0_0_14px_rgba(249,176,60,0.7)] font-bold ring-2 ring-amber-400'
                                       : 'bg-gray-100 dark:bg-slate-700 text-gray-400 hover:text-amber-500 hover:bg-amber-500/10'
                                   }`}
-                                  title={event.status === 'active' ? 'የዋናውን ገጽ ባነር አጥፋ (Remove from Banner)' : 'ይህን ክስተት በዋናው ገጽ ባነር ላይ አሳይ (Set as Active Banner)'}
+                                  title={(event.status === 'active' || event.isFeatured === true) ? 'የዋናውን ገጽ ባነር አጥፋ (Remove from Banner)' : 'ይህን ክስተት በዋናው ገጽ ባነር ላይ አሳይ (Set as Active Banner)'}
                                 >
-                                  <i className={`fa-solid fa-star text-xs ${event.status === 'active' ? 'animate-pulse' : ''}`}></i>
+                                  <i className="fa-solid fa-star text-xs"></i>
                                 </button>
                                 <a
                                   href={`/events/${event.slug || event.id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-[#f9b03c] hover:bg-[#f9b03c] hover:text-slate-950 transition flex items-center justify-center cursor-pointer"
+                                  className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-[#f9b03c] hover:bg-[#f9b03c] hover:text-slate-950 transition-all active:scale-90 flex items-center justify-center cursor-pointer"
                                   title="የክንውኑን ገጽ እይ (View Public Page)"
                                 >
                                   <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
@@ -5785,7 +5926,7 @@ export default function AdminDashboard() {
                                 <button
                                   type="button"
                                   onClick={() => openAdjustSeatsModal(event)}
-                                  className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-500/10 text-[#f9b03c] hover:bg-[#f9b03c] hover:text-slate-950 transition flex items-center justify-center cursor-pointer"
+                                  className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-500/10 text-[#f9b03c] hover:bg-[#f9b03c] hover:text-slate-950 transition-all active:scale-90 flex items-center justify-center cursor-pointer"
                                   title="የተያዙ መቀመጫዎችን ቀንስ / ክፍት አድርግ (Adjust Seats / Deduct)"
                                 >
                                   <i className="fa-solid fa-chair text-xs"></i>
@@ -5793,7 +5934,7 @@ export default function AdminDashboard() {
                                 <button
                                   type="button"
                                   onClick={() => openManualTicketModal(event)}
-                                  className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition flex items-center justify-center cursor-pointer"
+                                  className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all active:scale-90 flex items-center justify-center cursor-pointer"
                                   title="ለዚህ ክስተት ማንዋል ቲኬት ጨምር (Issue Manual Ticket)"
                                 >
                                   <i className="fa-solid fa-user-plus text-xs"></i>
@@ -5801,7 +5942,7 @@ export default function AdminDashboard() {
                                 <button
                                   type="button"
                                   onClick={() => openEditEventModal(event)}
-                                  className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 text-secondary dark:text-blue-400 hover:bg-secondary hover:text-white transition flex items-center justify-center cursor-pointer"
+                                  className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 text-secondary dark:text-blue-400 hover:bg-secondary hover:text-white transition-all active:scale-90 flex items-center justify-center cursor-pointer"
                                   title="ክንውኑን አስተካክል"
                                 >
                                   <i className="fa-solid fa-pen text-xs"></i>
@@ -5809,7 +5950,7 @@ export default function AdminDashboard() {
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteEvent(event.id)}
-                                  className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-500/10 text-danger hover:bg-danger hover:text-white transition flex items-center justify-center cursor-pointer"
+                                  className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-500/10 text-danger hover:bg-danger hover:text-white transition-all active:scale-90 flex items-center justify-center cursor-pointer"
                                   title="ክንውኑን ሰርዝ"
                                 >
                                   <i className="fa-solid fa-trash text-xs"></i>
@@ -11119,6 +11260,18 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-bold mb-1">የተመዘገበ ቁጥር (Registered Count)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={eventForm.registeredCount ?? 0}
+                    onChange={(e) => setEventForm({ ...eventForm, registeredCount: Math.max(0, Number(e.target.value)) })}
+                    placeholder="0"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-xs font-bold mb-1">የቲኬት ዋጋ በብር (Price in ETB)</label>
                   <input
                     type="number"
@@ -12114,27 +12267,27 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-2 p-1.5 bg-gray-100 dark:bg-slate-800/80 rounded-2xl border border-gray-200 dark:border-white/10">
                 <button
                   type="button"
-                  onClick={() => setSeatAdjustmentMode('deduct')}
+                  onClick={() => setSeatAdjustmentMode('reduce_registered')}
                   className={`flex-1 py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
-                    seatAdjustmentMode === 'deduct'
-                      ? 'bg-orange-500 text-slate-950 shadow-md'
+                    (seatAdjustmentMode === 'reduce_registered' || seatAdjustmentMode === 'release')
+                      ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
-                  <i className="fa-solid fa-user-plus"></i>
-                  <span>ክፍት ቦታ ቀንስ (በአካል የመጡ / Offline)</span>
+                  <i className="fa-solid fa-user-minus"></i>
+                  <span>የተመዘገቡ ሰዎችን ቁጥር ቀንስ (Deduct Registered)</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSeatAdjustmentMode('release')}
+                  onClick={() => setSeatAdjustmentMode('deduct')}
                   className={`flex-1 py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
-                    seatAdjustmentMode === 'release'
-                      ? 'bg-emerald-500 text-slate-950 shadow-md'
+                    seatAdjustmentMode === 'deduct'
+                      ? 'bg-orange-500 text-slate-950 shadow-md font-bold'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
-                  <i className="fa-solid fa-rotate-left"></i>
-                  <span>መቀመጫ ልቀቅ (Release Seats)</span>
+                  <i className="fa-solid fa-chair"></i>
+                  <span>ክፍት ቦታ ቀንስ (በአካል የመጡ / Offline)</span>
                 </button>
               </div>
 
@@ -12145,10 +12298,11 @@ export default function AdminDashboard() {
                 const rem = Math.max(0, cap - reg);
                 const deduction = Math.abs(Number(seatsDeductionCount) || 0);
 
+                const isReduceReg = seatAdjustmentMode === 'reduce_registered' || seatAdjustmentMode === 'release';
                 const isDeduct = seatAdjustmentMode === 'deduct';
-                const nextReg = isDeduct ? (reg + deduction) : Math.max(0, reg - deduction);
+                const nextReg = isReduceReg ? Math.max(0, reg - deduction) : Math.min(cap, reg + deduction);
                 const nextRem = Math.max(0, cap - nextReg);
-                const isExceeding = isDeduct && (nextReg > cap);
+                const isExceeding = !isReduceReg && (reg + deduction > cap);
 
                 return (
                   <div className="space-y-4">
@@ -12173,10 +12327,10 @@ export default function AdminDashboard() {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs font-black uppercase text-gray-700 dark:text-gray-300">
-                          {isDeduct ? 'የሚቀነሰው የቀረ ክፍት መቀመጫ ብዛት' : 'የሚለቀቀው መቀመጫ ብዛት'} <span className="text-danger">*</span>
+                          {isReduceReg ? 'የሚቀነሰው የተመዘገቡ ሰዎች ብዛት' : 'የሚቀነሰው የቀረ ክፍት መቀመጫ ብዛት'} <span className="text-danger">*</span>
                         </label>
                         <span className="text-[10px] text-amber-500 font-bold">
-                          {isDeduct ? `ከቀረው ${rem} መቀመጫ ይቀነሳል` : 'ወደ ክፍት ቦታ ይመለሳል'}
+                          {isReduceReg ? `ከተመዘገበው ${reg} ሰው ይቀነሳል` : `ከቀረው ${rem} ክፍት ቦታ ይቀነሳል`}
                         </span>
                       </div>
 
@@ -12194,7 +12348,7 @@ export default function AdminDashboard() {
                                 : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-white/10 hover:border-orange-500/40'
                             }`}
                           >
-                            {isDeduct ? `-${val}` : `+${val}`} መቀመጫ
+                            {isReduceReg ? `-${val} ተመዝጋቢ` : `-${val} ክፍት ቦታ`}
                           </button>
                         ))}
                       </div>
@@ -12227,8 +12381,8 @@ export default function AdminDashboard() {
                           <p className="font-mono font-black text-sm">
                             <span className="text-gray-400 line-through mr-1.5">{reg}</span>
                             <i className="fa-solid fa-arrow-right text-[10px] text-gray-400 mx-1"></i>
-                            <span className="text-orange-500 dark:text-orange-400 text-base">{nextReg}</span>
-                            <span className="text-[10px] text-gray-400 ml-1">({isDeduct ? `+${deduction}` : `-${deduction}`})</span>
+                            <span className="text-amber-500 dark:text-amber-400 text-base">{nextReg}</span>
+                            <span className="text-[10px] text-gray-400 ml-1">({isReduceReg ? `-${deduction}` : `+${deduction}`})</span>
                           </p>
                         </div>
                         <div className="space-y-1">
@@ -12237,7 +12391,7 @@ export default function AdminDashboard() {
                             <span className="text-gray-400 line-through mr-1.5">{rem}</span>
                             <i className="fa-solid fa-arrow-right text-[10px] text-gray-400 mx-1"></i>
                             <span className="text-emerald-500 text-base font-black">
-                              {isDeduct ? `-${deduction} (${nextRem})` : `+${deduction} (${nextRem})`}
+                              {isReduceReg ? `+${deduction} (${nextRem})` : `-${deduction} (${nextRem})`}
                             </span>
                           </p>
                         </div>
@@ -12295,7 +12449,7 @@ export default function AdminDashboard() {
                   ) : (
                     <>
                       <i className="fa-solid fa-check"></i>
-                      <span>{seatAdjustmentMode === 'deduct' ? 'ክፍት መቀመጫዎችን ቀንሰህ አስቀምጥ' : 'መቀመጫዎችን ልቀቅና አስቀምጥ'}</span>
+                      <span>{(seatAdjustmentMode === 'reduce_registered' || seatAdjustmentMode === 'release') ? 'የተመዘገቡ ሰዎችን ቀንሰህ አስቀምጥ' : 'ክፍት መቀመጫዎችን ቀንሰህ አስቀምጥ'}</span>
                     </>
                   )}
                 </button>

@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 import { invalidateEventsCache } from '@/app/api/events/route';
+import { savePersistedEvents } from '@/lib/memoryStore';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -60,9 +61,10 @@ export async function POST(req: NextRequest) {
       countToDeduct, 
       seatsToDeduct, 
       newRegisteredCount: explicitCount, 
+      newCount,
       note, 
-      mode = 'deduct', 
-      action = 'deduct' 
+      mode = 'reduce_registered', 
+      action 
     } = body;
 
     if (!eventId) {
@@ -118,14 +120,17 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Calculate new count with Seats Math:
-    // When deducting available seats (e.g. 10 offline in-person attendees arrived):
-    // registeredCount increases by +10 -> availableSeats decreases by -10!
+    // Determine whether we are:
+    // A) Reducing registered attendees count (mode: 'reduce_registered' | 'release' | 'decrement' | 'deduct_registered') -> registeredCount DECREASES, availableSeats INCREASES
+    // B) Deducting available seats / adding offline attendees (mode: 'deduct_seats' | 'deduct' | 'add_offline') -> registeredCount INCREASES, availableSeats DECREASES
+    // C) Explicit count set (explicitCount / newCount)
     let finalRegCount: number;
     let deductedAmount: number = 0;
-    const isRelease = mode === 'release' || action === 'release';
+    const isReduceRegistered = mode === 'reduce_registered' || mode === 'deduct_registered' || mode === 'release' || mode === 'decrement' || action === 'release' || action === 'decrement';
+    const targetExplicit = explicitCount !== undefined ? explicitCount : newCount;
 
-    if (explicitCount !== undefined && typeof explicitCount === 'number') {
-      finalRegCount = Math.max(0, Math.min(capacity, explicitCount));
+    if (targetExplicit !== undefined && typeof targetExplicit === 'number') {
+      finalRegCount = Math.max(0, Math.min(capacity, targetExplicit));
       deductedAmount = Math.abs(currentReg - finalRegCount);
     } else {
       const rawCount = Math.abs(Number(countToDeduct ?? deductCount ?? seatsToDeduct) || 0);
@@ -138,17 +143,17 @@ export async function POST(req: NextRequest) {
 
       deductedAmount = rawCount;
 
-      if (isRelease) {
-        // Seat release: reduces registered count (releasing back to available seats)
+      if (isReduceRegistered) {
+        // Reduces registered attendees count -> releases seats back to available
         finalRegCount = Math.max(0, currentReg - rawCount);
       } else {
-        // Default (Deduct Available Seats): In-person/offline attendees occupy available seats
+        // Deduct Available Seats: In-person/offline attendees occupy available seats
         const newRegisteredCount = currentReg + rawCount;
         if (newRegisteredCount > capacity) {
           return NextResponse.json(
             { 
               success: false, 
-              error: 'የተጠየቀው የመቀመጫ ብዛት ካለው ክፍት ቦታ በላይ ነው!' 
+              error: `የተጠየቀው የመቀመጫ ብዛት (${rawCount}) ካለው ክፍት ቦታ (${Math.max(0, capacity - currentReg)}) በላይ ነው!` 
             },
             { status: 400, headers: NO_CACHE_HEADERS }
           );
@@ -194,13 +199,13 @@ export async function POST(req: NextRequest) {
             updatedAt: nowIso,
             lastSeatAdjustment: {
               deductedAmount,
-              mode: isRelease ? 'release' : 'deduct',
+              mode: isReduceRegistered ? 'release' : 'deduct',
               previousCount: currentReg,
               newCount: finalRegCount,
               availableSeats: newAvailableSeats,
               at: nowIso,
               adminEmail: auth.email || 'Admin',
-              note: note || (isRelease ? 'Admin manual seat release' : 'Admin manual offline seat deduction')
+              note: note || (isReduceRegistered ? 'Admin manual seat release / attendee reduction' : 'Admin manual offline seat deduction')
             }
           };
           return updatedEventObj;
@@ -233,7 +238,15 @@ export async function POST(req: NextRequest) {
       };
     }
 
-    // 4. Invalidate Caches & Revalidate Next.js Paths
+    // 4. Save to memory store, invalidate caches & revalidate Next.js paths
+    try {
+      if (updatedEventsList.length > 0) {
+        savePersistedEvents(updatedEventsList);
+      } else if (updatedEventObj) {
+        savePersistedEvents([updatedEventObj]);
+      }
+    } catch (_) {}
+
     invalidateEventsCache();
     try {
       revalidatePath('/');
@@ -244,9 +257,9 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json(
       {
         success: true,
-        message: isRelease
-          ? `በተሳካ ሁኔታ ${deductedAmount} መቀመጫዎች ተለቀዋል! የቀረ ክፍት ቦታ፦ ${newAvailableSeats} (ጠቅላላ የተመዘገበ፦ ${finalRegCount}/${capacity})`
-          : `በተሳካ ሁኔታ ${deductedAmount} መቀመጫዎች ተቀንሰዋል! የቀረ ክፍት ቦታ፦ ${newAvailableSeats} (ጠቅላላ የተመዘገበ፦ ${finalRegCount}/${capacity})`,
+        message: isReduceRegistered
+          ? `የተመዘገቡ ሰዎች ቁጥር በ ${deductedAmount} በተሳካ ሁኔታ ተቀንሷል! የቀረ ክፍት ቦታ፦ ${newAvailableSeats} (ጠቅላላ የተመዘገበ፦ ${finalRegCount}/${capacity})`
+          : `በተሳካ ሁኔታ ${deductedAmount} ክፍት መቀመጫዎች ተቀንሰዋል! የቀረ ክፍት ቦታ፦ ${newAvailableSeats} (ጠቅላላ የተመዘገበ፦ ${finalRegCount}/${capacity})`,
         event: updatedEventObj,
         events: updatedEventsList.length > 0 ? updatedEventsList : undefined,
         previousCount: currentReg,

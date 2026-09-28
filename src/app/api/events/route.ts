@@ -180,8 +180,8 @@ async function getSupabaseEvents(forceFresh = false): Promise<any[]> {
     }
   }
 
-  // 🌟 4. Dynamic Live Ticket Count Synchronization:
-  // Cross-reference with confirmed issued tickets in site_settings ('event_tickets')
+  // 🌟 4. Dynamic Live Ticket Count & Capacity Synchronization:
+  // Respects explicit admin database adjustments (registered_count) and confirmed issued tickets
   try {
     const { data: ticketRow } = await supabaseAdmin
       .from('site_settings')
@@ -189,36 +189,80 @@ async function getSupabaseEvents(forceFresh = false): Promise<any[]> {
       .eq('key', 'event_tickets')
       .maybeSingle();
 
-    if (Array.isArray(ticketRow?.data)) {
-      const tickets: any[] = ticketRow.data;
-      mergedList = mergedList.map(ev => {
-        const matchingTickets = tickets.filter((t: any) => 
-          t && t.status !== 'cancelled' && (
-            t.eventId === ev.id || 
-            t.eventId === ev.slug || 
-            (ev.slug && t.eventSlug === ev.slug) ||
-            (ev.id && t.eventSlug === ev.id)
-          )
-        );
-        // Real count of confirmed tickets booked for this event
-        const liveCount = matchingTickets.length;
-        const cap = Number(ev.capacity || ev.seatCapacity) || 50;
-        const liveRemaining = Math.max(0, cap - liveCount);
-        return {
-          ...ev,
-          capacity: cap,
-          registeredCount: liveCount,
-          registered_count: liveCount,
-          availableSeats: liveRemaining,
-          remainingSeats: liveRemaining,
-          seatsLeft: liveRemaining,
-          availableTickets: liveRemaining
-        };
-      });
+    const tickets: any[] = Array.isArray(ticketRow?.data) ? ticketRow.data : [];
 
-    }
+    mergedList = mergedList.map(ev => {
+      const matchingTickets = tickets.filter((t: any) => 
+        t && t.status !== 'cancelled' && (
+          t.eventId === ev.id || 
+          t.eventId === ev.slug || 
+          (ev.slug && t.eventSlug === ev.slug) ||
+          (ev.id && t.eventSlug === ev.id)
+        )
+      );
+
+      const cap = Number(ev.capacity || ev.seatCapacity) || 50;
+      
+      // Preserve explicit admin database adjustments on registered_count
+      const dbReg = Number(ev.registered_count !== undefined ? ev.registered_count : ev.registeredCount);
+      const effectiveReg = !isNaN(dbReg) 
+        ? Math.max(0, Math.min(cap, dbReg))
+        : matchingTickets.length;
+
+      const liveRemaining = Math.max(0, cap - effectiveReg);
+      return {
+        ...ev,
+        capacity: cap,
+        registeredCount: effectiveReg,
+        registered_count: effectiveReg,
+        availableSeats: liveRemaining,
+        remainingSeats: liveRemaining,
+        seatsLeft: liveRemaining,
+        availableTickets: liveRemaining
+      };
+    });
   } catch (syncErr) {
     console.warn('Dynamic live ticket count sync notice:', syncErr);
+  }
+
+  // 🌟 5. Active Banner & Star State Synchronization:
+  // Synchronize with active event_banner from site_settings to ensure star never flickers or reverts
+  try {
+    const { data: bannerRow } = await supabaseAdmin
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'event_banner')
+      .maybeSingle();
+
+    if (bannerRow?.data) {
+      const bData = bannerRow.data;
+      const isBannerActive = bData.active !== false && bData.status === 'active';
+      const activeEventId = bData.eventId || (bData.banner && bData.banner.id);
+      const activeEventSlug = bData.banner && bData.banner.slug;
+
+      if (isBannerActive && (activeEventId || activeEventSlug)) {
+        mergedList = mergedList.map(ev => {
+          const isTarget = (activeEventId && (ev.id === activeEventId || ev.slug === activeEventId)) ||
+                           (activeEventSlug && (ev.slug === activeEventSlug || ev.id === activeEventSlug));
+          if (isTarget) {
+            return {
+              ...ev,
+              status: 'active',
+              isFeatured: true
+            };
+          } else if (ev.status === 'active') {
+            return {
+              ...ev,
+              status: 'upcoming',
+              isFeatured: false
+            };
+          }
+          return ev;
+        });
+      }
+    }
+  } catch (bannerSyncErr) {
+    console.warn('Banner sync notice in getSupabaseEvents:', bannerSyncErr);
   }
 
   savePersistedEvents(mergedList);

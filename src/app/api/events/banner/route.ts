@@ -5,8 +5,9 @@ export const fetchCache = 'force-no-store';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin, supabaseServer } from '@/lib/supabase/server';
 import { DEFAULT_EVENTS, TsehayEvent, formatDriveImageUrl, formatEventBannerUrl } from '@/lib/eventCache';
-import { loadPersistedEvents } from '@/lib/memoryStore';
+import { loadPersistedEvents, savePersistedEvents } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
+import { invalidateEventsCache } from '@/app/api/events/route';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -53,6 +54,7 @@ function mapDbRowToEvent(row: any): TsehayEvent {
     videoUrl: row.video_url || row.videoUrl || '',
     tags: Array.isArray(row.tags) ? row.tags : (typeof row.tags === 'string' ? row.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []),
     status: row.status || 'active',
+    isFeatured: row.isFeatured !== undefined ? Boolean(row.isFeatured) : (row.status === 'active'),
     createdAt: row.created_at || row.createdAt || new Date().toISOString(),
     updatedAt: row.updated_at || row.updatedAt || new Date().toISOString()
   };
@@ -84,7 +86,7 @@ export async function GET(req: NextRequest) {
         }
 
         if (d.banner && (d.active !== false && d.status !== 'inactive')) {
-          const mapped = mapDbRowToEvent(d.banner);
+          const mapped = mapDbRowToEvent({ ...d.banner, status: 'active', isFeatured: true });
           return NextResponse.json({
             success: true,
             active: true,
@@ -106,7 +108,7 @@ export async function GET(req: NextRequest) {
         .limit(1);
 
       if (!dbErr && dbEvents && dbEvents.length > 0) {
-        const activeEvent = mapDbRowToEvent(dbEvents[0]);
+        const activeEvent = mapDbRowToEvent({ ...dbEvents[0], status: 'active', isFeatured: true });
         return NextResponse.json({
           success: true,
           active: true,
@@ -126,12 +128,12 @@ export async function GET(req: NextRequest) {
         .maybeSingle();
 
       if (evSetting?.data && Array.isArray(evSetting.data)) {
-        const found = evSetting.data.find((e: any) => e.status === 'active' || e.status === 'published');
+        const found = evSetting.data.find((e: any) => e.status === 'active' || e.isFeatured === true);
         if (found) {
           return NextResponse.json({
             success: true,
             active: true,
-            banner: mapDbRowToEvent(found)
+            banner: mapDbRowToEvent({ ...found, status: 'active', isFeatured: true })
           }, { headers: NO_CACHE_HEADERS });
         }
       }
@@ -140,12 +142,12 @@ export async function GET(req: NextRequest) {
     // 4. Memory store check
     const inMem = loadPersistedEvents();
     if (inMem && inMem.length > 0) {
-      const activeInMem = inMem.find((e: any) => e.status === 'active' || e.status === 'published');
+      const activeInMem = inMem.find((e: any) => e.status === 'active' || e.isFeatured === true);
       if (activeInMem) {
         return NextResponse.json({
           success: true,
           active: true,
-          banner: mapDbRowToEvent(activeInMem)
+          banner: mapDbRowToEvent({ ...activeInMem, status: 'active', isFeatured: true })
         }, { headers: NO_CACHE_HEADERS });
       }
     }
@@ -186,69 +188,174 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const eventId = body.eventId || body.id;
-    const isActive = body.active !== undefined ? Boolean(body.active) : (body.status !== 'inactive');
-    const status = isActive ? 'active' : 'inactive';
+    const isActive = body.active !== undefined ? Boolean(body.active) : (body.status === 'active' || body.isFeatured === true);
+    // Note: When deactivating a banner, the event status should be 'upcoming' (NOT 'inactive', to prevent isDeleted filtering)
+    const status = isActive ? 'active' : 'upcoming';
+    const isFeatured = isActive;
+    const nowIso = new Date().toISOString();
 
     let bannerData = body.banner || null;
 
     // If eventId provided, look up full event details
     if (eventId && !bannerData) {
       try {
-        const { data: evRow } = await supabaseServer
+        const { data: evRow } = await supabaseAdmin
           .from('events')
           .select('*')
-          .eq('id', eventId)
+          .or(`id.eq.${eventId},slug.eq.${eventId}`)
           .maybeSingle();
 
         if (evRow) {
-          bannerData = mapDbRowToEvent({ ...evRow, status });
+          bannerData = mapDbRowToEvent({ ...evRow, status, isFeatured });
         }
       } catch (e) {}
+
+      if (!bannerData) {
+        // Also check site_settings 'events'
+        try {
+          const { data: setRow } = await supabaseAdmin
+            .from('site_settings')
+            .select('data')
+            .eq('key', 'events')
+            .maybeSingle();
+          if (Array.isArray(setRow?.data)) {
+            const m = setRow.data.find((e: any) => e && (e.id === eventId || e.slug === eventId));
+            if (m) bannerData = mapDbRowToEvent({ ...m, status, isFeatured });
+          }
+        } catch (_) {}
+      }
     }
 
     if (bannerData) {
-      bannerData.status = status;
-      bannerData.updatedAt = new Date().toISOString();
+      bannerData = {
+        ...bannerData,
+        status,
+        isFeatured,
+        updatedAt: nowIso
+      };
     }
 
-    const payload = {
+    const bannerPayload = {
       active: isActive,
-      status: status,
-      eventId: eventId || (bannerData?.id) || null,
-      banner: bannerData,
-      updatedAt: new Date().toISOString()
+      status: isActive ? 'active' : 'inactive',
+      eventId: isActive ? (eventId || bannerData?.id || null) : null,
+      banner: isActive ? bannerData : null,
+      updatedAt: nowIso
     };
 
-    // 1. Update Supabase site_settings table
+    // 1. Update Supabase site_settings table (key: 'event_banner')
     try {
       await supabaseAdmin
         .from('site_settings')
         .upsert({
           key: 'event_banner',
-          data: payload,
-          updated_at: new Date().toISOString()
+          data: bannerPayload,
+          updated_at: nowIso
         });
     } catch (e) {
       console.warn('Failed to upsert site_settings event_banner:', e);
     }
 
-    // 2. If eventId provided, update its status in `events` table
+    // 2. Synchronize site_settings (key: 'events') array so GET /api/events never reverts the star!
+    try {
+      const { data: existingRow } = await supabaseAdmin
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'events')
+        .maybeSingle();
+
+      if (Array.isArray(existingRow?.data)) {
+        const updatedList = existingRow.data.map((ev: any) => {
+          if (!ev) return ev;
+          const isTarget = ev.id === eventId || (ev.slug && ev.slug === eventId) || (bannerData && (ev.id === bannerData.id || ev.slug === bannerData.slug));
+          if (isTarget) {
+            return {
+              ...ev,
+              status,
+              isFeatured,
+              updatedAt: nowIso
+            };
+          }
+          if (isActive) {
+            // When setting an active banner, reset any previously active event to 'upcoming'
+            if (ev.status === 'active' || ev.isFeatured === true) {
+              return {
+                ...ev,
+                status: 'upcoming',
+                isFeatured: false,
+                updatedAt: nowIso
+              };
+            }
+          }
+          return ev;
+        });
+
+        await supabaseAdmin
+          .from('site_settings')
+          .upsert({
+            key: 'events',
+            data: updatedList,
+            updated_at: nowIso
+          });
+      }
+    } catch (e) {
+      console.warn('Failed to sync events array in site_settings:', e);
+    }
+
+    // 3. Update PostgreSQL `events` table
     if (eventId) {
       try {
-        await supabaseAdmin
-          .from('events')
-          .update({ status: status, updated_at: new Date().toISOString() })
-          .eq('id', eventId);
+        if (isActive) {
+          // Reset other active events in Postgres table
+          await supabaseAdmin
+            .from('events')
+            .update({ status: 'upcoming', updated_at: nowIso })
+            .eq('status', 'active');
+
+          await supabaseAdmin
+            .from('events')
+            .update({ status: 'active', updated_at: nowIso })
+            .or(`id.eq.${eventId},slug.eq.${eventId}`);
+        } else {
+          await supabaseAdmin
+            .from('events')
+            .update({ status: 'upcoming', updated_at: nowIso })
+            .or(`id.eq.${eventId},slug.eq.${eventId}`);
+        }
       } catch (e) {
         console.warn('Failed to update event status in events table:', e);
       }
     }
 
+    // 4. Update memory store
+    try {
+      const inMem = loadPersistedEvents();
+      if (Array.isArray(inMem) && inMem.length > 0) {
+        const updatedMem = inMem.map(ev => {
+          if (!ev) return ev;
+          const isTarget = ev.id === eventId || (ev.slug && ev.slug === eventId);
+          if (isTarget) {
+            return { ...ev, status, isFeatured, updatedAt: nowIso };
+          }
+          if (isActive && (ev.status === 'active' || ev.isFeatured)) {
+            return { ...ev, status: 'upcoming', isFeatured: false, updatedAt: nowIso };
+          }
+          return ev;
+        });
+        savePersistedEvents(updatedMem);
+      }
+    } catch (_) {}
+
+    // 5. Invalidate Events Cache
+    invalidateEventsCache();
+
     return NextResponse.json({
       success: true,
       active: isActive,
+      status,
+      isFeatured,
       banner: bannerData,
-      payload
+      payload: bannerPayload
     }, { headers: NO_CACHE_HEADERS });
 
   } catch (error: any) {
@@ -259,3 +366,4 @@ export async function POST(req: NextRequest) {
     }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
+
