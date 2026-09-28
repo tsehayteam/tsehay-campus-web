@@ -1,5 +1,5 @@
 // Tsehay Campus Lightweight PWA Service Worker (Strict Live-Sync NetworkFirst)
-const CACHE_NAME = 'tsehay-campus-live-v5';
+const CACHE_NAME = 'tsehay-campus-live-v6';
 const STATIC_PRECACHE = [
   '/manifest.json',
   '/favicon.png',
