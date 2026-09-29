@@ -20,6 +20,7 @@ const notoSansEthiopic = Noto_Sans_Ethiopic({
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-primary-amharic",
   display: "swap",
+  preload: false,
 });
 
 // 2. Secondary Display/Headings Font
@@ -141,6 +142,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#F9B03C" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap" />
         <link rel="preconnect" href="https://firestore.googleapis.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
