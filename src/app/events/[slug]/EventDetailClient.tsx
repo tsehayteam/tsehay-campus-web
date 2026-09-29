@@ -27,7 +27,7 @@ import {
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
-import { parseVideoEmbedUrl, parseImageUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
+import { parseVideoEmbedUrl, getMediaThumbnail } from '@/lib/videoParser';
 import EventLiveCountdown from '@/components/EventLiveCountdown';
 
 export default function EventDetailClient() {
@@ -40,23 +40,6 @@ export default function EventDetailClient() {
   const [liveRegistrationsCount, setLiveRegistrationsCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
-  // Auto-open video preview immediately if event has a video (just like Course Preview)
-  const [isPlayingVideo, setIsPlayingVideo] = useState(() => {
-    const initialEv = getEventBySlugOrId(slug, getCachedEvents());
-    const vid = (initialEv?.videoUrl || '').trim();
-    return Boolean(vid && vid !== 'none' && vid !== 'yelewim');
-  });
-
-  useEffect(() => {
-    if (event) {
-      const vid = (event.videoUrl || '').trim();
-      if (vid && vid !== 'none' && vid !== 'yelewim') {
-        setIsPlayingVideo(true);
-      } else {
-        setIsPlayingVideo(false);
-      }
-    }
-  }, [event?.id, event?.videoUrl]);
 
   // Booking & Payment Modal State
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -832,9 +815,10 @@ export default function EventDetailClient() {
                   const parsedVideo = hasVideo ? parseVideoEmbedUrl(effectiveVideoUrl, true) : null;
                   const posterUrl = formatEventBannerUrl(event.image) || (hasVideo ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
 
-                  if (hasVideo && isPlayingVideo && parsedVideo && parsedVideo.src) {
+                  // 1. If event has video: Directly display video in golden frame without overlays or toggle buttons
+                  if (hasVideo && parsedVideo && parsedVideo.src) {
                     return (
-                      <div className="relative rounded-3xl overflow-hidden border-2 border-[#f9b03c]/40 shadow-[0_20px_60px_rgba(0,0,0,0.95)] aspect-[16/9] bg-black group">
+                      <div className="relative rounded-3xl overflow-hidden border-2 border-[#f9b03c]/40 shadow-[0_20px_60px_rgba(0,0,0,0.95)] aspect-[16/9] bg-black">
                         {parsedVideo.type === 'video' ? (
                           <video 
                             src={parsedVideo.src} 
@@ -852,97 +836,23 @@ export default function EventDetailClient() {
                             allowFullScreen
                           />
                         )}
-                        {/* Switch Back to Poster Button */}
-                        <button
-                          type="button"
-                          onClick={() => setIsPlayingVideo(false)}
-                          className="absolute top-4 right-4 px-3.5 py-1.5 rounded-full bg-black/80 hover:bg-black text-white text-xs font-bold backdrop-blur-md border border-white/20 flex items-center gap-1.5 z-30 cursor-pointer transition shadow-xl hover:scale-105 active:scale-95"
-                          title="ወደ ባነር ፎቶ ተመለስ"
-                        >
-                          <i className="fa-solid fa-image text-[11px] text-[#f9b03c]"></i>
-                          <span>ባነር (Poster)</span>
-                        </button>
                       </div>
                     );
                   }
 
+                  // 2. If event has no video: Clean and direct poster banner in golden frame without extra text
                   return (
-                    <div 
-                      onClick={() => {
-                        if (hasVideo) setIsPlayingVideo(true);
-                      }}
-                      className={`relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group aspect-[16/9] bg-slate-900 ${
-                        hasVideo ? 'cursor-pointer' : ''
-                      }`}
-                      title={hasVideo ? "የክንውኑን ማስተዋወቂያ ቪዲዮ ይመልከቱ (Watch Trailer)" : event.title}
-                    >
+                    <div className="relative rounded-3xl overflow-hidden border-2 border-[#f9b03c]/40 shadow-[0_20px_60px_rgba(0,0,0,0.95)] aspect-[16/9] bg-slate-950">
                       <img
                         src={posterUrl}
                         alt={event.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        className="w-full h-full object-cover"
                         loading="eager"
                         decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
                         }}
                       />
-
-                      {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
-
-                      {/* Optional Discrete Trailer Pill Tag in Top-Right */}
-                      {hasVideo && (
-                        <div className="absolute top-3.5 right-3.5 px-3 py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/15 text-white text-[11px] font-bold z-10 flex items-center gap-1.5 shadow-md group-hover:border-[#f9b03c]/60 transition-colors">
-                          <i className="fa-solid fa-circle-play text-[11px] text-[#f9b03c]"></i>
-                          <span>ቪዲዮ አለው (Trailer)</span>
-                        </div>
-                      )}
-
-                      {/* Video Indicator / Play Trailer Button (Hidden by default; Smoothly appears on Hover / Tap / Interaction) */}
-                      {hasVideo && (
-                        <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-active:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsPlayingVideo(true);
-                            }}
-                            className="group/btn relative flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 scale-90 group-hover:scale-100"
-                            aria-label="የክንውኑን ማስተዋወቂያ ቪዲዮ ተመልከት"
-                          >
-                            <div className="absolute -inset-4 rounded-full bg-amber-500/25 blur-xl group-hover/btn:bg-amber-500/50 transition duration-500 animate-pulse"></div>
-                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center shadow-[0_0_35px_rgba(249,176,60,0.7)] border-2 border-white/40">
-                              <i className="fa-solid fa-play text-xl sm:text-2xl ml-1 text-slate-950 group-hover/btn:scale-110 transition-transform"></i>
-                            </div>
-                            <div className="mt-3 px-3.5 py-1.5 rounded-full bg-black/85 backdrop-blur-md border border-white/20 text-[11px] font-bold text-white whitespace-nowrap shadow-lg flex items-center gap-1.5">
-                              <i className="fa-solid fa-play text-[9px] text-[#f9b03c]"></i>
-                              <span>ቪዲዮውን ተመልከት (Watch Trailer)</span>
-                            </div>
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Floating Price Tag */}
-                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-10">
-                        <div>
-                          <p className="text-[10px] uppercase font-bold text-slate-300">የትኬት ዋጋ (Price)</p>
-                          <p className="text-xl font-black text-[#f9b03c]">
-                            {event.price === 0 || event.isFree ? '100% ነፃ (FREE)' : `${event.price.toLocaleString()} ብር`}
-                          </p>
-                        </div>
-
-                        {isPassed ? (
-                          <div className="px-3.5 py-1.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-black flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                            <span>ክስተቱ አልፏል (Closed)</span>
-                          </div>
-                        ) : (
-                          <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-black flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span>ቅበላ ክፍት ነው</span>
-                          </div>
-                        )}
-                      </div>
                     </div>
                   );
                 })()}
