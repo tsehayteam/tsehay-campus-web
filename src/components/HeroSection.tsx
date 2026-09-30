@@ -9,6 +9,9 @@ interface HeroSectionProps {
   videoThumbnail?: string;
 }
 
+const DEFAULT_LANDING_POSTER = '/assets/landing_video_poster.webp';
+const DEFAULT_LANDING_VIDEO = 'https://player.mediadelivery.net/play/750029/8d43ea38-dfaa-4dd8-bc28-03b4fad3b9a4';
+
 export default function HeroSection({
   videoSrc,
   videoThumbnail
@@ -60,7 +63,7 @@ export default function HeroSection({
         }
       } catch (e) {}
     }
-    return "";
+    return DEFAULT_LANDING_VIDEO;
   });
 
   const [activeThumbnail, setActiveThumbnail] = useState<string>(() => {
@@ -75,8 +78,11 @@ export default function HeroSection({
         }
       } catch (e) {}
     }
-    return "";
+    return DEFAULT_LANDING_POSTER;
   });
+
+  const [hasVideoError, setHasVideoError] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -251,7 +257,7 @@ export default function HeroSection({
     if (ytId) {
       return `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
     }
-    return '';
+    return DEFAULT_LANDING_POSTER;
   }, [resolvedThumbnailUrl, activeVideoUrl]);
 
   // 2. Dynamic Video Player Resolution (YouTube, Direct Video HTML5, or 3rd-Party Embed)
@@ -343,6 +349,8 @@ export default function HeroSection({
 
   // Direct video programmatic autoplay trigger with unmuted policy compliance
   useEffect(() => {
+    setHasVideoError(false);
+    setIsBuffering(false);
     if (videoConfig.type === 'direct_video' && videoRef.current) {
       videoRef.current.defaultMuted = true;
       videoRef.current.muted = true;
@@ -399,38 +407,51 @@ export default function HeroSection({
           <div className="relative rounded-2xl border border-neutral-800/80 bg-neutral-900/50 p-2 shadow-2xl backdrop-blur-xl sm:p-4 transition-transform duration-500 ease-out hover:-translate-y-1">
             <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950">
               {/* Autoplaying Video Player Stage */}
-              {videoConfig.type === 'direct_video' ? (
-                <video
-                  ref={videoRef}
-                  key={videoConfig.src}
-                  className="h-full w-full object-cover"
-                  src={videoConfig.src}
-                  poster={effectivePoster || undefined}
-                  preload="auto"
-                  autoPlay
-                  muted
-                  playsInline
-                  loop
-                  controls
-                  controlsList="nodownload"
-                  onLoadedMetadata={(e) => {
-                    const v = e.currentTarget;
-                    v.muted = true;
-                    v.play().catch(() => {});
-                  }}
-                  onCanPlay={(e) => {
-                    const v = e.currentTarget;
-                    v.muted = true;
-                    v.play().catch(() => {});
-                  }}
-                >
-                  <source
+              {!hasVideoError && videoConfig.type === 'direct_video' ? (
+                <div className="relative h-full w-full">
+                  <video
+                    ref={videoRef}
+                    key={videoConfig.src}
+                    className="h-full w-full object-cover"
                     src={videoConfig.src}
-                    type={videoConfig.src.toLowerCase().endsWith('.webm') ? 'video/webm' : 'video/mp4'}
-                  />
-                  Your browser does not support the video tag.
-                </video>
-              ) : videoConfig.type === 'youtube' || videoConfig.type === 'embed' ? (
+                    poster={effectivePoster || DEFAULT_LANDING_POSTER}
+                    preload="auto"
+                    autoPlay
+                    muted
+                    playsInline
+                    loop
+                    controls
+                    controlsList="nodownload"
+                    onLoadedMetadata={(e) => {
+                      const v = e.currentTarget;
+                      v.muted = true;
+                      v.play().catch(() => {});
+                    }}
+                    onCanPlay={(e) => {
+                      const v = e.currentTarget;
+                      v.muted = true;
+                      v.play().catch(() => {});
+                    }}
+                    onWaiting={() => setIsBuffering(true)}
+                    onPlaying={() => setIsBuffering(false)}
+                    onError={() => {
+                      console.warn("Direct video playback encountered an error, falling back to WebP poster preview.");
+                      setHasVideoError(true);
+                    }}
+                  >
+                    <source
+                      src={videoConfig.src}
+                      type={videoConfig.src.toLowerCase().endsWith('.webm') ? 'video/webm' : 'video/mp4'}
+                    />
+                    Your browser does not support the video tag.
+                  </video>
+                  {isBuffering && (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px] transition-opacity duration-300">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#f9b03c] border-t-transparent" />
+                    </div>
+                  )}
+                </div>
+              ) : !hasVideoError && (videoConfig.type === 'youtube' || videoConfig.type === 'embed') ? (
                 <iframe
                   key={videoConfig.src}
                   className="h-full w-full object-cover"
@@ -439,18 +460,28 @@ export default function HeroSection({
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen
                   loading="eager"
-                />
-              ) : effectivePoster ? (
-                <img
-                  src={effectivePoster}
-                  alt="Hero Thumbnail"
-                  className="h-full w-full object-cover"
+                  onError={() => setHasVideoError(true)}
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-neutral-950">
-                  <div className="flex flex-col items-center gap-2 text-neutral-500">
-                    <i className="fa-solid fa-circle-play text-4xl text-[#f9b03c]/40 animate-pulse" />
-                  </div>
+                <div className="relative h-full w-full">
+                  <img
+                    src={effectivePoster || DEFAULT_LANDING_POSTER}
+                    alt="Tsehay Campus Hero Preview"
+                    className="h-full w-full object-cover"
+                  />
+                  {hasVideoError && (
+                    <button
+                      type="button"
+                      onClick={() => setHasVideoError(false)}
+                      className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm group cursor-pointer transition-all"
+                      title="Retry Video Playback"
+                    >
+                      <div className="flex items-center gap-2 rounded-full bg-[#f9b03c] px-5 py-2.5 font-bold text-neutral-950 shadow-lg transition-transform group-hover:scale-105">
+                        <i className="fa-solid fa-play text-sm" />
+                        <span className="text-xs uppercase tracking-wider">ቪዲዮውን አጫውት (Play)</span>
+                      </div>
+                    </button>
+                  )}
                 </div>
               )}
             </div>

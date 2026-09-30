@@ -196,7 +196,8 @@ export async function getLiveCoursesServer(): Promise<any[]> {
   return DEFAULT_COURSES;
 }
 
-const DEFAULT_LANDING_VIDEO = '';
+const DEFAULT_LANDING_VIDEO = 'https://player.mediadelivery.net/play/750029/8d43ea38-dfaa-4dd8-bc28-03b4fad3b9a4';
+const DEFAULT_LANDING_POSTER = '/assets/landing_video_poster.webp';
 
 export interface LiveLandingVideoData {
   videoUrl: string;
@@ -205,8 +206,8 @@ export interface LiveLandingVideoData {
 
 export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoData> {
   const result: LiveLandingVideoData = {
-    videoUrl: '',
-    thumbnail: ''
+    videoUrl: DEFAULT_LANDING_VIDEO,
+    thumbnail: DEFAULT_LANDING_POSTER
   };
 
   try {

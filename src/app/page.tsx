@@ -41,18 +41,17 @@ export default async function HomePage() {
     }
   }
 
-  const resolvedThumb = rawThumb ? parseImageUrl(rawThumb) : '';
+  const resolvedThumb = rawThumb ? (parseImageUrl(rawThumb) || '/assets/landing_video_poster.webp') : '/assets/landing_video_poster.webp';
 
   return (
     <>
       {/* 🚀 Instant Browser Network Preload for Landing Video & Poster */}
-      {resolvedThumb && (
-        <link 
-          rel="preload" 
-          as="image" 
-          href={resolvedThumb} 
-        />
-      )}
+      <link 
+        rel="preload" 
+        as="image" 
+        href={resolvedThumb} 
+        type="image/webp"
+      />
       {preloadVideoSrc && (
         <link 
           rel="preload" 
@@ -67,6 +66,7 @@ export default async function HomePage() {
       <link rel="preconnect" href="https://video.bunnycdn.com" />
       <link rel="preconnect" href="https://img.youtube.com" />
       <link rel="preconnect" href="https://www.youtube.com" />
+      <link rel="preconnect" href="https://jzxgmikliwilyfpixskm.supabase.co" />
 
       <HomeClient 
         initialCourses={coursesData}
