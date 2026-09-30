@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Copy, Check, X, Sparkles } from "lucide-react";
+import { Copy, Check, X, Tag } from "lucide-react";
 
 export default function SheinCouponPopup() {
   const [isOpen, setIsOpen] = useState(false);
@@ -98,7 +98,7 @@ export default function SheinCouponPopup() {
             transition: "transform 0.15s ease-out, box-shadow 0.3s ease",
             transformStyle: "preserve-3d",
           }}
-          className="relative w-full overflow-hidden rounded-3xl border border-amber-500/25 bg-neutral-900/85 p-6 sm:p-8 text-center backdrop-blur-xl shadow-2xl transition-transform"
+          className="relative w-full overflow-hidden rounded-3xl border border-amber-500/25 bg-neutral-900/85 pt-7 pb-6 px-6 sm:pt-8 sm:pb-7 sm:px-8 text-center backdrop-blur-xl shadow-2xl transition-transform"
         >
           {/* Ambient Lighting & Specular Reflection Flairs */}
           <div className="pointer-events-none absolute -top-24 -left-24 h-48 w-48 rounded-full bg-[#f9b03c]/15 blur-3xl" />
@@ -115,47 +115,9 @@ export default function SheinCouponPopup() {
             <X className="w-4 h-4" />
           </button>
 
-          {/* 3D Elevated Gift Accent Badge */}
-          <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center">
-            {/* Pulsing Gold Glow Halo */}
-            <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[#f9b03c]/25 blur-xl animate-pulse" />
-            <div className="pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-tr from-[#f9b03c]/40 via-amber-400/20 to-transparent blur-md" />
-
-            {/* Elevated 3D Glass Badge */}
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-400/40 bg-gradient-to-b from-neutral-800/90 to-neutral-900/95 shadow-[0_12px_24px_-6px_rgba(249,176,60,0.35),inset_0_1px_2px_rgba(255,255,255,0.3)] backdrop-blur-md transform transition-transform hover:scale-105 duration-300">
-              {/* 3D Gold Gift Box SVG */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                className="w-8 h-8 text-[#f9b03c] drop-shadow-[0_4px_8px_rgba(249,176,60,0.5)]"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="8" width="18" height="4" rx="1" fill="#f9b03c" fillOpacity="0.2" />
-                <path d="M12 8v13" stroke="#f9b03c" strokeWidth="2.5" />
-                <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
-                <path
-                  d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"
-                  stroke="#f9b03c"
-                  strokeWidth="2"
-                  fill="#f9b03c"
-                  fillOpacity="0.3"
-                />
-              </svg>
-
-              {/* Sparkle Floating Badge */}
-              <div className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-tr from-amber-400 to-[#f9b03c] text-black shadow-md shadow-amber-500/50">
-                <Sparkles className="w-3 h-3 text-neutral-950 fill-neutral-950" />
-              </div>
-            </div>
-          </div>
-
-          {/* Special Limited Offer Tag */}
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-0.5 text-[11px] font-bold text-[#f9b03c] mb-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse" />
+          {/* Top Pill Badge (Direct Clean Opening) */}
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-[#f9b03c] mb-3">
+            <Tag className="w-3.5 h-3.5 stroke-[2.2] text-[#f9b03c]" />
             <span className="tracking-wide">20% ልዩ ቅናሽ • LIMITED TIME</span>
           </div>
 
@@ -163,7 +125,7 @@ export default function SheinCouponPopup() {
           <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight font-heading">
             ልዩ የቅናሽ ስጦታ! 🎁
           </h3>
-          <p className="mt-1.5 text-xs sm:text-sm text-neutral-300 font-normal leading-relaxed max-w-[300px] mx-auto">
+          <p className="mt-2 text-xs sm:text-sm text-neutral-300 font-normal leading-relaxed max-w-[320px] mx-auto">
             የ 20% ቅናሽ ለማግኘት ኮዱን ኮፒ በማድረግ በማንኛውም ኮርስ መግዣ ላይ ይጠቀሙበት።
           </p>
 
