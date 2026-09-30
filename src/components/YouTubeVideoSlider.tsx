@@ -487,6 +487,7 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
                           ref={(el) => { videoRefs.current[video.id] = el; }}
                           src={video.videoSrc}
                           poster={thumbUrl}
+                          preload="auto"
                           playsInline
                           muted={isMuted}
                           loop

@@ -1011,6 +1011,7 @@ export default function UpcomingEventsSection() {
                       controls
                       autoPlay
                       playsInline
+                      preload="auto"
                       className="w-full h-full object-contain"
                     />
                   );

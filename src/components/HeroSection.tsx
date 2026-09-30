@@ -83,13 +83,21 @@ export default function HeroSection({
   // Sync prop changes into state
   useEffect(() => {
     if (videoSrc && typeof videoSrc === 'string' && videoSrc.trim()) {
-      setActiveVideoUrl(videoSrc.trim());
+      const clean = videoSrc.trim();
+      setActiveVideoUrl(clean);
+      try {
+        localStorage.setItem('tsehay_landing_video_cache', clean);
+      } catch (e) {}
     }
   }, [videoSrc]);
 
   useEffect(() => {
     if (videoThumbnail && typeof videoThumbnail === 'string' && videoThumbnail.trim()) {
-      setActiveThumbnail(videoThumbnail.trim());
+      const clean = videoThumbnail.trim();
+      setActiveThumbnail(clean);
+      try {
+        localStorage.setItem('tsehay_landing_video_thumb', clean);
+      } catch (e) {}
     }
   }, [videoThumbnail]);
 
@@ -116,12 +124,17 @@ export default function HeroSection({
           const url = d?.url || d?.videoUrl || d?.youtubeUrl;
           const thumb = d?.heroThumbnailUrl || d?.posterUrl || d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl || d?.thumbUrl || d?.poster || '';
           if (!isCancelled && url && typeof url === 'string' && url.trim()) {
-            setActiveVideoUrl(url.trim());
+            const cleanUrl = url.trim();
+            setActiveVideoUrl(cleanUrl);
+            try {
+              localStorage.setItem('tsehay_landing_video_cache', cleanUrl);
+            } catch (e) {}
           }
           if (!isCancelled && typeof thumb === 'string') {
-            setActiveThumbnail(thumb.trim());
+            const cleanThumb = thumb.trim();
+            setActiveThumbnail(cleanThumb);
             try {
-              localStorage.setItem('tsehay_landing_video_thumb', thumb.trim());
+              localStorage.setItem('tsehay_landing_video_thumb', cleanThumb);
             } catch (e) {}
           }
         }
@@ -134,11 +147,19 @@ export default function HeroSection({
     const handleUpdate = (e: any) => {
       if (isCancelled) return;
       if (e.detail?.videoUrl) {
-        setActiveVideoUrl(e.detail.videoUrl.trim());
+        const cleanUrl = e.detail.videoUrl.trim();
+        setActiveVideoUrl(cleanUrl);
+        try {
+          localStorage.setItem('tsehay_landing_video_cache', cleanUrl);
+        } catch (err) {}
       }
       const thumb = e.detail?.heroThumbnailUrl || e.detail?.posterUrl || e.detail?.thumbnail || e.detail?.landingVideoThumbnail || '';
       if (typeof thumb === 'string') {
-        setActiveThumbnail(thumb.trim());
+        const cleanThumb = thumb.trim();
+        setActiveThumbnail(cleanThumb);
+        try {
+          localStorage.setItem('tsehay_landing_video_thumb', cleanThumb);
+        } catch (err) {}
       }
     };
     window.addEventListener('tsehay_landing_video_updated', handleUpdate);
@@ -151,11 +172,19 @@ export default function HeroSection({
         bc.onmessage = (ev) => {
           if (isCancelled) return;
           if (ev.data?.videoUrl) {
-            setActiveVideoUrl(ev.data.videoUrl.trim());
+            const cleanUrl = ev.data.videoUrl.trim();
+            setActiveVideoUrl(cleanUrl);
+            try {
+              localStorage.setItem('tsehay_landing_video_cache', cleanUrl);
+            } catch (err) {}
           }
           const thumb = ev.data?.heroThumbnailUrl || ev.data?.posterUrl || ev.data?.thumbnail || ev.data?.landingVideoThumbnail || '';
           if (typeof thumb === 'string') {
-            setActiveThumbnail(thumb.trim());
+            const cleanThumb = thumb.trim();
+            setActiveThumbnail(cleanThumb);
+            try {
+              localStorage.setItem('tsehay_landing_video_thumb', cleanThumb);
+            } catch (err) {}
           }
         };
       } catch (e) {}
@@ -377,13 +406,30 @@ export default function HeroSection({
                   className="h-full w-full object-cover"
                   src={videoConfig.src}
                   poster={effectivePoster || undefined}
+                  preload="auto"
                   autoPlay
                   muted
                   playsInline
                   loop
                   controls
-                  preload="auto"
-                />
+                  controlsList="nodownload"
+                  onLoadedMetadata={(e) => {
+                    const v = e.currentTarget;
+                    v.muted = true;
+                    v.play().catch(() => {});
+                  }}
+                  onCanPlay={(e) => {
+                    const v = e.currentTarget;
+                    v.muted = true;
+                    v.play().catch(() => {});
+                  }}
+                >
+                  <source
+                    src={videoConfig.src}
+                    type={videoConfig.src.toLowerCase().endsWith('.webm') ? 'video/webm' : 'video/mp4'}
+                  />
+                  Your browser does not support the video tag.
+                </video>
               ) : videoConfig.type === 'youtube' || videoConfig.type === 'embed' ? (
                 <iframe
                   key={videoConfig.src}
