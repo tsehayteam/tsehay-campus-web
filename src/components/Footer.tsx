@@ -92,22 +92,15 @@ export default function Footer() {
         if (pathname === '/') {
             const el = document.getElementById(hash);
             if (el) {
-                const offset = 80;
-                const bodyRect = document.body.getBoundingClientRect().top;
-                const elementRect = el.getBoundingClientRect().top;
-                window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+                const offset = 85;
+                const elementPosition = el.getBoundingClientRect().top + window.scrollY;
+                window.scrollTo({ top: Math.max(0, elementPosition - offset), behavior: 'smooth' });
+                try {
+                    window.history.pushState(null, '', '#' + hash);
+                } catch (e) {}
             }
         } else {
             router.push('/#' + hash);
-            setTimeout(() => {
-                const el = document.getElementById(hash);
-                if (el) {
-                    const offset = 80;
-                    const bodyRect = document.body.getBoundingClientRect().top;
-                    const elementRect = el.getBoundingClientRect().top;
-                    window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
-                }
-            }, 350);
         }
     };
 

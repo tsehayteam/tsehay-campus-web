@@ -168,6 +168,19 @@ export default function Navbar() {
     };
   }, []);
 
+  const [currentHash, setCurrentHash] = useState('');
+
+  useEffect(() => {
+    const updateHash = () => {
+      if (typeof window !== 'undefined') {
+        setCurrentHash(window.location.hash || '');
+      }
+    };
+    updateHash();
+    window.addEventListener('hashchange', updateHash);
+    return () => window.removeEventListener('hashchange', updateHash);
+  }, [pathname]);
+
   const navigateTo = (url: string) => {
     setShowProfileDropdown(false);
     setIsCurtainOpen(false);
@@ -178,28 +191,26 @@ export default function Navbar() {
       if (pathname === '/') {
         const el = document.getElementById(hash);
         if (el) {
-          const offset = 80;
-          const bodyRect = document.body.getBoundingClientRect().top;
-          const elementRect = el.getBoundingClientRect().top;
-          window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+          const offset = 85;
+          const elementPosition = el.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top: Math.max(0, elementPosition - offset), behavior: 'smooth' });
+          try {
+            window.history.pushState(null, '', `#${hash}`);
+            setCurrentHash(`#${hash}`);
+          } catch (e) {}
         }
       } else {
         router.push('/#' + hash);
-        setTimeout(() => {
-          const el = document.getElementById(hash);
-          if (el) {
-            const offset = 80;
-            const bodyRect = document.body.getBoundingClientRect().top;
-            const elementRect = el.getBoundingClientRect().top;
-            window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
-          }
-        }, 350);
       }
       return;
     }
 
     if (pathname === url) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      try {
+        window.history.pushState(null, '', url);
+        setCurrentHash('');
+      } catch (e) {}
     } else {
       router.push(url);
     }
@@ -303,6 +314,12 @@ export default function Navbar() {
   const isMentorship = pathname === '/mentorship';
   const isCommunity = pathname === '/community';
 
+  const isHomeActive = isHome && (!currentHash || currentHash === '#home');
+  const isCoursesActive = isCourses || (isHome && currentHash === '#courses');
+  const isAboutActive = isAbout || (isHome && currentHash === '#about');
+  const isMentorshipActive = isMentorship;
+  const isCommunityActive = isCommunity;
+
   return (
     <>
       {/* ===================== 1. FLOATING CAPSULE (ONLY WHEN CLOSED) ===================== */}
@@ -384,7 +401,6 @@ export default function Navbar() {
               className="flex-shrink-0 flex items-center cursor-pointer group gap-3 mr-2 sm:mr-4"
             >
               <Image 
-                key={`brand-logo-${animationKey}`}
                 src="/tc-logo.jpg" 
                 alt="Tsehay Campus Logo" 
                 width={44}
@@ -410,16 +426,25 @@ export default function Navbar() {
             </Link>
 
             {/* 2. CENTER: Clean Navigation Links (መነሻ, ኮርሶች, ማማከር, ማህበረሰብ, ስለ እኛ) */}
-            <div key={`desktop-nav-links-${animationKey}`} className="hidden xl:flex items-center gap-7 h-full">
+            <div className="hidden md:flex items-center gap-3.5 lg:gap-7 h-full">
               
               {/* መነሻ */}
               <Link 
                 href="/" 
-                onClick={() => {
-                  if (pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' });
+                prefetch={true}
+                onClick={(e) => {
+                  closeCurtain();
+                  if (pathname === '/') {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    try {
+                      window.history.pushState(null, '', '/');
+                      setCurrentHash('');
+                    } catch (err) {}
+                  }
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
-                  isHome 
+                  isHomeActive 
                     ? 'terafab-nav-link-active' 
                     : 'terafab-nav-link text-slate-300 hover:text-white'
                 }`}
@@ -430,11 +455,16 @@ export default function Navbar() {
               {/* ኮርሶች */}
               <Link 
                 href="/courses" 
-                onClick={() => {
-                  if (pathname === '/courses') window.scrollTo({ top: 0, behavior: 'smooth' });
+                prefetch={true}
+                onClick={(e) => {
+                  closeCurtain();
+                  if (pathname === '/courses') {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
-                  isCourses 
+                  isCoursesActive 
                     ? 'terafab-nav-link-active' 
                     : 'terafab-nav-link text-slate-300 hover:text-white'
                 }`}
@@ -445,11 +475,16 @@ export default function Navbar() {
               {/* ማማከር */}
               <Link 
                 href="/mentorship" 
-                onClick={() => {
-                  if (pathname === '/mentorship') window.scrollTo({ top: 0, behavior: 'smooth' });
+                prefetch={true}
+                onClick={(e) => {
+                  closeCurtain();
+                  if (pathname === '/mentorship') {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
-                  isMentorship 
+                  isMentorshipActive 
                     ? 'terafab-nav-link-active' 
                     : 'terafab-nav-link text-slate-300 hover:text-white'
                 }`}
@@ -460,11 +495,16 @@ export default function Navbar() {
               {/* ማህበረሰብ */}
               <Link 
                 href="/community" 
-                onClick={() => {
-                  if (pathname === '/community') window.scrollTo({ top: 0, behavior: 'smooth' });
+                prefetch={true}
+                onClick={(e) => {
+                  closeCurtain();
+                  if (pathname === '/community') {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
-                  isCommunity 
+                  isCommunityActive 
                     ? 'terafab-nav-link-active' 
                     : 'terafab-nav-link text-slate-300 hover:text-white'
                 }`}
@@ -474,12 +514,29 @@ export default function Navbar() {
 
               {/* ስለ እኛ */}
               <Link 
-                href="/about" 
-                onClick={() => {
-                  if (pathname === '/about') window.scrollTo({ top: 0, behavior: 'smooth' });
+                href={isHome ? "#about" : "/about"} 
+                prefetch={true}
+                onClick={(e) => {
+                  closeCurtain();
+                  if (isHome) {
+                    e.preventDefault();
+                    const el = document.getElementById('about');
+                    if (el) {
+                      const offset = 85;
+                      const elementPosition = el.getBoundingClientRect().top + window.scrollY;
+                      window.scrollTo({ top: Math.max(0, elementPosition - offset), behavior: 'smooth' });
+                      try {
+                        window.history.pushState(null, '', '#about');
+                        setCurrentHash('#about');
+                      } catch (err) {}
+                    }
+                  } else if (pathname === '/about') {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
-                  isAbout 
+                  isAboutActive 
                     ? 'terafab-nav-link-active' 
                     : 'terafab-nav-link text-slate-300 hover:text-white'
                 }`}
@@ -489,10 +546,10 @@ export default function Navbar() {
             </div>
 
             {/* 3. RIGHT: Search Input + Tsehay AI + Install + Lang/Theme + Integrated Close Toggle */}
-            <div key={`desktop-actions-${animationKey}`} className="flex items-center gap-2 lg:gap-3 font-heading text-sm">
+            <div className="flex items-center gap-2 lg:gap-3 font-heading text-sm">
               
               {/* Distinct Search Bar with Cobalt Blue Glass Border */}
-              <div className="hidden sm:block w-44 lg:w-56">
+              <div className="hidden md:block w-36 lg:w-56">
                 <SmartSearchInput 
                   courses={allCourses} 
                   compact={true}
@@ -605,7 +662,7 @@ export default function Navbar() {
           </div>
 
           {/* =====================  MOBILE MENU PANEL ===================== */}
-          <div key={`mobile-nav-${animationKey}`} className="xl:hidden pb-3 sm:pb-4 pt-2 space-y-3.5 max-w-lg mx-auto w-full flex flex-col items-center text-center">
+          <div className="md:hidden pb-3 sm:pb-4 pt-2 space-y-3.5 max-w-lg mx-auto w-full flex flex-col items-center text-center">
             
             {/* Drag Bar Indicator */}
             <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-1"></div>
@@ -627,7 +684,7 @@ export default function Navbar() {
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/'); }} 
-                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isHome ? 'mobile-nav-card-active' : ''}`}
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isHomeActive ? 'mobile-nav-card-active' : ''}`}
               >
                 <span className="text-xs font-black text-white font-heading">
                   {t('home') || 'መነሻ'}
@@ -639,7 +696,7 @@ export default function Navbar() {
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/courses'); }} 
-                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isCourses ? 'mobile-nav-card-active' : ''}`}
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isCoursesActive ? 'mobile-nav-card-active' : ''}`}
               >
                 <span className="text-xs font-black text-white font-heading">
                   {t('courses') || 'ኮርሶች'}
@@ -651,7 +708,7 @@ export default function Navbar() {
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/mentorship'); }} 
-                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isMentorship ? 'mobile-nav-card-active' : ''}`}
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isMentorshipActive ? 'mobile-nav-card-active' : ''}`}
               >
                 <span className="text-xs font-black text-white font-heading">
                   {lang === 'en' ? 'Mentorship' : 'ማማከር'}
@@ -663,7 +720,7 @@ export default function Navbar() {
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/community'); }} 
-                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isCommunity ? 'mobile-nav-card-active' : ''}`}
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isCommunityActive ? 'mobile-nav-card-active' : ''}`}
               >
                 <span className="text-xs font-black text-white font-heading">
                   {lang === 'en' ? 'Community' : 'ማህበረሰብ'}
@@ -674,8 +731,8 @@ export default function Navbar() {
               {/* About Us */}
               <button 
                 type="button" 
-                onClick={() => { closeCurtain(); navigateTo('/about'); }} 
-                className={`col-span-2 p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isAbout ? 'mobile-nav-card-active' : ''}`}
+                onClick={() => { closeCurtain(); navigateTo(isHome ? '#about' : '/about'); }} 
+                className={`col-span-2 p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isAboutActive ? 'mobile-nav-card-active' : ''}`}
               >
                 <span className="text-xs font-black text-white font-heading">
                   {t('about_us') || 'ስለ እኛ'}

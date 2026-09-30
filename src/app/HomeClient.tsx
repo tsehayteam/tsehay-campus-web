@@ -244,6 +244,39 @@ export default function HomeClient({
     }
   }, [courses.length]);
 
+  // Smooth Hash Scroll Orchestrator (Cross-page & deep-link section navigation)
+  useEffect(() => {
+    const handleHashScroll = () => {
+      if (typeof window === 'undefined') return;
+      const rawHash = window.location.hash;
+      if (!rawHash) return;
+      const hash = rawHash.replace('#', '');
+      if (hash) {
+        let attempts = 0;
+        const tryScroll = () => {
+          attempts++;
+          const el = document.getElementById(hash);
+          if (el) {
+            const offset = 85;
+            const elementPosition = el.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({
+              top: Math.max(0, elementPosition - offset),
+              behavior: 'smooth'
+            });
+          } else if (attempts < 10) {
+            setTimeout(tryScroll, 120);
+          }
+        };
+        // Small initial tick to ensure layout and scrolly-reveal elements are mounted
+        setTimeout(tryScroll, 60);
+      }
+    };
+
+    handleHashScroll();
+    window.addEventListener('hashchange', handleHashScroll);
+    return () => window.removeEventListener('hashchange', handleHashScroll);
+  }, []);
+
   // Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll
   useEffect(() => {
     const handleResume = () => {
@@ -948,9 +981,9 @@ export default function HomeClient({
       {/* =========================================================================
           7. INSTRUCTOR YOUTUBE PORTFOLIO (2-Column Terafab Glassmorphism Section)
          ========================================================================= */}
-      <div className="scrolly-reveal">
+      <section id="about" className="scrolly-reveal">
         <InstructorYouTubePortfolio initialData={initialPortfolio} />
-      </div>
+      </section>
       
       {/* =========================================================================
           8. LIVE EVENTS & WORKSHOPS
