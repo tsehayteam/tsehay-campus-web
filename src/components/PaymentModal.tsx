@@ -562,14 +562,14 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                       </div>
 
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-amber-400 font-mono text-xs font-bold">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-amber-400 font-mono text-xs font-bold shrink-0">
                           🇪🇹 +251
                         </div>
                         <input
                           id="lakipay-phone-field"
                           type="tel"
                           inputMode="numeric"
-                          placeholder="09... ወይም 07... (የባንክ፣ ካርድ ወይም ዋሌት ስልክ ቁጥር)"
+                          placeholder="09/07.. (የባንክ፣ ካርድ ወይም ዋሌት ቁጥር)"
                           value={phone}
                           disabled={isPaying}
                           onChange={(e) => {
@@ -577,7 +577,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                             setPhoneTouched(true);
                             if (error) setError(null);
                           }}
-                          className={`w-full bg-[#080d1a] border rounded-xl pl-20 pr-10 py-2.5 sm:py-3 text-xs sm:text-sm font-mono text-white outline-none transition ${
+                          className={`w-full bg-[#080d1a] border rounded-xl pl-[4.6rem] pr-9 py-2.5 sm:py-3 text-xs sm:text-sm font-mono text-white placeholder:font-sans placeholder:text-[11px] sm:placeholder:text-xs placeholder:text-gray-400/90 outline-none transition ${
                             phoneTouched && cleanPhone.length > 0 && !isPhoneValid
                               ? 'border-red-500/80 focus:border-red-500 ring-1 ring-red-500/40'
                               : isPhoneValid
@@ -586,7 +586,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                           }`}
                         />
                         {isPhoneValid && (
-                          <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-emerald-400">
+                          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-emerald-400">
                             <i className="fa-solid fa-circle-check text-sm"></i>
                           </div>
                         )}
