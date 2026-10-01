@@ -729,7 +729,12 @@ export default function UpcomingEventsSection() {
                     
                     {/* Top Status Capsules */}
                     <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2 z-20 pointer-events-none">
-                      {isPassed ? (
+                      {(event.isPostponed || event.status === 'postponed') ? (
+                        <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-[#f9b03c] backdrop-blur-md text-slate-950 border border-amber-300 text-xs font-black shadow-[0_0_15px_rgba(249,176,60,0.5)] flex items-center gap-1.5 animate-pulse">
+                          <i className="fa-solid fa-calendar-days text-[11px]"></i>
+                          <span>Postponed to: {event.postponedTo || event.date}</span>
+                        </span>
+                      ) : isPassed ? (
                         <span className="px-3 py-1 rounded-full bg-red-600/90 backdrop-blur-md text-white border border-red-500 text-xs font-black shadow-lg flex items-center gap-1.5 animate-pulse">
                           <i className="fa-solid fa-clock-rotate-left text-[11px]"></i>
                           <span>ኩነት አልፏል (EVENT PASSED)</span>
@@ -772,12 +777,17 @@ export default function UpcomingEventsSection() {
                     <div className="flex items-center gap-2.5 text-xs text-slate-300 font-semibold flex-wrap">
                       <div className="flex items-center gap-1.5 bg-[#f9b03c]/10 border border-[#f9b03c]/30 px-3 py-1.5 rounded-xl text-[#f9b03c] font-black">
                         <i className="fa-regular fa-calendar text-[#f9b03c]"></i>
-                        <span>{event.date}</span>
+                        <span>{(event.isPostponed || event.status === 'postponed') ? `Postponed: ${event.postponedTo || event.date}` : event.date}</span>
                       </div>
                       <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-slate-200">
                         <i className="fa-regular fa-clock text-[#f9b03c]"></i>
                         <span>{event.time}</span>
                       </div>
+                      {(event.isPostponed || event.status === 'postponed') && event.originalDate && (
+                        <div className="text-[11px] text-gray-400 line-through">
+                          (ቀድሞ፡ {event.originalDate})
+                        </div>
+                      )}
                     </div>
 
                     {/* Accurate Live Countdown Timer (Days, Hours, Minutes, Seconds) */}

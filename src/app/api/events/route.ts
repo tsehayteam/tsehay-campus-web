@@ -88,7 +88,11 @@ function mapDbRowToEvent(row: any): TsehayEvent {
     image: img,
     videoUrl: row.video_url || row.videoUrl || '',
     tags: Array.isArray(row.tags) ? row.tags : (typeof row.tags === 'string' ? row.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []),
-    status: row.status || 'upcoming',
+    isPostponed: Boolean(row.is_postponed !== undefined ? row.is_postponed : row.isPostponed),
+    postponedTo: row.postponed_to || row.postponedTo || '',
+    originalDate: row.original_date || row.originalDate || '',
+    postponedNote: row.postponed_note || row.postponedNote || '',
+    status: row.status || (Boolean(row.is_postponed || row.isPostponed) ? 'postponed' : 'upcoming'),
     createdAt: row.created_at || row.createdAt || new Date().toISOString(),
     updatedAt: row.updated_at || row.updatedAt || new Date().toISOString()
   };
@@ -299,6 +303,10 @@ async function saveSupabaseEvents(events: any[], singlePayload?: any) {
         speaker_image: singlePayload.speakerImage || null,
         image: singlePayload.image || '',
         tags: Array.isArray(singlePayload.tags) ? singlePayload.tags : [],
+        is_postponed: Boolean(singlePayload.isPostponed),
+        postponed_to: singlePayload.postponedTo || null,
+        original_date: singlePayload.originalDate || null,
+        postponed_note: singlePayload.postponedNote || null,
         status: singlePayload.status || 'upcoming',
         updated_at: new Date().toISOString()
       };

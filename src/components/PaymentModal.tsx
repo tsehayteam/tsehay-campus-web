@@ -536,7 +536,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                       <div className="min-w-0 flex-1">
                         <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
                         <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">
-                          For Local Payments (Telebirr, CBE, M-Pesa)
+                          For Local Payments
                         </span>
                       </div>
                     </div>
@@ -569,7 +569,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                           id="lakipay-phone-field"
                           type="tel"
                           inputMode="numeric"
-                          placeholder="0911223344 ወይም 0711223344"
+                          placeholder="የባንክ፣ የካርድ ወይም የዋሌት ስልክ ቁጥር ያስገቡ"
                           value={phone}
                           disabled={isPaying}
                           onChange={(e) => {

@@ -547,7 +547,12 @@ export default function EventsClient() {
 
                       {/* Badges */}
                       <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20 pointer-events-none">
-                        {isPassed ? (
+                        {(evt.isPostponed || evt.status === 'postponed') ? (
+                          <div className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 font-black text-[10px] tracking-wider uppercase shadow-[0_0_15px_rgba(249,176,60,0.6)] border border-amber-300 backdrop-blur-md flex items-center gap-1.5 animate-pulse">
+                            <i className="fa-solid fa-calendar-days text-[9px]" />
+                            <span>Postponed to: {evt.postponedTo || evt.date}</span>
+                          </div>
+                        ) : isPassed ? (
                           <div className="px-3 py-1 rounded-full bg-red-600/90 text-white font-black text-[10px] tracking-wider uppercase shadow-[0_0_15px_rgba(239,68,68,0.5)] border border-red-400/40 backdrop-blur-md flex items-center gap-1">
                             <i className="fa-solid fa-clock-rotate-left text-[9px]" />
                             <span>ኩነት አልፏል</span>
@@ -564,7 +569,7 @@ export default function EventsClient() {
                           </div>
                         )}
                         <div className={`px-3 py-1 rounded-full font-black text-[11px] ${
-                          isPassed 
+                          isPassed && !(evt.isPostponed || evt.status === 'postponed')
                             ? 'bg-slate-300/80 text-slate-900 shadow-sm' 
                             : 'bg-[#f9b03c] text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.5)]'
                         }`}>
@@ -577,16 +582,28 @@ export default function EventsClient() {
                     <div className="p-5 space-y-3">
                       {/* Date & Time Row & Live Countdown */}
                       <div className="space-y-2.5">
-                        <div className="flex items-center gap-3 text-[11px] font-bold">
-                          <span className={`flex items-center gap-1 ${isPassed ? 'text-red-400' : 'text-[#f9b03c]'}`}>
-                            <i className="fa-regular fa-calendar" />
-                            <span>{evt.date}</span>
-                          </span>
+                        <div className="flex items-center gap-2 text-[11px] font-bold flex-wrap">
+                          {(evt.isPostponed || evt.status === 'postponed') ? (
+                            <span className="flex items-center gap-1.5 text-[#f9b03c] bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-lg">
+                              <i className="fa-solid fa-calendar-days text-[10px]" />
+                              <span>Postponed to: {evt.postponedTo || evt.date}</span>
+                            </span>
+                          ) : (
+                            <span className={`flex items-center gap-1 ${isPassed ? 'text-red-400' : 'text-[#f9b03c]'}`}>
+                              <i className="fa-regular fa-calendar" />
+                              <span>{evt.date}</span>
+                            </span>
+                          )}
                           <span>•</span>
                           <span className="flex items-center gap-1 text-slate-300">
                             <i className="fa-regular fa-clock" />
                             <span>{evt.time}</span>
                           </span>
+                          {(evt.isPostponed || evt.status === 'postponed') && evt.originalDate && (
+                            <span className="text-[10px] text-gray-500 line-through">
+                              (ቀድሞ፡ {evt.originalDate})
+                            </span>
+                          )}
                         </div>
                         {!isPassed && (
                           <EventLiveCountdown event={evt} variant="card" className="pt-0.5 pb-0.5" />
@@ -630,7 +647,12 @@ export default function EventsClient() {
                     <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between mb-3">
                       {/* የቀረ ክፍት ቦታ ወይም የተጠናቀቀበት ማሳያ */}
                       <div className="text-xs font-medium">
-                        {isPassed ? (
+                        {(evt.isPostponed || evt.status === 'postponed') ? (
+                          <span className="text-[#f9b03c] font-bold flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping" />
+                            ተላልፏል (Postponed)
+                          </span>
+                        ) : isPassed ? (
                           <span className="text-red-400 font-bold flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                             ክስተቱ ተጠናቋል (Passed)

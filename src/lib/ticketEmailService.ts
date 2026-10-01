@@ -503,3 +503,250 @@ export async function sendEventReminderEmail(
 
   return { success: false, error: 'Failed to send event reminder email' };
 }
+
+export interface PostponedEmailParams {
+  ticket: EventTicket;
+  eventTitle: string;
+  oldDate: string;
+  newDate: string;
+  eventTime?: string;
+  eventLocation?: string;
+  isOnline?: boolean;
+  meetingLink?: string;
+  mapsUrl?: string;
+  reason?: string;
+}
+
+/**
+ * 📢 Dispatches an automated email to a registered attendee when an event is postponed.
+ */
+export async function sendPostponedEventEmail(params: PostponedEmailParams): Promise<{ success: boolean; error?: string }> {
+  const {
+    ticket,
+    eventTitle,
+    oldDate,
+    newDate,
+    eventTime = '02:00 PM',
+    eventLocation = 'Bole, Addis Ababa',
+    isOnline = false,
+    meetingLink = 'https://meet.google.com/tsehay-live',
+    mapsUrl = 'https://maps.google.com/?q=Bole+Addis+Ababa',
+    reason
+  } = params;
+
+  if (!ticket || !ticket.attendeeEmail) {
+    return { success: false, error: 'Recipient email is missing' };
+  }
+
+  const normalizedEmail = ticket.attendeeEmail.trim().toLowerCase();
+  const ticketId = ticket.ticketId || `TC-EVT-${Date.now().toString(36).toUpperCase()}`;
+  const dedupeKey = `postponed_${normalizedEmail}_${ticket.eventId || 'evt'}_${newDate}`;
+
+  if (isRecentlyDispatched(dedupeKey)) {
+    console.log(`[Ticket Email Service] 🛡️ Duplicate postponement dispatch prevented for ${dedupeKey}`);
+    return { success: true };
+  }
+
+  const resendApiKey = (process.env.RESEND_API_KEY || process.env.RESEND_KEY || '').trim();
+  const attendeeName = ticket.attendeeName || ticket.name || 'የተከበሩ ተማሪ';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&format=png&data=${encodeURIComponent(ticket.qrCodeData || ticketId)}&color=0c1017&bgcolor=ffffff&qzone=2`;
+
+  const subject = `📢 አስፈላጊ ማሳወቂያ፦ የ"${eventTitle}" ስልጠና ወደ ${newDate} ተላልፏል! (Tsehay Campus)`;
+
+  const htmlEmail = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${subject}</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #050811; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 30px auto; background-color: #0c121e; border-radius: 24px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);">
+      
+      <!-- Header Banner -->
+      <tr>
+        <td style="padding: 36px 28px 24px; text-align: center; background: radial-gradient(circle at top, rgba(249, 176, 60, 0.2) 0%, transparent 70%);">
+          <div style="display: inline-block; background: rgba(249, 176, 60, 0.15); border: 1px solid #f9b03c; color: #f9b03c; font-size: 11px; font-weight: 900; padding: 6px 18px; border-radius: 100px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;">
+            📅 ፕሮግራም ተላልፏል • EVENT POSTPONED
+          </div>
+          <h1 style="color: #ffffff; font-size: 23px; font-weight: 900; margin: 0 0 10px 0; line-height: 1.35;">
+            የስልጠና ቀን ማስተላለፍ ማሳወቂያ
+          </h1>
+          <p style="color: #cbd5e1; font-size: 14px; margin: 0; line-height: 1.6;">
+            ሰላም <strong>${attendeeName}</strong>፣ ለተመዘገቡበት <strong>"${eventTitle}"</strong> የቀጥታ ስልጠና አዲስ ቀን መወሰኑን በትህትና እናሳውቃለን።
+          </p>
+        </td>
+      </tr>
+
+      ${reason ? `
+      <!-- Reason / Note Box -->
+      <tr>
+        <td style="padding: 0 28px 16px;">
+          <div style="background: rgba(249, 176, 60, 0.08); border-left: 4px solid #f9b03c; border-radius: 12px; padding: 14px 18px;">
+            <span style="font-size: 11px; text-transform: uppercase; color: #f9b03c; font-weight: 800; display: block; margin-bottom: 4px;">📌 የማስተላለፊያ ማብራሪያ</span>
+            <p style="color: #e2e8f0; font-size: 13.5px; margin: 0; line-height: 1.5;">${reason}</p>
+          </div>
+        </td>
+      </tr>
+      ` : ''}
+
+      <!-- Comparison Card: Old vs New Date -->
+      <tr>
+        <td style="padding: 0 28px 20px;">
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 22px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                  <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">ዝግጅት (Event)</span>
+                  <div style="font-size: 16px; font-weight: 900; color: #ffffff; margin-top: 2px;">${eventTitle}</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                  <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">የቀድሞው ቀን (Previous Date)</span>
+                  <div style="font-size: 14px; font-weight: 700; color: #ef4444; text-decoration: line-through; margin-top: 2px;">
+                    ❌ ${oldDate}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(249, 176, 60, 0.05); border-radius: 12px; padding-left: 10px;">
+                  <span style="font-size: 11px; text-transform: uppercase; color: #f9b03c; font-weight: 800;">⭐ አዲሱ የተላለፈበት ቀን (New Rescheduled Date)</span>
+                  <div style="font-size: 16px; font-weight: 900; color: #f9b03c; margin-top: 2px;">
+                    📅 ${newDate} • ⏰ ${eventTime}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding-top: 12px;">
+                  <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">ቦታ / አዳራሽ (Venue)</span>
+                  <div style="font-size: 14px; font-weight: 800; color: #ffffff; margin-top: 2px;">📍 ${eventLocation}</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Reassurance Banner -->
+      <tr>
+        <td style="padding: 0 28px 20px;">
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 16px 20px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td width="32" valign="top" style="font-size: 20px;">🛡️</td>
+                <td style="padding-left: 10px;">
+                  <strong style="color: #10b981; font-size: 13px; display: block; margin-bottom: 3px;">ትኬትዎ ሙሉ በሙሉ የሚሰራ ነው!</strong>
+                  <span style="color: #cbd5e1; font-size: 12px; line-height: 1.5; display: block;">
+                    ቀድመው የያዙት የትኬት ቁጥር (<strong>${ticketId}</strong>) ለአዲሱ ቀን በቀጥታ ስለሚያገለግል ምንም አይነት አዲስ ምዝገባ ወይም ተጨማሪ ክፍያ ማድረግ አይጠበቅብዎትም።
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Online or In-Person Link -->
+      ${isOnline ? `
+      <tr>
+        <td style="padding: 0 28px 20px;">
+          <div style="background: rgba(50, 104, 186, 0.12); border: 1.5px solid #3268ba; border-radius: 18px; padding: 18px; text-align: center;">
+            <div style="font-size: 12px; font-weight: 800; color: #5a93e8; text-transform: uppercase; margin-bottom: 6px;">🎥 ቀጥታ የኦንላይን መግቢያ ሊንክ</div>
+            <a href="${meetingLink}" target="_blank" style="display: block; background: #3268ba; color: #ffffff; font-weight: 900; font-size: 14px; padding: 12px 24px; border-radius: 12px; text-decoration: none; margin-top: 8px;">
+              የቀጥታ ስብሰባውን ይቀላቀሉ (Open Google Meet)
+            </a>
+          </div>
+        </td>
+      </tr>
+      ` : `
+      <tr>
+        <td style="padding: 0 28px 20px;">
+          <a href="${mapsUrl}" target="_blank" style="display: block; background: rgba(56, 189, 248, 0.1); border: 1px solid #38bdf8; border-radius: 14px; padding: 12px; text-align: center; color: #38bdf8; font-weight: 800; font-size: 13px; text-decoration: none;">
+            🗺️ በአድራሻው በቀላሉ ለመድረስ Google Maps ይክፈቱ
+          </a>
+        </td>
+      </tr>
+      `}
+
+      <!-- SCANNABLE QR PASS SECTION -->
+      <tr>
+        <td style="padding: 0 28px 30px; text-align: center;">
+          <div style="background: linear-gradient(135deg, rgba(249, 176, 60, 0.08) 0%, rgba(255,255,255,0.02) 100%); border: 2px dashed rgba(249, 176, 60, 0.4); border-radius: 20px; padding: 24px;">
+            <span style="font-size: 11px; font-weight: 900; color: #f9b03c; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">
+              🎟️ የእርስዎ መግቢያ ዲጂታል QR ኮድ (Valid Ticket Pass)
+            </span>
+            <p style="font-size: 12px; color: #94a3b8; margin: 0 0 16px 0;">
+              በአዲሱ ቀን ወደ ስልጠናው አዳራሽ ወይም ኦንላይን መግቢያ ላይ ይህን QR Code በስልክዎ ያሳዩ።
+            </p>
+            <div style="display: inline-block; padding: 12px; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
+              <img src="${qrCodeUrl}" alt="Event Ticket QR Pass" width="180" height="180" style="display: block; border-radius: 8px;" />
+            </div>
+            <div style="font-family: monospace; font-size: 13px; font-weight: 900; color: #ffffff; margin-top: 14px; letter-spacing: 1px;">
+              TICKET ID: <span style="color: #f9b03c;">${ticketId}</span>
+            </div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td style="padding: 24px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.08); background-color: #080d16;">
+          <p style="color: #64748b; font-size: 12px; margin: 0 0 6px 0;">
+            ይህ መልዕክት በራስ-ሰር የተላከ የፀሐይ ካምፓስ (Tsehay Campus) ኦፊሴላዊ ማሳወቂያ ነው።
+          </p>
+          <p style="color: #64748b; font-size: 11px; margin: 0;">
+            ጥያቄ ካለዎት በ <a href="mailto:support@tsehaycampus.com" style="color: #f9b03c; text-decoration: none;">support@tsehaycampus.com</a> ያነጋግሩን።
+          </p>
+        </td>
+      </tr>
+
+    </table>
+  </body>
+  </html>
+  `;
+
+  if (!resendApiKey) {
+    console.warn('[Ticket Email Service] RESEND_API_KEY is not configured for postponement notification.');
+    return { success: false, error: 'RESEND_API_KEY is not configured' };
+  }
+
+  const sendersToTry = [
+    process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>',
+    'Tsehay Campus <support@tsehaycampus.com>',
+    'Tsehay Campus <events@tsehaycampus.com>',
+    'Tsehay Campus <onboarding@resend.dev>'
+  ];
+
+  for (const fromSender of sendersToTry) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resendApiKey}`
+        },
+        body: JSON.stringify({
+          from: fromSender,
+          to: [normalizedEmail],
+          subject,
+          html: htmlEmail,
+          reply_to: 'support@tsehaycampus.com'
+        })
+      });
+
+      const responseJson = await res.json().catch(() => ({}));
+      if (res.ok && responseJson.id) {
+        markAsDispatched(dedupeKey);
+        console.log(`[Ticket Email Service] ✅ Postponement email dispatched to ${normalizedEmail}`);
+        return { success: true };
+      }
+    } catch (err: any) {
+      console.warn(`[Postponement Service] Send attempt failed with "${fromSender}":`, err.message);
+    }
+  }
+
+  return { success: false, error: 'Failed to send event postponement email' };
+}
+

@@ -31,7 +31,11 @@ export interface TsehayEvent {
   videoUrl?: string;
   tags: string[];
   isFeatured?: boolean;
-  status: 'upcoming' | 'ongoing' | 'completed' | 'sold_out' | 'active' | 'published' | 'inactive' | 'passed' | 'expired';
+  isPostponed?: boolean;
+  postponedTo?: string; // New postponed date e.g. "ጥቅምት 15, 2019" or "2026-10-15"
+  originalDate?: string; // Original date prior to postponement
+  postponedNote?: string; // Postponement announcement note or reason
+  status: 'upcoming' | 'ongoing' | 'completed' | 'sold_out' | 'active' | 'published' | 'inactive' | 'passed' | 'expired' | 'postponed';
   createdAt?: any;
   updatedAt?: any;
 }
@@ -291,7 +295,9 @@ export function getEventCountdown(event: TsehayEvent | any, now: Date = new Date
   const st = (event?.status || '').toLowerCase().trim();
   const explicitPassed = st === 'passed' || st === 'completed' || st === 'expired';
 
-  const dateStr = event?.date || event?.eventDate || event?.event_date || '';
+  const dateStr = event?.isPostponed && event?.postponedTo
+    ? event.postponedTo
+    : (event?.date || event?.eventDate || event?.event_date || '');
   const timeStr = event?.time || event?.eventTime || event?.event_time || '';
   const targetDate = parseEventDate(dateStr, timeStr);
 
@@ -407,7 +413,9 @@ export function isEventPassed(eventOrDate: any, rawTime?: string): boolean {
 
   const dateStr = typeof eventOrDate === 'string'
     ? eventOrDate
-    : (eventOrDate.eventDate || eventOrDate.event_date || eventOrDate.date || '');
+    : (eventOrDate.isPostponed && eventOrDate.postponedTo
+        ? eventOrDate.postponedTo
+        : (eventOrDate.eventDate || eventOrDate.event_date || eventOrDate.date || ''));
 
   const timeStr = rawTime || (typeof eventOrDate === 'object'
     ? (eventOrDate.eventTime || eventOrDate.event_time || eventOrDate.time || '')

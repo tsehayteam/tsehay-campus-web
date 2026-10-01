@@ -169,6 +169,15 @@ export default function AdminDashboard() {
   // 🚫 Attendee Cancellation Loading State (Option A)
   const [cancellingTicketId, setCancellingTicketId] = useState<string | null>(null);
 
+  // 📅 Postpone Event State (ኢቨንት ማስተላለፊያ)
+  const [isPostponeModalOpen, setIsPostponeModalOpen] = useState(false);
+  const [selectedEventForPostpone, setSelectedEventForPostpone] = useState<TsehayEvent | null>(null);
+  const [postponeNewDate, setPostponeNewDate] = useState('');
+  const [postponeNewTime, setPostponeNewTime] = useState('');
+  const [postponeReason, setPostponeReason] = useState('');
+  const [postponeNotifyAttendees, setPostponeNotifyAttendees] = useState(true);
+  const [isSubmittingPostpone, setIsSubmittingPostpone] = useState(false);
+
   // 🔒 Strict Admin Email OTP State & Verification Handlers (Decoupled from student session)
   const STRICT_ADMIN_EMAILS = [
     'eyobsahle@gmail.com'
@@ -1459,6 +1468,146 @@ export default function AdminDashboard() {
       showToast(err.message || 'የኔትወርክ ችግር አጋጥሟል', 'error');
     } finally {
       setIsSubmittingSeatAdjustment(false);
+    }
+  };
+
+  // 📅 Postpone Event Handlers
+  const openPostponeModal = (targetEvent?: TsehayEvent) => {
+    const defaultEv = targetEvent || (events && events.length > 0 ? events[0] : null);
+    setSelectedEventForPostpone(defaultEv || null);
+    if (defaultEv) {
+      setPostponeNewDate(defaultEv.isPostponed && defaultEv.postponedTo ? defaultEv.postponedTo : '');
+      setPostponeNewTime(defaultEv.time || '');
+      setPostponeReason(defaultEv.postponedNote || '');
+    } else {
+      setPostponeNewDate('');
+      setPostponeNewTime('');
+      setPostponeReason('');
+    }
+    setPostponeNotifyAttendees(true);
+    setIsPostponeModalOpen(true);
+  };
+
+  const handleSavePostpone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEventForPostpone) return;
+    if (!postponeNewDate.trim()) {
+      showToast('እባክዎ አዲሱን የተላለፈበትን ቀን ያስገቡ', 'error');
+      return;
+    }
+
+    setIsSubmittingPostpone(true);
+    try {
+      const authHeaders = getAdminAuthHeaders({ 'Content-Type': 'application/json' });
+      const res = await fetch('/api/events/postpone', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({
+          eventId: selectedEventForPostpone.id,
+          newDate: postponeNewDate.trim(),
+          newTime: postponeNewTime.trim() || undefined,
+          reason: postponeReason.trim() || undefined,
+          notifyAttendees: postponeNotifyAttendees
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        // Optimistically update local events state
+        const updated = events.map(ev => {
+          if (ev.id === selectedEventForPostpone.id || (ev.slug && ev.slug === selectedEventForPostpone.slug)) {
+            return {
+              ...ev,
+              originalDate: ev.originalDate || ev.date,
+              date: postponeNewDate.trim(),
+              time: postponeNewTime.trim() || ev.time,
+              isPostponed: true,
+              postponedTo: postponeNewDate.trim(),
+              postponedNote: postponeReason.trim(),
+              status: 'upcoming' as const
+            };
+          }
+          return ev;
+        });
+
+        setEvents(updated);
+        saveCachedEvents(updated);
+
+        try {
+          localStorage.setItem('tsehay_events_cache', JSON.stringify(updated));
+          window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updated } }));
+          const bc = new BroadcastChannel('tsehay_events_sync');
+          bc.postMessage({ type: 'EVENT_POSTPONED', eventId: selectedEventForPostpone.id, events: updated });
+          setTimeout(() => bc.close(), 300);
+        } catch (_) {}
+
+        setIsPostponeModalOpen(false);
+        showToast(
+          data.notifiedCount > 0 
+            ? `ኢቨንቱ ወደ "${postponeNewDate.trim()}" ተላልፏል! ለ ${data.notifiedCount} ተሳታፊዎች የኢሜይል ማሳወቂያ ወዲያውኑ ተልኳል።`
+            : `ኢቨንቱ ወደ "${postponeNewDate.trim()}" በተሳካ ሁኔታ ተላልፏል!`,
+          'success'
+        );
+      } else {
+        showToast(data.error || 'ኢቨንቱን ማስተላለፍ አልተቻለም', 'error');
+      }
+    } catch (err: any) {
+      console.error('Postpone event error:', err);
+      showToast(err.message || 'የኔትወርክ ችግር አጋጥሟል', 'error');
+    } finally {
+      setIsSubmittingPostpone(false);
+    }
+  };
+
+  const handleCancelPostpone = async () => {
+    if (!selectedEventForPostpone) return;
+    if (!confirm('የዚህን ኢቨንት ማስተላለፊያ ሰርዘው ወደ ቀድሞው ቀን መመለስ ይፈልጋሉ?')) return;
+
+    setIsSubmittingPostpone(true);
+    try {
+      const authHeaders = getAdminAuthHeaders({ 'Content-Type': 'application/json' });
+      const res = await fetch('/api/events/postpone', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({
+          eventId: selectedEventForPostpone.id,
+          cancelPostpone: true
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        const updated = events.map(ev => {
+          if (ev.id === selectedEventForPostpone.id || (ev.slug && ev.slug === selectedEventForPostpone.slug)) {
+            return {
+              ...ev,
+              date: ev.originalDate || ev.date,
+              isPostponed: false,
+              postponedTo: undefined,
+              postponedNote: undefined,
+              status: 'upcoming' as const
+            };
+          }
+          return ev;
+        });
+
+        setEvents(updated);
+        saveCachedEvents(updated);
+
+        try {
+          localStorage.setItem('tsehay_events_cache', JSON.stringify(updated));
+          window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updated } }));
+        } catch (_) {}
+
+        setIsPostponeModalOpen(false);
+        showToast('የኢቨንቱ ማስተላለፊያ ተሰርዞ ወደ ቀድሞው ቀን ተመልሷል', 'success');
+      } else {
+        showToast(data.error || 'ማስተላለፊያውን መሰረዝ አልተቻለም', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'የኔትወርክ ችግር አጋጥሟል', 'error');
+    } finally {
+      setIsSubmittingPostpone(false);
     }
   };
 
@@ -5808,9 +5957,14 @@ export default function AdminDashboard() {
                                 </div>
                                 <div>
                                   <p className="font-bold text-sm text-dark dark:text-white line-clamp-1">{event.title}</p>
-                                  <div className="text-xs text-gray-500 font-semibold flex items-center gap-1.5">
+                                  <div className="text-xs text-gray-500 font-semibold flex items-center gap-1.5 flex-wrap">
                                     <span>{event.speaker}</span>
-                                    {isEventPassed(event) ? (
+                                    {event.isPostponed || (event as any).status === 'postponed' ? (
+                                      <span className="text-[10px] bg-amber-500/20 text-[#f9b03c] border border-amber-500/40 px-1.5 py-0.2 rounded-md font-black flex items-center gap-1">
+                                        <i className="fa-solid fa-clock-rotate-left text-[8px] text-amber-400"></i>
+                                        <span>ተላልፏል (Postponed)</span>
+                                      </span>
+                                    ) : isEventPassed(event) ? (
                                       <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/40 px-1.5 py-0.2 rounded-md font-black flex items-center gap-1">
                                         <i className="fa-solid fa-clock-rotate-left text-[7px] text-red-400"></i>
                                         <span>ያለፈ (Passed)</span>
@@ -5848,8 +6002,23 @@ export default function AdminDashboard() {
                               </div>
                             </td>
                             <td className="p-4 text-xs text-gray-700 dark:text-gray-300">
-                              <div className="font-bold">{event.date}</div>
-                              <div className="text-gray-500">{event.time}</div>
+                              {event.isPostponed ? (
+                                <div>
+                                  <div className="font-bold text-amber-500 flex items-center gap-1">
+                                    <i className="fa-solid fa-calendar-check text-[10px]"></i>
+                                    <span>{event.postponedTo || event.date}</span>
+                                  </div>
+                                  {Boolean(event.originalDate) && (
+                                    <div className="text-[10px] text-gray-400 line-through">ቀድሞ፦ {event.originalDate}</div>
+                                  )}
+                                  <div className="text-gray-500">{event.time}</div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="font-bold">{event.date}</div>
+                                  <div className="text-gray-500">{event.time}</div>
+                                </div>
+                              )}
                             </td>
                             <td className="p-4 text-xs text-gray-700 dark:text-gray-300">
                               <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold">
@@ -5923,6 +6092,18 @@ export default function AdminDashboard() {
                                 >
                                   <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
                                 </a>
+                                <button
+                                  type="button"
+                                  onClick={() => openPostponeModal(event)}
+                                  className={`w-8 h-8 rounded-lg transition-all active:scale-90 flex items-center justify-center cursor-pointer ${
+                                    event.isPostponed
+                                      ? 'bg-amber-500 text-slate-950 font-bold shadow-[0_0_10px_rgba(245,158,11,0.5)]'
+                                      : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-[#f9b03c] hover:bg-amber-500 hover:text-slate-950'
+                                  }`}
+                                  title={event.isPostponed ? `ኢቨንቱ ተላልፏል (ወደ ${event.postponedTo || event.date}) - አስተካክል / ሰርዝ` : 'ኢቨንቱን ወደ ሌላ ቀን አስተላልፍ (Postpone Event)'}
+                                >
+                                  <i className="fa-solid fa-clock-rotate-left text-xs"></i>
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => openAdjustSeatsModal(event)}
@@ -12450,6 +12631,180 @@ export default function AdminDashboard() {
                     <>
                       <i className="fa-solid fa-check"></i>
                       <span>{(seatAdjustmentMode === 'reduce_registered' || seatAdjustmentMode === 'release') ? 'የተመዘገቡ ሰዎችን ቀንሰህ አስቀምጥ' : 'ክፍት መቀመጫዎችን ቀንሰህ አስቀምጥ'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* 📅 Postpone Event Modal (ኢቨንት ማስተላለፊያ ስርዓት) */}
+      {isPostponeModalOpen && selectedEventForPostpone && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-6 border border-gray-100 dark:border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200 text-dark dark:text-white">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-slate-800 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center text-xl shadow-lg shadow-amber-500/25 font-bold">
+                  <i className="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black tracking-tight text-gray-900 dark:text-white">
+                    ኢቨንት አስተላልፍ (Postpone Event)
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold line-clamp-1">
+                    {selectedEventForPostpone.title}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPostponeModalOpen(false)}
+                className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-colors flex items-center justify-center cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            {/* If Already Postponed: Alert Banner with Option to Cancel Postponement */}
+            {selectedEventForPostpone.isPostponed && (
+              <div className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5">
+                  <i className="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 text-sm"></i>
+                  <div>
+                    <p className="text-xs font-black text-amber-500 uppercase tracking-wider">ይህ ኢቨንት በአሁኑ ሰዓት ተላልፏል</p>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 font-bold mt-0.5">
+                      አዲሱ ቀን፦ <span className="text-amber-400 font-black">{selectedEventForPostpone.postponedTo || selectedEventForPostpone.date}</span>
+                    </p>
+                    {Boolean(selectedEventForPostpone.originalDate) && (
+                      <p className="text-[11px] text-gray-400">የቀድሞ ቀን፦ {selectedEventForPostpone.originalDate}</p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelPostpone}
+                  disabled={isSubmittingPostpone}
+                  className="px-3 py-1.5 rounded-xl bg-red-500/15 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/30 text-xs font-black transition shrink-0 cursor-pointer disabled:opacity-50"
+                  title="ማስተላለፉን ሰርዝና ወደ ቀድሞው ቀን መልስ"
+                >
+                  ማስተላለፉን ሰርዝ
+                </button>
+              </div>
+            )}
+
+            {/* Current Schedule Info Box */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-gray-200/80 dark:border-white/5 space-y-2 mb-5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-500 dark:text-gray-400 font-bold">አሁን ያለው ፕሮግራም፦</span>
+                <span className="font-bold text-gray-800 dark:text-gray-200">
+                  {selectedEventForPostpone.date} • {selectedEventForPostpone.time}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-500 dark:text-gray-400 font-bold">የተመዘገቡ ተሳታፊዎች፦</span>
+                <span className="font-mono font-black text-amber-500">
+                  {selectedEventForPostpone.registeredCount || 0} ተመዝጋቢዎች
+                </span>
+              </div>
+            </div>
+
+            {/* Postpone Form */}
+            <form onSubmit={handleSavePostpone} className="space-y-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  አዲሱ የኢቨንቱ ቀን (New Event Date) <span className="text-danger">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    value={postponeNewDate}
+                    onChange={(e) => setPostponeNewDate(e.target.value)}
+                    placeholder="ለምሳሌ፡ 2026-11-20 ወይም ህዳር 11፣ 2019 / Nov 20, 2026"
+                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition pl-11"
+                  />
+                  <i className="fa-solid fa-calendar-day absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  አዲሱ ሰዓት (New Event Time - Optional)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={postponeNewTime}
+                    onChange={(e) => setPostponeNewTime(e.target.value)}
+                    placeholder="ለምሳሌ፡ 2:00 PM - 5:00 PM (ከሰዓት 8:00 - 11:00)"
+                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition pl-11"
+                  />
+                  <i className="fa-solid fa-clock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  የማስተላለፊያ ምክንያት ወይም ማስታወሻ (Reason / Notice)
+                </label>
+                <textarea
+                  rows={3}
+                  value={postponeReason}
+                  onChange={(e) => setPostponeReason(e.target.value)}
+                  placeholder="ለምሳሌ፡ በአዳራሽ እድሳት እና በቴክኒክ ማስተካከያ ምክንያት ፕሮግራሙ ወደ አዲሱ ቀን ተላልፏል። ቲኬትዎ ለአዲሱ ቀን ሙሉ በሙሉ ያገለግላል።"
+                  className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition resize-none"
+                />
+              </div>
+
+              {/* Automatic Email Notification to Attendees Option */}
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-2">
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={postponeNotifyAttendees}
+                    onChange={(e) => setPostponeNotifyAttendees(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded text-amber-500 focus:ring-amber-500 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600"
+                  />
+                  <div>
+                    <span className="text-xs font-black text-amber-500 flex items-center gap-1.5">
+                      <i className="fa-solid fa-paper-plane text-[10px]"></i>
+                      ቀድመው ለተመዘገቡ ተሳታፊዎች አውቶማቲክ የኢሜይል ማሳወቂያ ይላክ
+                    </span>
+                    <p className="text-[11px] text-gray-600 dark:text-gray-400 font-semibold mt-1">
+                      ኢቨንቱ ወደ ተመረጠው አዲስ ቀን መተላለፉንና የገዟቸው ትኬቶች ሙሉ በሙሉ ትክክለኛ ሆነው እንደሚቀጥሉ የሚያረጋግጥ ይፋዊ ኢሜይል ለሁሉም ተሳታፊዎች ወዲያውኑ ይላካል።
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsPostponeModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  ተመለስ (Cancel)
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingPostpone || !postponeNewDate.trim()}
+                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 hover:shadow-lg hover:shadow-amber-500/20 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isSubmittingPostpone ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      <span>ቀኑን በማስተላለፍና ኢሜይል በመላክ ላይ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-calendar-check"></i>
+                      <span>ቀኑን አስተላልፍና አስቀምጥ (Save & Postpone)</span>
                     </>
                   )}
                 </button>

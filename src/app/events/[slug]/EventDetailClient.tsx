@@ -539,7 +539,12 @@ export default function EventDetailClient() {
           >
               {/* Top Event Badge & Format */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
-              {isPassed ? (
+              {(event.isPostponed || event.status === 'postponed') ? (
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 text-xs font-black tracking-wider uppercase backdrop-blur-md shadow-[0_0_20px_rgba(249,176,60,0.6)] border border-amber-300 animate-pulse">
+                  <i className="fa-solid fa-calendar-days text-xs" />
+                  <span>Postponed to: {event.postponedTo || event.date}</span>
+                </span>
+              ) : isPassed ? (
                 <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-black tracking-wider uppercase backdrop-blur-md shadow-[0_0_20px_rgba(239,68,68,0.3)]">
                   <i className="fa-solid fa-clock-rotate-left text-xs" />
                   <span>ክስተቱ አልፏል • EVENT PASSED</span>
@@ -577,6 +582,28 @@ export default function EventDetailClient() {
               )}
             </div>
 
+            {/* Postponement Prominent Notice Banner */}
+            {(event.isPostponed || event.status === 'postponed') && (
+              <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/40 shadow-[0_0_30px_rgba(249,176,60,0.2)] flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-xl shrink-0 font-black shadow-md mt-0.5">
+                  <i className="fa-solid fa-calendar-days"></i>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider">
+                      ኢቨንቱ ተላልፏል (Event Postponed)
+                    </span>
+                    <strong className="text-sm font-black text-[#f9b03c]">
+                      Postponed to: {event.postponedTo || event.date}
+                    </strong>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-200 mt-1.5 leading-relaxed">
+                    {event.postponedNote || `ይህ ዝግጅት ወደ ${event.postponedTo || event.date} የተላለፈ ሲሆን ቀድመው የተቆረጡ ትኬቶች በሙሉ በአዲሱ ቀን ሙሉ በሙሉ ይሰራሉ!`}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Grid: Details (Left) + Banner Card (Right) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
               
@@ -609,7 +636,14 @@ export default function EventDetailClient() {
                     </div>
                     <div>
                       <p className="text-[10px] uppercase font-bold text-slate-400">ቀን (Date)</p>
-                      <p className="text-xs font-black text-white">{event.date}</p>
+                      <p className="text-xs font-black text-white">
+                        {(event.isPostponed || event.status === 'postponed') ? (
+                          <span className="text-[#f9b03c]">📅 {event.postponedTo || event.date}</span>
+                        ) : event.date}
+                      </p>
+                      {(event.isPostponed || event.status === 'postponed') && event.originalDate && (
+                        <p className="text-[9px] text-gray-500 line-through">ቀድሞ፡ {event.originalDate}</p>
+                      )}
                     </div>
                   </div>
 

@@ -213,10 +213,17 @@ export default function EventBanner({ className = '', onBookClick }: EventBanner
             
             {/* Top Eyebrow Tag */}
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-500/25 to-[#f9b03c]/25 border border-[#f9b03c]/50 text-[#f9b03c] text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-[0_0_15px_rgba(249,176,60,0.3)]">
-                <Sparkles className="w-3 h-3 text-[#f9b03c] animate-pulse" />
-                <span>ልዩ የቀጥታ ክስተት (Featured Event)</span>
-              </span>
+              {(banner.isPostponed || (banner as any).postponedTo) ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-[0_0_15px_rgba(249,176,60,0.6)] border border-amber-300 animate-pulse">
+                  <Calendar className="w-3 h-3" />
+                  <span>Postponed to: {(banner as any).postponedTo || banner.date}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-500/25 to-[#f9b03c]/25 border border-[#f9b03c]/50 text-[#f9b03c] text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-[0_0_15px_rgba(249,176,60,0.3)]">
+                  <Sparkles className="w-3 h-3 text-[#f9b03c] animate-pulse" />
+                  <span>ልዩ የቀጥታ ክስተት (Featured Event)</span>
+                </span>
+              )}
               {banner.speaker && (
                 <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
                   <span>ከ</span>
