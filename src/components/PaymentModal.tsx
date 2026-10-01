@@ -551,7 +551,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                       <div className="flex items-center justify-between text-xs font-bold text-gray-300">
                         <label htmlFor="lakipay-phone-field" className="flex items-center gap-1.5 cursor-pointer">
                           <i className="fa-solid fa-phone text-[#f9b03c]"></i>
-                          <span>የ LakiPay ስልክ ቁጥር (Phone Number)</span>
+                          <span>ስልክ ቁጥር ያስገቡ</span>
                           <span className="text-amber-400">*</span>
                         </label>
                         {cleanPhone.length > 0 && (
@@ -569,7 +569,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                           id="lakipay-phone-field"
                           type="tel"
                           inputMode="numeric"
-                          placeholder="የባንክ፣ የካርድ ወይም የዋሌት ስልክ ቁጥር ያስገቡ"
+                          placeholder="09... ወይም 07... (የባንክ፣ ካርድ ወይም ዋሌት ስልክ ቁጥር)"
                           value={phone}
                           disabled={isPaying}
                           onChange={(e) => {
@@ -591,11 +591,6 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                           </div>
                         )}
                       </div>
-
-                      <p className="text-[10.5px] text-gray-400 flex items-center gap-1.5">
-                        <i className="fa-solid fa-circle-info text-[#f9b03c] text-xs shrink-0"></i>
-                        <span>በቴሌብር (Telebirr) ወይም CBE Birr ክፍያ የሚፈጽሙበትን 10-አሃዝ ስልክ ቁጥር ያስገቡ።</span>
-                      </p>
                     </div>
                   )}
                 </div>
