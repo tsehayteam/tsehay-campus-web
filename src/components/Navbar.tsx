@@ -316,7 +316,7 @@ export default function Navbar() {
 
   const isHomeActive = isHome && (!currentHash || currentHash === '#home');
   const isCoursesActive = isCourses || (isHome && currentHash === '#courses');
-  const isAboutActive = isAbout || (isHome && currentHash === '#about');
+  const isAboutActive = isAbout;
   const isMentorshipActive = isMentorship;
   const isCommunityActive = isCommunity;
 
@@ -514,23 +514,11 @@ export default function Navbar() {
 
               {/* ስለ እኛ */}
               <Link 
-                href={isHome ? "#about" : "/about"} 
+                href="/about" 
                 prefetch={true}
                 onClick={(e) => {
                   closeCurtain();
-                  if (isHome) {
-                    e.preventDefault();
-                    const el = document.getElementById('about');
-                    if (el) {
-                      const offset = 85;
-                      const elementPosition = el.getBoundingClientRect().top + window.scrollY;
-                      window.scrollTo({ top: Math.max(0, elementPosition - offset), behavior: 'smooth' });
-                      try {
-                        window.history.pushState(null, '', '#about');
-                        setCurrentHash('#about');
-                      } catch (err) {}
-                    }
-                  } else if (pathname === '/about') {
+                  if (pathname === '/about') {
                     e.preventDefault();
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
@@ -731,7 +719,7 @@ export default function Navbar() {
               {/* About Us */}
               <button 
                 type="button" 
-                onClick={() => { closeCurtain(); navigateTo(isHome ? '#about' : '/about'); }} 
+                onClick={() => { closeCurtain(); navigateTo('/about'); }} 
                 className={`col-span-2 p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isAboutActive ? 'mobile-nav-card-active' : ''}`}
               >
                 <span className="text-xs font-black text-white font-heading">

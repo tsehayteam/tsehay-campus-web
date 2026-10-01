@@ -981,7 +981,7 @@ export default function HomeClient({
       {/* =========================================================================
           7. INSTRUCTOR YOUTUBE PORTFOLIO (2-Column Terafab Glassmorphism Section)
          ========================================================================= */}
-      <section id="about" className="scrolly-reveal">
+      <section id="portfolio" className="scrolly-reveal">
         <InstructorYouTubePortfolio initialData={initialPortfolio} />
       </section>
       
