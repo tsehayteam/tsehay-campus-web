@@ -8,12 +8,14 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
+import PaywallModal from '@/components/PaywallModal';
 import Footer from '@/components/Footer';
 import TypingCourseTitle from '@/components/TypingCourseTitle';
 import FormattedAiText from '@/components/FormattedAiText';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCleanInstructorImage, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses, formatCleanCategory, fetchLiveCoursesClient } from '@/lib/courseCache';
 import { parseVideoEmbedUrl } from '@/lib/videoParser';
-import { Crown, Sparkles } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
+import { Crown, Sparkles, Lock, CheckCircle2 } from 'lucide-react';
 
 function CoursePreviewContent() {
   const routeParams = useParams();
@@ -21,7 +23,7 @@ function CoursePreviewContent() {
   const id = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : '';
 
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const router = useRouter();
 
   const [allCourses, setAllCourses] = useState<any[]>([]);
@@ -35,8 +37,11 @@ function CoursePreviewContent() {
 
   // Payment/Enrollment states
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
+  const [showPaywallModal, setShowPaywallModal] = useState(false);
+  const [selectedLockedLesson, setSelectedLockedLesson] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
@@ -105,12 +110,23 @@ function CoursePreviewContent() {
 
         // 0. Authoritative Fetch from /api/courses (Supabase)
         try {
-          const apiRes = await fetch(`/api/courses?id=${encodeURIComponent(id)}`);
+          let idToken = '';
+          if (typeof user?.getIdToken === 'function') {
+            idToken = await user.getIdToken().catch(() => '');
+          }
+          const fetchHeaders: Record<string, string> = {};
+          if (idToken) {
+            fetchHeaders['Authorization'] = `Bearer ${idToken}`;
+          }
+          const apiRes = await fetch(`/api/courses?id=${encodeURIComponent(id)}`, { headers: fetchHeaders });
           if (apiRes.ok) {
             const apiData = await apiRes.json();
             if (apiData.success && apiData.course) {
               loadedCourseData = apiData.course;
               loadedCourseId = apiData.course.id || id;
+              if (apiData.course.is_enrolled) {
+                setIsEnrolled(true);
+              }
             }
           }
         } catch (e) {}
@@ -196,6 +212,72 @@ function CoursePreviewContent() {
       unsubscribe();
     };
   }, [id]);
+
+  // Verified Active Enrollment Check
+  useEffect(() => {
+    let isMounted = true;
+
+    const verifyActiveEnrollment = async () => {
+      if (!course) return;
+
+      if (isAdmin) {
+        if (isMounted) setIsEnrolled(true);
+        return;
+      }
+
+      if (!user?.uid) {
+        if (isMounted) setIsEnrolled(false);
+        return;
+      }
+
+      const courseIdentifiers = [course.id, course.slug].filter(Boolean).map(x => String(x).toLowerCase().trim());
+
+      // 1. Fast local cache check
+      try {
+        const cachedEnrolled = localStorage.getItem(`tsehay_enrolled_courses_${user.uid}`);
+        if (cachedEnrolled) {
+          const list = JSON.parse(cachedEnrolled);
+          if (Array.isArray(list) && list.some(cId => courseIdentifiers.includes(String(cId).toLowerCase().trim()))) {
+            if (isMounted) setIsEnrolled(true);
+            return;
+          }
+        }
+        const cachedUserCourses = localStorage.getItem(`tsehay_user_courses_${user.uid}`);
+        if (cachedUserCourses) {
+          const list = JSON.parse(cachedUserCourses);
+          if (Array.isArray(list) && list.some((c: any) => courseIdentifiers.includes(String(c.id || c.slug).toLowerCase().trim()))) {
+            if (isMounted) setIsEnrolled(true);
+            return;
+          }
+        }
+      } catch (e) {}
+
+      // 2. Authoritative Supabase query
+      try {
+        const { data: enrollments, error: enrErr } = await supabase
+          .from('enrollments')
+          .select('id, course_id, status')
+          .eq('user_id', user.uid);
+
+        if (!enrErr && Array.isArray(enrollments)) {
+          const hasActiveEnrollment = enrollments.some((enr: any) => {
+            const enrCourse = String(enr.course_id || '').toLowerCase().trim();
+            const isCompleted = enr.status === 'completed' || enr.status === 'success' || enr.status === 'active' || !enr.status;
+            return isCompleted && (courseIdentifiers.includes(enrCourse) || courseIdentifiers.some(cid => enrCourse.includes(cid) || cid.includes(enrCourse)));
+          });
+
+          if (isMounted) {
+            setIsEnrolled(hasActiveEnrollment);
+          }
+        }
+      } catch (e) {
+        console.warn('Error checking verified enrollment:', e);
+      }
+    };
+
+    verifyActiveEnrollment();
+    return () => { isMounted = false; };
+  }, [user, course, isAdmin]);
 
   // Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll
   useEffect(() => {
@@ -408,7 +490,55 @@ function CoursePreviewContent() {
     );
   }
 
-  const rawVideo = activeVideoUrl || course.previewVideoUrl || course.videoUrl || course.video || (course.lessons && course.lessons[0]?.video) || '';
+  const isPaidCourse = !course?.isFree && course?.price !== 'Free' && Number(course?.price || 0) > 0;
+
+  const isLessonLocked = (lesson: any) => {
+    if (!isPaidCourse) return false;
+    if (isEnrolled || isAdmin) return false;
+    const isFreePreview = Boolean(lesson?.is_free_preview || lesson?.isFreePreview || lesson?.free_preview || lesson?.freePreview);
+    return !isFreePreview;
+  };
+
+  const handleLessonClick = (lesson: any) => {
+    if (isLessonLocked(lesson)) {
+      setSelectedLockedLesson(lesson);
+      setShowPaywallModal(true);
+      return;
+    }
+
+    const targetVideo = lesson.video || lesson.videoUrl || lesson.url;
+    if (targetVideo) {
+      setActiveVideoUrl(targetVideo);
+      setIsPlaying(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Find first available free preview lesson if any
+  const allFlatLessons = modules.flatMap((m: any) => m.lessons || []);
+  const firstFreePreviewLesson = allFlatLessons.find((l: any) => Boolean(l.is_free_preview || l.isFreePreview || l.free_preview || l.freePreview));
+
+  // Determine authorized video URL to prevent unauthorized playback
+  let safeVideoUrl = activeVideoUrl;
+  if (safeVideoUrl && isPaidCourse && !isEnrolled && !isAdmin) {
+    const isPromoTrailer = safeVideoUrl === course.previewVideoUrl || safeVideoUrl === course.videoUrl || safeVideoUrl === course.video;
+    const isAllowedPreview = allFlatLessons.some((l: any) => 
+      (l.is_free_preview || l.isFreePreview || l.free_preview || l.freePreview) && 
+      (l.video === safeVideoUrl || l.videoUrl === safeVideoUrl || l.url === safeVideoUrl)
+    );
+    if (!isPromoTrailer && !isAllowedPreview) {
+      safeVideoUrl = null;
+    }
+  }
+
+  const rawVideo = safeVideoUrl || 
+    course.previewVideoUrl || 
+    course.promoVideoUrl || 
+    course.previewVideo || 
+    course.video || 
+    (firstFreePreviewLesson?.video) || 
+    (!isPaidCourse || isEnrolled || isAdmin ? (course.lessons && course.lessons[0]?.video) : '') || 
+    '';
   const parsedVideo = rawVideo ? parseVideoEmbedUrl(rawVideo, true) : null;
 
   return (
@@ -539,6 +669,24 @@ function CoursePreviewContent() {
                 </span>
               </div>
 
+              {/* Informative Locked Content Banner for Unenrolled Users */}
+              {isPaidCourse && !isEnrolled && (
+                <div className="p-4 rounded-2xl bg-amber-400/[0.06] border border-amber-400/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm animate-in fade-in">
+                  <div className="flex items-center gap-2.5 text-amber-300 font-bold">
+                    <i className="fa-solid fa-lock text-[#f9b03c]"></i>
+                    <span>የኮርሱ ትምህርቶች ክፍያ ይጠይቃሉ። ነፃ ቅምሻዎች ብቻ ክፍት ናቸው።</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleBuyClick}
+                    className="terafab-btn-primary px-4 py-2 rounded-xl text-xs font-black shrink-0 flex items-center gap-1.5 shadow-md hover:scale-105 transition-transform"
+                  >
+                    <i className="fa-solid fa-cart-shopping"></i>
+                    <span>አሁኑኑ ይመዝገቡ (Enroll Now)</span>
+                  </button>
+                </div>
+              )}
+
               {modules.length === 0 ? (
                 <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-6 text-center text-gray-400 text-sm">
                   የኮርሱ ክፍሎች በቅርቡ ሙሉ በሙሉ ይዘረዘራሉ።
@@ -564,27 +712,55 @@ function CoursePreviewContent() {
 
                       {isExpanded && mod.lessons && mod.lessons.length > 0 && (
                         <div className="border-t border-white/10 divide-y divide-white/5 bg-black/30">
-                          {mod.lessons.map((lesson: any, lesIdx: number) => (
-                            <div 
-                              key={lesIdx}
-                              onClick={() => {
-                                if (lesson.video) {
-                                  setActiveVideoUrl(lesson.video);
-                                  setIsPlaying(true);
-                                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }
-                              }}
-                              className="p-3.5 sm:p-4 sm:pl-14 flex items-center justify-between hover:bg-white/[0.03] transition cursor-pointer group text-xs sm:text-sm"
-                            >
-                              <div className="flex items-center gap-3 text-gray-300 group-hover:text-white">
-                                <i className="fa-solid fa-circle-play text-[#3268ba] group-hover:text-[#f9b03c] text-sm group-hover:scale-110 transition-transform duration-300"></i>
-                                <span className="font-medium font-body">{lesson.title}</span>
+                          {mod.lessons.map((lesson: any, lesIdx: number) => {
+                            const locked = isLessonLocked(lesson);
+                            const isFreePreview = !isEnrolled && isPaidCourse && Boolean(lesson.is_free_preview || lesson.isFreePreview || lesson.free_preview || lesson.freePreview);
+
+                            return (
+                              <div 
+                                key={lesIdx}
+                                onClick={() => handleLessonClick(lesson)}
+                                className={`p-3.5 sm:p-4 sm:pl-14 flex items-center justify-between transition cursor-pointer group text-xs sm:text-sm ${
+                                  locked
+                                    ? 'hover:bg-amber-400/[0.04] bg-white/[0.01]'
+                                    : 'hover:bg-white/[0.04]'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 text-gray-300 group-hover:text-white min-w-0 pr-3">
+                                  {locked ? (
+                                    <div className="w-6 h-6 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                      <i className="fa-solid fa-lock text-xs"></i>
+                                    </div>
+                                  ) : isFreePreview ? (
+                                    <div className="w-6 h-6 rounded-lg bg-[#f9b03c]/20 border border-[#f9b03c]/40 text-[#f9b03c] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform animate-pulse">
+                                      <i className="fa-solid fa-play text-xs pl-0.5"></i>
+                                    </div>
+                                  ) : (
+                                    <i className="fa-solid fa-circle-play text-[#3268ba] group-hover:text-[#f9b03c] text-sm group-hover:scale-110 transition-transform duration-300 shrink-0"></i>
+                                  )}
+                                  <span className={`font-medium font-body truncate ${locked ? 'text-gray-400 group-hover:text-gray-200' : 'text-gray-200 group-hover:text-white'}`}>
+                                    {lesson.title}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {locked ? (
+                                    <span className="text-[10px] sm:text-[11px] bg-amber-400/10 border border-amber-400/30 text-amber-300 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                                      <i className="fa-solid fa-lock text-[9px]"></i>
+                                      <span>ተቆልፏል</span>
+                                    </span>
+                                  ) : isFreePreview ? (
+                                    <span className="text-[10px] sm:text-[11px] bg-gradient-to-r from-[#f9b03c]/20 to-amber-500/20 border border-[#f9b03c]/40 text-[#f9b03c] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-[0_0_12px_rgba(249,176,60,0.25)]">
+                                      <i className="fa-solid fa-sparkles text-[9px]"></i>
+                                      <span>ነፃ ቅምሻ</span>
+                                    </span>
+                                  ) : null}
+                                  {lesson.duration && (
+                                    <span className="text-xs text-gray-400 font-mono bg-white/5 px-2.5 py-0.5 rounded-md">{lesson.duration}</span>
+                                  )}
+                                </div>
                               </div>
-                              {lesson.duration && (
-                                <span className="text-xs text-gray-400 font-mono bg-white/5 px-2.5 py-0.5 rounded-md">{lesson.duration}</span>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -624,7 +800,11 @@ function CoursePreviewContent() {
                 ) : (
                   <div 
                     onClick={() => {
-                      if (parsedVideo) setIsPlaying(true);
+                      if (parsedVideo) {
+                        setIsPlaying(true);
+                      } else if (isPaidCourse && !isEnrolled && !isAdmin) {
+                        setShowPaywallModal(true);
+                      }
                     }}
                     className="relative w-full h-full flex items-center justify-center cursor-pointer"
                   >
@@ -634,13 +814,35 @@ function CoursePreviewContent() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-black/45 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-xl shadow-[0_0_30px_rgba(249,176,60,0.6)] group-hover:scale-110 transition-transform pl-1 animate-pulse">
-                        <i className="fa-solid fa-play"></i>
-                      </div>
+                      {parsedVideo ? (
+                        <div className="w-16 h-16 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-xl shadow-[0_0_30px_rgba(249,176,60,0.6)] group-hover:scale-110 transition-transform pl-1 animate-pulse">
+                          <i className="fa-solid fa-play"></i>
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-xl shadow-[0_0_30px_rgba(249,176,60,0.6)] group-hover:scale-110 transition-transform">
+                          <i className="fa-solid fa-lock"></i>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Verified Enrollment / Lock Indicator Badge */}
+              {isEnrolled ? (
+                <div className="flex items-center gap-2 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold">
+                  <i className="fa-solid fa-circle-check text-sm text-emerald-400"></i>
+                  <span>የተረጋገጠ ምዝገባ አለዎት — ሁሉም ክፍሎች ክፍት ናቸው (Enrolled)</span>
+                </div>
+              ) : isPaidCourse ? (
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-amber-400/[0.08] border border-amber-400/20 text-xs text-amber-300">
+                  <div className="flex items-center gap-2 font-bold">
+                    <i className="fa-solid fa-lock text-amber-400"></i>
+                    <span>የተቆለፈ ፕሪሚየም ኮርስ</span>
+                  </div>
+                  <span className="text-[11px] text-gray-400 font-normal">ሙሉውን ለማየት ይመዝገቡ</span>
+                </div>
+              ) : null}
 
               {/* Price Display with Discount Savings */}
               <div className="pt-2">
@@ -661,7 +863,23 @@ function CoursePreviewContent() {
 
               {/* CTAs */}
               <div className="space-y-3 pt-1">
-                {isFree ? (
+                {isEnrolled ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.slug || course.id)}&lesson=0`;
+                      if (typeof window !== 'undefined') {
+                        window.location.href = targetUrl;
+                      } else {
+                        router.push(targetUrl);
+                      }
+                    }}
+                    className="w-full terafab-btn-primary py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.45)] hover:scale-[1.02] transition-transform"
+                  >
+                    <i className="fa-solid fa-graduation-cap"></i>
+                    <span>ወደ መማሪያ ክፍል ይሂዱ (Go to Classroom)</span>
+                  </button>
+                ) : isFree ? (
                   <button
                     type="button"
                     onClick={handleEnroll}
@@ -753,6 +971,18 @@ function CoursePreviewContent() {
           window.dispatchEvent(new CustomEvent('open-auth-modal', { 
             detail: { isSignupMode: isSignup, isSignUp: isSignup } 
           }));
+        }}
+      />
+
+      {/* Paywall Modal for Locked Lessons */}
+      <PaywallModal
+        isOpen={showPaywallModal}
+        onClose={() => setShowPaywallModal(false)}
+        course={course}
+        lesson={selectedLockedLesson}
+        onEnroll={() => {
+          setShowPaywallModal(false);
+          handleBuyClick();
         }}
       />
     </div>

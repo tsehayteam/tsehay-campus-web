@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin, supabaseServer } from '@/lib/supabase/server';
 import { generateCourseSlug, DEFAULT_COURSES, isValidCourse, formatDriveImageUrl, getCleanCourseImage, getCleanInstructorImage, deduplicateCourses } from '@/lib/courseCache';
 import { loadPersistedCourses } from '@/lib/memoryStore';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,6 +86,123 @@ function sanitizeCourseImages(course: any) {
   };
 }
 
+async function checkCourseAccess(req: NextRequest, targetCourse: any): Promise<{ hasAccess: boolean }> {
+  try {
+    if (!targetCourse) return { hasAccess: false };
+    const isFree = targetCourse.isFree || targetCourse.price === 'Free' || targetCourse.price === 0 || targetCourse.price === '0';
+    if (isFree) return { hasAccess: true };
+
+    // 1. Admin fast-path
+    try {
+      const adminCheck = await verifyAdminRequest(req);
+      if (adminCheck && adminCheck.authorized) {
+        return { hasAccess: true };
+      }
+    } catch (e) {}
+
+    // 2. Check Bearer token in Authorization header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return { hasAccess: false };
+    }
+
+    const token = authHeader.split('Bearer ')[1].trim();
+    if (!token) return { hasAccess: false };
+
+    const { data: { user }, error: authErr } = await supabaseServer.auth.getUser(token);
+    if (authErr || !user) return { hasAccess: false };
+
+    // 3. Check enrollment in Supabase enrollments table
+    const targetIds = [targetCourse.id, targetCourse.slug].filter(Boolean).map(x => String(x).toLowerCase().trim());
+    const { data: enrollments, error: enrErr } = await supabaseAdmin
+      .from('enrollments')
+      .select('id, course_id, status')
+      .eq('user_id', user.id);
+
+    if (!enrErr && enrollments && Array.isArray(enrollments)) {
+      const isEnrolled = enrollments.some((enr: any) => {
+        const enrCourse = String(enr.course_id || '').toLowerCase().trim();
+        const isCompleted = enr.status === 'completed' || enr.status === 'success' || enr.status === 'active' || !enr.status;
+        return isCompleted && (targetIds.includes(enrCourse) || targetIds.some(t => enrCourse.includes(t) || t.includes(enrCourse)));
+      });
+      if (isEnrolled) return { hasAccess: true };
+    }
+
+    return { hasAccess: false };
+  } catch (e) {
+    return { hasAccess: false };
+  }
+}
+
+function protectCoursePayload(course: any, hasAccess: boolean) {
+  if (!course || typeof course !== 'object') return course;
+  const isPaidCourse = !course.isFree && course.price !== 'Free' && Number(course.price || 0) > 0;
+
+  // Free course or verified enrollment/admin: return full content
+  if (!isPaidCourse || hasAccess) {
+    return {
+      ...course,
+      is_enrolled: hasAccess,
+      lessons: Array.isArray(course.lessons)
+        ? course.lessons.map((lesson: any) => ({
+            ...lesson,
+            is_locked: false,
+            is_free_preview: Boolean(lesson.is_free_preview || lesson.isFreePreview || lesson.free_preview || lesson.freePreview)
+          }))
+        : course.lessons,
+      modules: Array.isArray(course.modules)
+        ? course.modules.map((m: any) => ({
+            ...m,
+            lessons: Array.isArray(m.lessons)
+              ? m.lessons.map((lesson: any) => ({
+                  ...lesson,
+                  is_locked: false,
+                  is_free_preview: Boolean(lesson.is_free_preview || lesson.isFreePreview || lesson.free_preview || lesson.freePreview)
+                }))
+              : m.lessons
+          }))
+        : course.modules
+    };
+  }
+
+  // Unauthenticated / non-enrolled on paid course: protect locked lesson media!
+  const sanitizeLesson = (lesson: any) => {
+    if (!lesson || typeof lesson !== 'object') return lesson;
+    const isFreePreview = Boolean(lesson.is_free_preview || lesson.isFreePreview || lesson.free_preview || lesson.freePreview);
+    if (isFreePreview) {
+      return {
+        ...lesson,
+        is_locked: false,
+        is_free_preview: true
+      };
+    }
+
+    const { video, videoUrl, url, downloadUrl, resources, materials, attachments, file, ...safe } = lesson;
+    return {
+      ...safe,
+      is_locked: true,
+      is_free_preview: false,
+      video: null,
+      videoUrl: null,
+      url: null,
+      downloadUrl: null,
+      resources: null,
+      materials: null,
+      attachments: null
+    };
+  };
+
+  return {
+    ...course,
+    is_enrolled: false,
+    lessons: Array.isArray(course.lessons) ? course.lessons.map(sanitizeLesson) : [],
+    modules: Array.isArray(course.modules) ? course.modules.map((m: any) => ({
+      ...m,
+      lessons: Array.isArray(m.lessons) ? m.lessons.map(sanitizeLesson) : []
+    })) : []
+  };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -138,13 +256,27 @@ export async function GET(req: NextRequest) {
       const cleanId = courseId.trim();
       const cleanLower = cleanId.toLowerCase();
 
+      const returnSingleCourse = async (rawCourse: any) => {
+        const sanitized = sanitizeCourseImages(rawCourse);
+        singleCourseCache.set(cleanId, { timestamp: now, data: sanitized });
+        singleCourseCache.set(cleanLower, { timestamp: now, data: sanitized });
+        const { hasAccess } = await checkCourseAccess(req, sanitized);
+        const responseData = protectCoursePayload(sanitized, hasAccess);
+        return NextResponse.json(
+          { success: true, course: responseData },
+          { headers: hasAccess ? NO_CACHE_HEADERS : CACHE_HEADERS }
+        );
+      };
+
       // Check single course memory cache
       if (!isFresh) {
         const cachedSingle = singleCourseCache.get(cleanLower) || singleCourseCache.get(cleanId);
         if (cachedSingle && (now - cachedSingle.timestamp < CACHE_TTL_MS)) {
+          const { hasAccess } = await checkCourseAccess(req, cachedSingle.data);
+          const responseData = protectCoursePayload(cachedSingle.data, hasAccess);
           return NextResponse.json(
-            { success: true, course: cachedSingle.data },
-            { headers: CACHE_HEADERS }
+            { success: true, course: responseData },
+            { headers: hasAccess ? NO_CACHE_HEADERS : CACHE_HEADERS }
           );
         }
       }
@@ -161,10 +293,7 @@ export async function GET(req: NextRequest) {
         c.slug === cleanId
       ));
       if (csMatch) {
-        const sanitized = sanitizeCourseImages({ ...csMatch, status: 'coming_soon', isComingSoon: true });
-        singleCourseCache.set(cleanId, { timestamp: now, data: sanitized });
-        singleCourseCache.set(cleanLower, { timestamp: now, data: sanitized });
-        return NextResponse.json({ success: true, course: sanitized }, { headers: CACHE_HEADERS });
+        return await returnSingleCourse({ ...csMatch, status: 'coming_soon', isComingSoon: true });
       }
 
       // Check persistent custom courses
@@ -175,10 +304,7 @@ export async function GET(req: NextRequest) {
         c.slug === cleanId
       ));
       if (customMatch && isValidCourse(customMatch) && customMatch.status !== 'Deleted' && !customMatch.isDeleted) {
-        const sanitized = sanitizeCourseImages(customMatch);
-        singleCourseCache.set(cleanId, { timestamp: now, data: sanitized });
-        singleCourseCache.set(cleanLower, { timestamp: now, data: sanitized });
-        return NextResponse.json({ success: true, course: sanitized }, { headers: CACHE_HEADERS });
+        return await returnSingleCourse(customMatch);
       }
 
       // Check Supabase directly using supabaseAdmin (Bypasses RLS)
@@ -190,10 +316,7 @@ export async function GET(req: NextRequest) {
           .maybeSingle();
 
         if (sbCourse && !sbErr && isValidCourse(sbCourse) && sbCourse.status !== 'Deleted' && !sbCourse.isDeleted) {
-          const sanitized = sanitizeCourseImages(sbCourse);
-          singleCourseCache.set(cleanId, { timestamp: now, data: sanitized });
-          singleCourseCache.set(cleanLower, { timestamp: now, data: sanitized });
-          return NextResponse.json({ success: true, course: sanitized }, { headers: CACHE_HEADERS });
+          return await returnSingleCourse(sbCourse);
         }
       } catch (sbE) {}
 
@@ -205,15 +328,13 @@ export async function GET(req: NextRequest) {
         !deletedCourses.includes(c.slug)
       );
       if (pMatch) {
-        const sanitized = sanitizeCourseImages(pMatch);
-        return NextResponse.json({ success: true, course: sanitized }, { headers: CACHE_HEADERS });
+        return await returnSingleCourse(pMatch);
       }
 
       // Fallback to matching default course
       const defMatch = DEFAULT_COURSES.find(c => (c.id === cleanId || c.slug === cleanLower) && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
       if (defMatch) {
-        const sanitized = sanitizeCourseImages(defMatch);
-        return NextResponse.json({ success: true, course: sanitized }, { headers: CACHE_HEADERS });
+        return await returnSingleCourse(defMatch);
       }
 
       return NextResponse.json({ success: false, error: 'Course not found' }, { status: 404, headers: NO_CACHE_HEADERS });
@@ -223,10 +344,11 @@ export async function GET(req: NextRequest) {
     // 📚 ALL COURSES LOOKUP
     // ==========================================
     if (!isFresh && allCoursesCache && (now - allCoursesCache.timestamp < CACHE_TTL_MS)) {
+      const publicCourses = allCoursesCache.data.courses.map(c => protectCoursePayload(c, false));
       return NextResponse.json({
         success: true,
-        count: allCoursesCache.data.courses.length,
-        courses: allCoursesCache.data.courses
+        count: publicCourses.length,
+        courses: publicCourses
       }, { headers: CACHE_HEADERS });
     }
 
@@ -347,10 +469,12 @@ export async function GET(req: NextRequest) {
       }
     };
 
+    const publicMergedCourses = allMergedCourses.map(c => protectCoursePayload(c, false));
+
     return NextResponse.json({
       success: true,
-      count: allMergedCourses.length,
-      courses: allMergedCourses
+      count: publicMergedCourses.length,
+      courses: publicMergedCourses
     }, { headers: CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error in GET /api/courses:', error);

@@ -43,7 +43,13 @@ export default function CoursePreviewModal({
   if (!isOpen || !course) return null;
 
   const isFree = course.isFree || course.price === 'Free' || course.price === '0' || course.price === 0;
-  const rawVideoUrl = course.video || course.previewVideo || (course.lessons && course.lessons[0]?.video) || 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
+  const rawVideoUrl = 
+    course.promoVideo || 
+    course.previewVideo || 
+    course.video || 
+    (course.lessons && course.lessons.find((l: any) => l.is_free_preview || l.isFreePreview || l.free_preview || l.freePreview)?.video) || 
+    (isFree && course.lessons && course.lessons[0]?.video) || 
+    'https://www.youtube.com/watch?v=mgdOMtW6J8k';
   const parsedVideo = parseVideoEmbedUrl(rawVideoUrl, true);
   const slug = getCourseSlug(course) || course.id;
 

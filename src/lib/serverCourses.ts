@@ -184,7 +184,30 @@ export async function getLiveCoursesServer(): Promise<any[]> {
       });
     });
 
-    const finalResult = deduplicateCourses(Array.from(courseMap.values()));
+    const protectPublicCourse = (c: any) => {
+      if (!c || typeof c !== 'object') return c;
+      const isPaid = !c.isFree && c.price !== 'Free' && Number(c.price || 0) > 0;
+      if (!isPaid) return c;
+
+      const sanitize = (lesson: any) => {
+        if (!lesson || typeof lesson !== 'object') return lesson;
+        const isFreePreview = Boolean(lesson.is_free_preview || lesson.isFreePreview || lesson.free_preview || lesson.freePreview);
+        if (isFreePreview) return { ...lesson, is_locked: false, is_free_preview: true };
+        const { video, videoUrl, url, downloadUrl, resources, materials, attachments, file, ...rest } = lesson;
+        return { ...rest, is_locked: true, is_free_preview: false, video: null, videoUrl: null, url: null, downloadUrl: null };
+      };
+
+      return {
+        ...c,
+        lessons: Array.isArray(c.lessons) ? c.lessons.map(sanitize) : [],
+        modules: Array.isArray(c.modules) ? c.modules.map((m: any) => ({
+          ...m,
+          lessons: Array.isArray(m.lessons) ? m.lessons.map(sanitize) : []
+        })) : []
+      };
+    };
+
+    const finalResult = deduplicateCourses(Array.from(courseMap.values())).map(protectPublicCourse);
     if (finalResult.length > 0) {
       cachedServerCourses = { data: finalResult, timestamp: Date.now() };
     }

@@ -703,7 +703,7 @@ export default function AdminDashboard() {
   });
 
   const [lessons, setLessons] = useState<any[]>([]);
-  const [lessonForm, setLessonForm] = useState({ title: '', duration: '', video: '', desc: '', points: 0 });
+  const [lessonForm, setLessonForm] = useState({ title: '', duration: '', video: '', desc: '', points: 0, is_free_preview: false });
   const [editingLessonIdx, setEditingLessonIdx] = useState<number | null>(null);
 
   // 🎓 Course Segregation (Live Courses vs Coming Soon Courses)
@@ -3644,7 +3644,7 @@ export default function AdminDashboard() {
 
   const openForm = async (course: any = null) => {
     setEditingLessonIdx(null);
-    setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0 });
+    setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0, is_free_preview: false });
 
     if (course) {
       setEditingCourse(course);
@@ -3881,7 +3881,7 @@ export default function AdminDashboard() {
     } else {
       setLessons([...lessons, lessonForm]);
     }
-    setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0 });
+    setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0, is_free_preview: false });
   };
 
   const handleStartEditLesson = (index: number) => {
@@ -3892,7 +3892,8 @@ export default function AdminDashboard() {
       duration: lessonToEdit.duration || '',
       video: lessonToEdit.video || '',
       desc: lessonToEdit.desc || '',
-      points: lessonToEdit.points || 0
+      points: lessonToEdit.points || 0,
+      is_free_preview: Boolean(lessonToEdit.is_free_preview || lessonToEdit.isFreePreview || lessonToEdit.free_preview || lessonToEdit.freePreview)
     });
     setEditingLessonIdx(index);
   };
@@ -10911,6 +10912,15 @@ export default function AdminDashboard() {
                         <input placeholder="የቪዲዮ ሊንክ (Video URL)" value={lessonForm.video} onChange={e => setLessonForm({...lessonForm, video: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
                         <input type="number" placeholder="ነጥብ (Points)" value={lessonForm.points || ''} onChange={e => setLessonForm({...lessonForm, points: Number(e.target.value)})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
                         <input placeholder="የቪዲዮ ማብራሪያ (Description)" value={lessonForm.desc} onChange={e => setLessonForm({...lessonForm, desc: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900 sm:col-span-2" />
+                        <label className="sm:col-span-2 flex items-center gap-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-300/40 dark:border-amber-700/30 p-2.5 rounded-lg cursor-pointer hover:bg-amber-100/50 transition">
+                          <input 
+                            type="checkbox" 
+                            checked={Boolean(lessonForm.is_free_preview)} 
+                            onChange={e => setLessonForm({...lessonForm, is_free_preview: e.target.checked})} 
+                            className="w-4 h-4 text-amber-500 rounded accent-amber-500 cursor-pointer"
+                          />
+                          <span>🔓 ነፃ የሙከራ ትምህርት (Free Preview) - ያለ ክፍያ በቅድመ-ዕይታ ለሁሉም ሰው እንዲታይ ፍቀድ</span>
+                        </label>
                       </div>
                       <p className="text-xs text-gray-500 mb-2 mt-2">መረጃውን ሞልተው ሲጨርሱ ከታች ያለውን አዝራር ተጭነው አስቀምጡ።</p>
                       <div className="flex gap-2 mt-2">
@@ -10919,7 +10929,7 @@ export default function AdminDashboard() {
                           <span>{editingLessonIdx !== null ? 'ለወጡን አስቀምጥ (Save Edits)' : 'ወደ ክፍሎች ዝርዝር ጨምር (Add to List)'}</span>
                         </button>
                         {editingLessonIdx !== null && (
-                          <button type="button" onClick={() => { setEditingLessonIdx(null); setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0 }); }} className="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg text-sm font-bold hover:bg-gray-300 transition cursor-pointer">
+                          <button type="button" onClick={() => { setEditingLessonIdx(null); setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0, is_free_preview: false }); }} className="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg text-sm font-bold hover:bg-gray-300 transition cursor-pointer">
                             ሰርዝ (Cancel)
                           </button>
                         )}
@@ -10944,6 +10954,11 @@ export default function AdminDashboard() {
                                 <div>
                                   <p className="font-bold text-sm text-dark dark:text-white group-hover:text-primary transition-colors flex items-center gap-2">
                                     <span>{lesson.title || `ትምህርት ${lidx + 1}`}</span>
+                                    {Boolean(lesson.is_free_preview || lesson.isFreePreview || lesson.free_preview || lesson.freePreview) && (
+                                      <span className="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-black px-2 py-0.5 rounded-full">
+                                        🔓 ነፃ ቅምሻ (Free Preview)
+                                      </span>
+                                    )}
                                     <span className="text-[10px] text-blue-500 dark:text-primary font-bold underline opacity-80 group-hover:opacity-100 transition-opacity">(ለመቀየር ይጫኑ / Click to edit)</span>
                                   </p>
                                   {lesson.desc && <p className="text-xs text-gray-500 mt-0.5 truncate max-w-xs">{lesson.desc}</p>}
@@ -11012,10 +11027,21 @@ export default function AdminDashboard() {
                                     <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">የቪዲዮ ማብራሪያ (Description)</label>
                                     <input value={lessonForm.desc} onChange={e => setLessonForm({...lessonForm, desc: e.target.value})} className="w-full border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary" />
                                   </div>
+                                  <div className="sm:col-span-2">
+                                    <label className="flex items-center gap-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-300/50 dark:border-amber-700/40 p-2.5 rounded-xl cursor-pointer hover:bg-amber-100/60 transition">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={Boolean(lessonForm.is_free_preview)} 
+                                        onChange={e => setLessonForm({...lessonForm, is_free_preview: e.target.checked})} 
+                                        className="w-4 h-4 text-amber-500 rounded accent-amber-500 cursor-pointer"
+                                      />
+                                      <span>🔓 ነፃ የሙከራ ትምህርት (Free Preview) - ያለ ክፍያ በቅድመ-ዕይታ ለሁሉም ሰው እንዲታይ ፍቀድ</span>
+                                    </label>
+                                  </div>
                                 </div>
 
                                 <div className="flex justify-end gap-2 pt-2 border-t border-gray-200 dark:border-slate-700">
-                                  <button type="button" onClick={() => { setEditingLessonIdx(null); setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0 }); }} className="px-3.5 py-2 rounded-xl bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-300 transition cursor-pointer">
+                                  <button type="button" onClick={() => { setEditingLessonIdx(null); setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0, is_free_preview: false }); }} className="px-3.5 py-2 rounded-xl bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-300 transition cursor-pointer">
                                     ሰርዝ (Cancel)
                                   </button>
                                   <button type="button" onClick={handleAddOrUpdateLesson} className="px-5 py-2 rounded-xl bg-primary text-dark text-xs font-black hover:bg-yellow-400 shadow-md flex items-center gap-1.5 cursor-pointer">

@@ -1007,7 +1007,7 @@ function StudentDashboardContent() {
           } catch (e) {}
         }
 
-        // Resilient fallback for URL courseId
+        // Resilient fallback for URL courseId (only allow if course is free or user is admin)
         if (urlCourseId) {
           const urlMatch = allCatalogCourses.find(c => 
             c.id === urlCourseId || 
@@ -1016,7 +1016,13 @@ function StudentDashboardContent() {
             c.slug?.toLowerCase() === urlCourseId.toLowerCase()
           );
           if (urlMatch && !userCourses.some(c => c.id === urlMatch.id || c.slug === urlMatch.slug)) {
-            userCourses = [urlMatch, ...userCourses];
+            const rawPrice = urlMatch.price;
+            const numPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice || '0').replace(/[^0-9.]/g, ''));
+            const isFree = isNaN(numPrice) || numPrice === 0 || urlMatch.is_free;
+            const isAdmin = (user as any)?.role === 'admin' || user.email === 'admin@tsehay.com';
+            if (isFree || isAdmin) {
+              userCourses = [urlMatch, ...userCourses];
+            }
           }
         }
 
@@ -2294,7 +2300,28 @@ function StudentDashboardContent() {
                                       const isActive = activeLesson?.title === lesson.title;
                                       const isCompleted = progress.includes(lesson.title);
                                       const prevLessonTitle = globalIdx > 0 ? allFlatLessons[globalIdx - 1]?.title : null;
-                                      const isUnlocked = isCourseCompleted || globalIdx === 0 || (prevLessonTitle ? progress.includes(prevLessonTitle) : true);
+
+                                      const isCoursePaid = (() => {
+                                        if (!activeCourse) return false;
+                                        const rawPrice = activeCourse.price;
+                                        const numPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice || '0').replace(/[^0-9.]/g, ''));
+                                        return !isNaN(numPrice) && numPrice > 0 && !activeCourse.is_free;
+                                      })();
+                                      const isEnrolledInCourse = Boolean(
+                                        isProStudent ||
+                                        (user as any)?.role === 'admin' ||
+                                        (activeCourse && courses.some((c: any) => c.id === activeCourse.id || c.slug === activeCourse.slug))
+                                      );
+                                      const hasAccessToCourse = !isCoursePaid || isEnrolledInCourse;
+                                      const isFreePreviewLesson = Boolean(
+                                        lesson.is_free_preview || 
+                                        lesson.isFreePreview || 
+                                        lesson.free_preview || 
+                                        lesson.freePreview
+                                      );
+                                      const isUnlocked = hasAccessToCourse
+                                        ? (isCourseCompleted || globalIdx === 0 || (prevLessonTitle ? progress.includes(prevLessonTitle) : true))
+                                        : isFreePreviewLesson;
 
                                       return (
                                         <button
@@ -2303,7 +2330,13 @@ function StudentDashboardContent() {
                                           disabled={!isUnlocked}
                                           onClick={() => {
                                             if (!isUnlocked) {
-                                              alert("ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                              if (!hasAccessToCourse) {
+                                                if (window.confirm("ይህ ትምህርት የተቆለፈ ነው! ትምህርቱን ለመከታተል እባክዎ መጀመሪያ ይመዝገቡ እና ክፍያ ያጠናቁ። ወደ ኮርሱ መመዝገቢያ ገጽ መሄድ ይፈልጋሉ?")) {
+                                                  window.location.href = `/courses/${activeCourse?.id || ''}`;
+                                                }
+                                              } else {
+                                                alert("ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                              }
                                               return;
                                             }
                                             const selectedLesson = { ...lesson, moduleIndex: mIdx, lessonIndex: lIdx };
@@ -2335,6 +2368,11 @@ function StudentDashboardContent() {
                                             <span className={`truncate text-xs ${isActive ? 'text-[#f9b03c] font-black' : isCompleted ? 'text-emerald-400' : 'text-slate-200'}`}>
                                               {lesson.title}
                                             </span>
+                                            {!hasAccessToCourse && isFreePreviewLesson && (
+                                              <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-black shrink-0">
+                                                ነፃ ቅምሻ
+                                              </span>
+                                            )}
                                           </div>
                                           <div className="shrink-0 text-[10px] text-slate-400 flex items-center gap-1.5">
                                             {lesson.duration && <span>{lesson.duration}</span>}
@@ -2818,6 +2856,51 @@ function StudentDashboardContent() {
                           </div>
                         )}
                         {(() => {
+                            const isCoursePaid = (() => {
+                              if (!activeCourse) return false;
+                              const rawPrice = activeCourse.price;
+                              const numPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice || '0').replace(/[^0-9.]/g, ''));
+                              return !isNaN(numPrice) && numPrice > 0 && !activeCourse.is_free;
+                            })();
+                            const isEnrolledInCourse = Boolean(
+                              isProStudent ||
+                              (user as any)?.role === 'admin' ||
+                              (activeCourse && courses.some((c: any) => c.id === activeCourse.id || c.slug === activeCourse.slug))
+                            );
+                            const hasAccessToCourse = !isCoursePaid || isEnrolledInCourse;
+                            const isFreePreview = Boolean(
+                              activeLesson?.is_free_preview || 
+                              activeLesson?.isFreePreview || 
+                              activeLesson?.free_preview || 
+                              activeLesson?.freePreview
+                            );
+
+                            if (!hasAccessToCourse && !isFreePreview) {
+                              return (
+                                <div className="absolute inset-0 bg-[#080d1a] flex flex-col items-center justify-center p-6 text-center z-20">
+                                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl mb-4 shadow-[0_0_30px_rgba(249,176,60,0.2)]">
+                                    <i className="fa-solid fa-lock"></i>
+                                  </div>
+                                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20 mb-2">
+                                    የተቆለፈ ትምህርት (Locked Lesson)
+                                  </span>
+                                  <h3 className="text-lg sm:text-xl font-black text-white mb-2 max-w-md">
+                                    {activeLesson?.title || 'የተቆለፈ የኮርስ ትምህርት'}
+                                  </h3>
+                                  <p className="text-xs sm:text-sm text-slate-400 max-w-md mb-6 leading-relaxed">
+                                    ይህንን ትምህርት እና የተሟላውን የኮርስ ይዘት ለመከታተል እባክዎ መጀመሪያ ይመዝገቡ እና ክፍያ ያጠናቁ።
+                                  </p>
+                                  <a
+                                    href={`/courses/${activeCourse?.id || ''}`}
+                                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-black text-sm shadow-[0_4px_20px_rgba(249,176,60,0.4)] flex items-center gap-2 cursor-pointer transition active:scale-95"
+                                  >
+                                    <i className="fa-solid fa-graduation-cap"></i>
+                                    <span>አሁኑኑ ይመዝገቡ እና ይክፈሉ (Enroll Now)</span>
+                                  </a>
+                                </div>
+                              );
+                            }
+
                             const rawUrl = activeLesson?.video || activeLesson?.videoUrl || activeLesson?.url || activeCourse?.video || activeCourse?.videoUrl || activeCourse?.promoVideo || activeCourse?.previewVideo;
                             if (!rawUrl) return null;
                             
@@ -3155,14 +3238,41 @@ function StudentDashboardContent() {
                                                             const isCompleted = progress.includes(lesson.title);
                                                             
                                                             const prevLessonTitle = globalIdx > 0 ? allFlatLessons[globalIdx - 1]?.title : null;
-                                                            const isUnlocked = isCourseCompleted || globalIdx === 0 || (prevLessonTitle ? progress.includes(prevLessonTitle) : true);
+
+                                                            const isCoursePaid = (() => {
+                                                              if (!activeCourse) return false;
+                                                              const rawPrice = activeCourse.price;
+                                                              const numPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice || '0').replace(/[^0-9.]/g, ''));
+                                                              return !isNaN(numPrice) && numPrice > 0 && !activeCourse.is_free;
+                                                            })();
+                                                            const isEnrolledInCourse = Boolean(
+                                                              isProStudent ||
+                                                              (user as any)?.role === 'admin' ||
+                                                              (activeCourse && courses.some((c: any) => c.id === activeCourse.id || c.slug === activeCourse.slug))
+                                                            );
+                                                            const hasAccessToCourse = !isCoursePaid || isEnrolledInCourse;
+                                                            const isFreePreviewLesson = Boolean(
+                                                              lesson.is_free_preview || 
+                                                              lesson.isFreePreview || 
+                                                              lesson.free_preview || 
+                                                              lesson.freePreview
+                                                            );
+                                                            const isUnlocked = hasAccessToCourse
+                                                              ? (isCourseCompleted || globalIdx === 0 || (prevLessonTitle ? progress.includes(prevLessonTitle) : true))
+                                                              : isFreePreviewLesson;
 
                                                             return (
                                                                 <div 
                                                                     key={lidx} 
                                                                     onClick={() => {
                                                                         if (!isUnlocked) {
-                                                                            alert("ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                                                            if (!hasAccessToCourse) {
+                                                                                if (window.confirm("ይህ ትምህርት የተቆለፈ ነው! ትምህርቱን ለመከታተል እባክዎ መጀመሪያ ይመዝገቡ እና ክፍያ ያጠናቁ። ወደ ኮርሱ መመዝገቢያ ገጽ መሄድ ይፈልጋሉ?")) {
+                                                                                    window.location.href = `/courses/${activeCourse?.id || ''}`;
+                                                                                }
+                                                                            } else {
+                                                                                alert("ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                                                            }
                                                                             return;
                                                                         }
                                                                         const selectedLesson = {...lesson, moduleIndex: idx, lessonIndex: lidx};
@@ -3192,9 +3302,16 @@ function StudentDashboardContent() {
                                                                             <i className="fa-solid fa-circle-play text-gray-400 text-sm shrink-0"></i>
                                                                         )}
                                                                         <div className="min-w-0">
-                                                                            <p className={`text-xs sm:text-sm font-bold truncate ${isActive ? 'text-primary' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : !isUnlocked ? 'text-gray-400 dark:text-gray-500' : 'text-dark dark:text-white'}`}>
-                                                                                {lesson.title}
-                                                                            </p>
+                                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                                <p className={`text-xs sm:text-sm font-bold truncate ${isActive ? 'text-primary' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : !isUnlocked ? 'text-gray-400 dark:text-gray-500' : 'text-dark dark:text-white'}`}>
+                                                                                    {lesson.title}
+                                                                                </p>
+                                                                                {!hasAccessToCourse && isFreePreviewLesson && (
+                                                                                    <span className="text-[9px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded font-black shrink-0">
+                                                                                        ነፃ ቅምሻ
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
                                                                             <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
                                                                                 <span><i className="fa-solid fa-video"></i> {lesson.duration || '00:00'}</span>
                                                                                 <span className="text-primary font-bold">+{lesson.points || 25} ነጥብ</span>
