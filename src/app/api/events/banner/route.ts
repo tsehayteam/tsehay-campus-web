@@ -4,7 +4,7 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin, supabaseServer } from '@/lib/supabase/server';
-import { DEFAULT_EVENTS, TsehayEvent, formatDriveImageUrl, formatEventBannerUrl } from '@/lib/eventCache';
+import { DEFAULT_EVENTS, TsehayEvent, formatDriveImageUrl, formatEventBannerUrl, isEventPassed, getUpcomingEvents, getNextUpcomingEvent } from '@/lib/eventCache';
 import { loadPersistedEvents, savePersistedEvents } from '@/lib/memoryStore';
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 import { invalidateEventsCache } from '@/app/api/events/route';
@@ -86,34 +86,48 @@ export async function GET(req: NextRequest) {
         }
 
         if (d.banner && (d.active !== false && d.status !== 'inactive')) {
-          const mapped = mapDbRowToEvent({ ...d.banner, status: 'active', isFeatured: true });
-          return NextResponse.json({
-            success: true,
-            active: true,
-            banner: mapped
-          }, { headers: NO_CACHE_HEADERS });
+          // Check if explicit banner has passed its end date/time
+          if (!isEventPassed(d.banner)) {
+            const mapped = mapDbRowToEvent({ ...d.banner, status: 'active', isFeatured: true });
+            return NextResponse.json({
+              success: true,
+              active: true,
+              banner: mapped
+            }, { headers: NO_CACHE_HEADERS });
+          } else {
+            // Banner is expired! Automatically deactivate site_settings in background without blocking
+            try {
+              supabaseAdmin
+                .from('site_settings')
+                .update({
+                  data: { ...d, active: false, status: 'expired', updatedAt: new Date().toISOString() },
+                  updated_at: new Date().toISOString()
+                })
+                .eq('key', 'event_banner')
+                .then(() => {});
+            } catch (_) {}
+            // Fall through to finding the next upcoming event
+          }
         }
       }
     } catch (e) {
       console.warn('Supabase site_settings event_banner fetch warning:', e);
     }
 
-    // 2. Secondary: Query Supabase `events` table for any event marked 'active' or 'published'
+    // 2. Gather candidate events from Supabase `events` table
+    const candidateEvents: TsehayEvent[] = [];
+
     try {
       const { data: dbEvents, error: dbErr } = await supabaseServer
         .from('events')
         .select('*')
-        .in('status', ['active', 'published'])
-        .order('updated_at', { ascending: false })
-        .limit(1);
+        .in('status', ['active', 'published', 'upcoming'])
+        .order('updated_at', { ascending: false });
 
       if (!dbErr && dbEvents && dbEvents.length > 0) {
-        const activeEvent = mapDbRowToEvent({ ...dbEvents[0], status: 'active', isFeatured: true });
-        return NextResponse.json({
-          success: true,
-          active: true,
-          banner: activeEvent
-        }, { headers: NO_CACHE_HEADERS });
+        dbEvents.forEach(row => {
+          candidateEvents.push(mapDbRowToEvent(row));
+        });
       }
     } catch (e) {
       console.warn('Supabase events active banner query warning:', e);
@@ -128,44 +142,67 @@ export async function GET(req: NextRequest) {
         .maybeSingle();
 
       if (evSetting?.data && Array.isArray(evSetting.data)) {
-        const found = evSetting.data.find((e: any) => e.status === 'active' || e.isFeatured === true);
-        if (found) {
-          return NextResponse.json({
-            success: true,
-            active: true,
-            banner: mapDbRowToEvent({ ...found, status: 'active', isFeatured: true })
-          }, { headers: NO_CACHE_HEADERS });
-        }
+        evSetting.data.forEach((e: any) => {
+          if (e && !candidateEvents.some(c => c.id === e.id || c.slug === e.slug)) {
+            candidateEvents.push(mapDbRowToEvent(e));
+          }
+        });
       }
     } catch (e) {}
 
-    // 4. Memory store check
+    // 4. Quaternary: Memory store check
     const inMem = loadPersistedEvents();
     if (inMem && inMem.length > 0) {
-      const activeInMem = inMem.find((e: any) => e.status === 'active' || e.isFeatured === true);
-      if (activeInMem) {
+      inMem.forEach((e: any) => {
+        if (e && !candidateEvents.some(c => c.id === e.id || c.slug === e.slug)) {
+          candidateEvents.push(mapDbRowToEvent(e));
+        }
+      });
+    }
+
+    // 5. Automatically filter out all expired events and sort upcoming chronologically
+    const nonExpiredUpcoming = getUpcomingEvents(candidateEvents);
+
+    if (nonExpiredUpcoming.length > 0) {
+      // First preference: any upcoming event marked active or featured
+      const activeFeatured = nonExpiredUpcoming.find(e => e.status === 'active' || e.isFeatured === true);
+      if (activeFeatured) {
         return NextResponse.json({
           success: true,
           active: true,
-          banner: mapDbRowToEvent({ ...activeInMem, status: 'active', isFeatured: true })
+          banner: { ...activeFeatured, isFeatured: true }
+        }, { headers: NO_CACHE_HEADERS });
+      }
+
+      // Next preference: the earliest upcoming event in sequence
+      const nextUpcoming = nonExpiredUpcoming[0];
+      return NextResponse.json({
+        success: true,
+        active: true,
+        banner: { ...nextUpcoming, isFeatured: true },
+        isFallbackUpcoming: true
+      }, { headers: NO_CACHE_HEADERS });
+    }
+
+    // 6. Fallback if requested and default events are upcoming
+    if (allowDefault && DEFAULT_EVENTS.length > 0) {
+      const upcomingDefaults = getUpcomingEvents(DEFAULT_EVENTS);
+      if (upcomingDefaults.length > 0) {
+        return NextResponse.json({
+          success: true,
+          active: true,
+          banner: mapDbRowToEvent(upcomingDefaults[0]),
+          isDefault: true
         }, { headers: NO_CACHE_HEADERS });
       }
     }
 
-    // 5. Fallback if requested or return inactive
-    if (allowDefault && DEFAULT_EVENTS.length > 0) {
-      return NextResponse.json({
-        success: true,
-        active: true,
-        banner: mapDbRowToEvent(DEFAULT_EVENTS[0]),
-        isDefault: true
-      }, { headers: NO_CACHE_HEADERS });
-    }
-
+    // 7. If all active and upcoming event banners are expired: Gracefully dismiss and return null
     return NextResponse.json({
       success: true,
       active: false,
-      banner: null
+      banner: null,
+      message: 'All event banners expired. Fallen back to default hero layout.'
     }, { headers: NO_CACHE_HEADERS });
 
   } catch (error: any) {

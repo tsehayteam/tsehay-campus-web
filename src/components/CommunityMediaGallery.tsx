@@ -299,7 +299,12 @@ export default function CommunityMediaGallery({
               alt={item.title || "Tsehay Campus Community"}
               className="relative z-10 max-h-[560px] w-auto max-w-full object-contain p-2 sm:p-4 rounded-2xl transition-transform duration-700 ease-out group-hover:scale-[1.01] drop-shadow-2xl"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/assets/about_video_cover.jpg';
+                const target = e.currentTarget as HTMLImageElement;
+                const current = target.src || '';
+                if (current.includes('dropboxusercontent.com') && !target.dataset.retried) {
+                  target.dataset.retried = '1';
+                  target.src = current.replace('dl.dropboxusercontent.com', 'www.dropbox.com');
+                }
               }}
             />
 
@@ -532,7 +537,12 @@ export default function CommunityMediaGallery({
                 className="relative z-10 w-full h-full object-contain p-2 sm:p-3 rounded-[22px] sm:rounded-[26px] select-none pointer-events-none drop-shadow-md"
                 loading="lazy"
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/assets/about_video_cover.jpg';
+                  const target = e.currentTarget as HTMLImageElement;
+                  const current = target.src || '';
+                  if (current.includes('dropboxusercontent.com') && !target.dataset.retried) {
+                    target.dataset.retried = '1';
+                    target.src = current.replace('dl.dropboxusercontent.com', 'www.dropbox.com');
+                  }
                 }}
               />
 

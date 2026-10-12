@@ -79,6 +79,51 @@ export function extractGoogleDriveId(url: string): string {
 }
 
 /**
+ * Checks if a given media URL is an image source based on format, extension, or protocol.
+ * Supports: JPG, JPEG, PNG, WebP, AVIF, GIF, SVG, BMP, ICO, TIFF, HEIC, base64 data URIs, blob URLs, Unsplash, Google CDN.
+ */
+export function isMediaImage(url?: string): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim().toLowerCase();
+  if (trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) return true;
+
+  // Check known image extensions before query params or hash
+  const cleanPath = trimmed.split('?')[0].split('#')[0];
+  const imageExtensions = [
+    '.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.svg', '.bmp', '.ico', '.tiff', '.heic'
+  ];
+  if (imageExtensions.some(ext => cleanPath.endsWith(ext))) {
+    return true;
+  }
+
+  // Also check query string containing image file names (e.g. Dropbox /scl/fi/.../file.png?...)
+  if (
+    trimmed.includes('.jpg?') ||
+    trimmed.includes('.jpeg?') ||
+    trimmed.includes('.png?') ||
+    trimmed.includes('.webp?') ||
+    trimmed.includes('.avif?') ||
+    trimmed.includes('.gif?') ||
+    trimmed.includes('.svg?')
+  ) {
+    return true;
+  }
+
+  // Known direct photo CDNs
+  if (
+    trimmed.includes('images.unsplash.com') ||
+    trimmed.includes('postimg.cc') ||
+    trimmed.includes('i.postimg.cc') ||
+    trimmed.includes('imgur.com') ||
+    trimmed.includes('lh3.googleusercontent.com')
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Normalizes any Dropbox URL to a direct binary download / raw CDN embed URL.
  * Converts:
  * - https://www.dropbox.com/s/.../img.png?dl=0 -> https://dl.dropboxusercontent.com/s/.../img.png?raw=1
@@ -108,7 +153,7 @@ export function parseDropboxImageUrl(url?: string): string {
       fullUrl = 'https://' + fullUrl;
     }
     const parsed = new URL(fullUrl);
-    if (parsed.hostname.includes('dropbox.com')) {
+    if (parsed.hostname.includes('dropbox.com') && !parsed.hostname.includes('dropboxusercontent.com')) {
       parsed.hostname = 'dl.dropboxusercontent.com';
     }
     parsed.searchParams.delete('dl');
@@ -225,20 +270,25 @@ export function getMediaThumbnail(url?: string, fallback: string = 'https://imag
 export function isMediaVideo(url?: string): boolean {
   if (!url || typeof url !== 'string') return false;
   const trimmed = url.trim().toLowerCase();
+
+  // Images (JPG, PNG, WebP, AVIF, SVG, etc.) are never treated as videos
+  if (isMediaImage(trimmed)) return false;
+
   if (extractYouTubeId(url)) return true;
   if (extractVimeoId(url)) return true;
   if (trimmed.includes('<iframe')) return true;
+
+  const cleanPath = trimmed.split('?')[0].split('#')[0];
+  const videoExtensions = ['.mp4', '.webm', '.mov', '.ogg', '.m4v', '.m3u8', '.mkv', '.avi'];
+  if (videoExtensions.some(ext => cleanPath.endsWith(ext))) {
+    return true;
+  }
   if (
-    trimmed.endsWith('.mp4') || 
-    trimmed.endsWith('.webm') || 
-    trimmed.endsWith('.mov') || 
-    trimmed.endsWith('.ogg') ||
-    trimmed.endsWith('.m4v') ||
-    trimmed.endsWith('.m3u8') ||
-    trimmed.includes('.mp4?') ||
-    trimmed.includes('.webm?') ||
-    trimmed.includes('.mov?') ||
+    trimmed.includes('.mp4?') || 
+    trimmed.includes('.webm?') || 
+    trimmed.includes('.mov?') || 
     trimmed.includes('.m3u8?') ||
+    trimmed.includes('.m4v?') ||
     trimmed.includes('/assets/videos/') ||
     trimmed.includes('vimeo.com') ||
     trimmed.includes('mediadelivery.net') ||
@@ -248,15 +298,22 @@ export function isMediaVideo(url?: string): boolean {
   ) {
     return true;
   }
+
   if (trimmed.includes('dropbox.com') || trimmed.includes('dropboxusercontent.com')) {
+    // Only video if it explicitly has a video file extension or /videos/ path segment
     return (
-      trimmed.includes('.mp4') || 
-      trimmed.includes('.mov') || 
-      trimmed.includes('.webm') || 
-      trimmed.includes('raw=1') ||
-      trimmed.includes('video')
+      cleanPath.endsWith('.mp4') || 
+      cleanPath.endsWith('.mov') || 
+      cleanPath.endsWith('.webm') || 
+      cleanPath.endsWith('.m4v') ||
+      cleanPath.endsWith('.mkv') ||
+      trimmed.includes('.mp4?') ||
+      trimmed.includes('.mov?') ||
+      trimmed.includes('.webm?') ||
+      trimmed.includes('/videos/')
     );
   }
+
   if (trimmed.includes('drive.google.com')) {
     return (
       trimmed.includes('/preview') || 
@@ -559,12 +616,13 @@ export function normalizeCommunityMediaItems(data: any): CommunityMediaItem[] {
     const results: CommunityMediaItem[] = [];
     data.forEach((item, idx) => {
       if (typeof item === 'string') {
-        const u = item.trim();
+        const u = formatCloudStorageUrl(item.trim());
         if (u) {
           results.push({ id: `cm-${idx}-${u.slice(-8)}`, url: u, title: '', fit: 'cover' });
         }
       } else if (item && typeof item === 'object') {
-        const u = item.url || item.mediaUrl || item.imageUrl || item.videoUrl || item.src || '';
+        const raw = (item.url || item.mediaUrl || item.imageUrl || item.videoUrl || item.src || '').trim();
+        const u = formatCloudStorageUrl(raw);
         if (typeof u === 'string' && u.trim()) {
           results.push({
             id: String(item.id || `cm-${idx}-${u.slice(-8)}`),
@@ -586,11 +644,11 @@ export function normalizeCommunityMediaItems(data: any): CommunityMediaItem[] {
 
   const single = data.mediaUrl || data.url || data.imageUrl || data.videoUrl;
   if (single && typeof single === 'string' && single.trim()) {
-    return [{ id: 'cm-legacy-1', url: single.trim(), title: '', fit: 'cover' }];
+    return [{ id: 'cm-legacy-1', url: formatCloudStorageUrl(single.trim()), title: '', fit: 'cover' }];
   }
 
   if (typeof data === 'string' && data.trim()) {
-    return [{ id: 'cm-str-1', url: data.trim(), title: '', fit: 'cover' }];
+    return [{ id: 'cm-str-1', url: formatCloudStorageUrl(data.trim()), title: '', fit: 'cover' }];
   }
 
   return [];

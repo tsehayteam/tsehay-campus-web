@@ -482,7 +482,7 @@ export default function AdminDashboard() {
   // About Video State
   const [aboutVideoUrl, setAboutVideoUrl] = useState('https://www.youtube.com/embed/mgdOMtW6J8k');
   const [aboutVideoTitle, setAboutVideoTitle] = useState('Tsehay Campus Introduction');
-  const [aboutVideoThumbnail, setAboutVideoThumbnail] = useState('/assets/about_video_cover.jpg');
+  const [aboutVideoThumbnail, setAboutVideoThumbnail] = useState('');
   const [aboutPreviewMode, setAboutPreviewMode] = useState<'thumbnail' | 'player'>('thumbnail');
   const [isSavingAboutVideo, setIsSavingAboutVideo] = useState(false);
   const [aboutVideoSavedMessage, setAboutVideoSavedMessage] = useState('');
@@ -2085,7 +2085,7 @@ export default function AdminDashboard() {
           const title = json.title || json.data?.title;
           if (url) setAboutVideoUrl(url);
           if (title) setAboutVideoTitle(title);
-          if (thumb) setAboutVideoThumbnail(thumb);
+          if (thumb) setAboutVideoThumbnail(formatCloudStorageUrl(thumb));
         }
       })
       .catch(() => {
@@ -2097,7 +2097,7 @@ export default function AdminDashboard() {
               const thumb = json.data.thumbnail || json.data.thumbnailUrl || json.data.thumbUrl || json.data.poster;
               if (url) setAboutVideoUrl(url);
               if (json.data.title) setAboutVideoTitle(json.data.title);
-              if (thumb) setAboutVideoThumbnail(thumb);
+              if (thumb) setAboutVideoThumbnail(formatCloudStorageUrl(thumb));
             }
           })
           .catch(e => console.warn("About video API load error:", e));
@@ -2473,7 +2473,7 @@ export default function AdminDashboard() {
       alert("እባክዎ የቪዲዮ ሊንክ ያስገቡ (YouTube, Google Drive, Dropbox, Direct MP4)።");
       return;
     }
-    const cleanThumb = aboutVideoThumbnail.trim();
+    const cleanThumb = formatCloudStorageUrl(aboutVideoThumbnail.trim());
     const cleanTitle = (aboutVideoTitle || 'ስለ ፀሐይ ካምፓስ').trim();
 
     setIsSavingAboutVideo(true);
@@ -2585,7 +2585,7 @@ export default function AdminDashboard() {
     const cleanItems = itemsToSave
       .map((it) => ({
         id: it.id || 'cm-' + Math.random().toString(36).substring(2, 7),
-        url: it.url.trim(),
+        url: formatCloudStorageUrl(it.url.trim()),
         title: it.title ? it.title.trim() : '',
         fit: it.fit || 'cover'
       }))
@@ -2681,7 +2681,11 @@ export default function AdminDashboard() {
   const handleCommunityMediaChange = (idx: number, field: 'url' | 'title' | 'fit', value: any) => {
     setAboutCommunityMediaList((prev) => {
       const copy = [...prev];
-      copy[idx] = { ...copy[idx], [field]: value };
+      let finalVal = value;
+      if (field === 'url' && typeof value === 'string') {
+        finalVal = formatCloudStorageUrl(value);
+      }
+      copy[idx] = { ...copy[idx], [field]: finalVal };
       return copy;
     });
   };
@@ -2699,7 +2703,7 @@ export default function AdminDashboard() {
       const existing = prev.filter((x) => x.url.trim());
       const newItems = lines.map((url, i) => ({
         id: 'cm-' + Date.now() + '-' + i,
-        url,
+        url: formatCloudStorageUrl(url),
         title: '',
         fit: 'cover' as const
       }));
@@ -8840,9 +8844,14 @@ export default function AdminDashboard() {
                     <div className="relative">
                       <input 
                         type="text" 
-                        placeholder="e.g. Google Drive Link, PostImage, Unsplash ወይም የፎቶ ሊንክ (ባዶ ከተዉት ከቪዲዮው በራሱ ያመጣል)" 
+                        placeholder="e.g. Dropbox Link, Google Drive Link, Unsplash ወይም የፎቶ ሊንክ (ባዶ ከተዉት ከቪዲዮው በራሱ ያመጣል)" 
                         value={aboutVideoThumbnail}
-                        onChange={(e) => setAboutVideoThumbnail(e.target.value)}
+                        onChange={(e) => setAboutVideoThumbnail(formatCloudStorageUrl(e.target.value))}
+                        onBlur={(e) => {
+                          if (e.target.value) {
+                            setAboutVideoThumbnail(formatCloudStorageUrl(e.target.value));
+                          }
+                        }}
                         className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition pr-10 font-mono"
                       />
                       {aboutVideoThumbnail && (
@@ -8857,8 +8866,9 @@ export default function AdminDashboard() {
                       )}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                      <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-md">Dropbox Direct / Raw Link Supported</span>
                       <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md">Google Drive Image Link Supported</span>
-                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-md">Direct Image URLs (.jpg, .png, .webp)</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-md">Direct Image URLs (.jpg, .png, .webp, .avif)</span>
                     </div>
                   </div>
 
@@ -8894,7 +8904,14 @@ export default function AdminDashboard() {
                                 alt="Thumbnail Preview"
                                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                                 onError={(e) => {
-                                  e.currentTarget.src = '/assets/hero-bg-new.jpg';
+                                  const target = e.currentTarget as HTMLImageElement;
+                                  const current = target.src || '';
+                                  if (current.includes('dropboxusercontent.com') && !target.dataset.retried) {
+                                    target.dataset.retried = '1';
+                                    target.src = current.replace('dl.dropboxusercontent.com', 'www.dropbox.com');
+                                  } else if (!customThumb) {
+                                    target.src = '/assets/hero-bg-new.jpg';
+                                  }
                                 }}
                               />
                               {/* Subtle Vignette Scrim */}
@@ -9125,7 +9142,10 @@ export default function AdminDashboard() {
                                     alt="Preview"
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
-                                      (e.target as HTMLImageElement).src = '/assets/about_video_cover.jpg';
+                                      const target = e.target as HTMLImageElement;
+                                      if (target.src.includes('dropbox.com') && !target.src.includes('raw=1')) {
+                                        target.src = formatCloudStorageUrl(target.src);
+                                      }
                                     }}
                                   />
                                 ) : (

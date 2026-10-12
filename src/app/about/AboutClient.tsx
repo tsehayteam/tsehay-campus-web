@@ -707,7 +707,14 @@ function AboutHeroPlayer({
                 alt="Tsehay Campus Video" 
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 onError={(e) => { 
-                  (e.target as HTMLImageElement).src = 'https://img.youtube.com/vi/mgdOMtW6J8k/hqdefault.jpg'; 
+                  const target = e.target as HTMLImageElement;
+                  const current = target.src || '';
+                  if (current.includes('dropboxusercontent.com') && !target.dataset.retried) {
+                    target.dataset.retried = '1';
+                    target.src = current.replace('dl.dropboxusercontent.com', 'www.dropbox.com');
+                  } else if (!customThumb) {
+                    target.src = 'https://img.youtube.com/vi/mgdOMtW6J8k/hqdefault.jpg'; 
+                  }
                 }}
               />
 

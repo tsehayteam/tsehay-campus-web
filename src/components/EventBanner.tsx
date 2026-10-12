@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { TsehayEvent, formatEventBannerUrl, DEFAULT_EVENT_BANNER } from '@/lib/eventCache';
+import { TsehayEvent, formatEventBannerUrl, DEFAULT_EVENT_BANNER, isEventPassed } from '@/lib/eventCache';
 import { supabase } from '@/lib/supabase/client';
 import { Calendar, Clock, MapPin, Globe, Sparkles, X, Ticket, ArrowRight } from 'lucide-react';
 
@@ -18,8 +18,10 @@ export default function EventBanner({ className = '', onBookClick }: EventBanner
       const cached = localStorage.getItem('tsehay_event_banner_cache');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed && parsed.id && parsed.status !== 'inactive') {
+        if (parsed && parsed.id && parsed.status !== 'inactive' && !isEventPassed(parsed)) {
           return parsed;
+        } else if (parsed && isEventPassed(parsed)) {
+          localStorage.removeItem('tsehay_event_banner_cache');
         }
       }
     } catch (_) {}
@@ -41,7 +43,7 @@ export default function EventBanner({ className = '', onBookClick }: EventBanner
 
       if (res.ok) {
         const data = await res.json();
-        if (data && data.success && data.active && data.banner) {
+        if (data && data.success && data.active && data.banner && !isEventPassed(data.banner)) {
           const b = data.banner;
           // Check if user previously dismissed THIS specific event in current session
           const dismissedInSession = sessionStorage.getItem(`tsehay_banner_dismissed_${b.id}`) === 'true';
@@ -54,7 +56,7 @@ export default function EventBanner({ className = '', onBookClick }: EventBanner
             localStorage.setItem('tsehay_event_banner_cache', JSON.stringify(b));
           } catch (_) {}
         } else {
-          // If inactive or null
+          // If inactive, expired, or all banners expired
           setIsActive(false);
           setBanner(null);
           try {
@@ -68,6 +70,27 @@ export default function EventBanner({ className = '', onBookClick }: EventBanner
       setIsLoading(false);
     }
   }, []);
+
+  // Real-time Expiration Checker: automatically dismisses banner the moment event date/time passes
+  useEffect(() => {
+    if (!banner) return;
+
+    const checkAutoExpiration = () => {
+      if (isEventPassed(banner)) {
+        setIsActive(false);
+        setBanner(null);
+        try {
+          localStorage.removeItem('tsehay_event_banner_cache');
+        } catch (_) {}
+        // Proactively fetch next upcoming event or fall back to default layout
+        fetchLiveBanner();
+      }
+    };
+
+    checkAutoExpiration();
+    const interval = setInterval(checkAutoExpiration, 10000);
+    return () => clearInterval(interval);
+  }, [banner, fetchLiveBanner]);
 
   useEffect(() => {
     fetchLiveBanner();
@@ -138,8 +161,8 @@ export default function EventBanner({ className = '', onBookClick }: EventBanner
     }
   };
 
-  // If not active, no banner data, or dismissed by user for this session, render nothing
-  if (!isActive || !banner || isDismissed || banner.status === 'inactive') {
+  // If not active, no banner data, expired, or dismissed by user for this session, render nothing
+  if (!isActive || !banner || isDismissed || banner.status === 'inactive' || isEventPassed(banner)) {
     return null;
   }
 

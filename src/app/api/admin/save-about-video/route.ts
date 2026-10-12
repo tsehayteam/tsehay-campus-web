@@ -4,6 +4,7 @@ import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore
 import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 import { invalidateServerCoursesCache } from '@/lib/serverCourses';
 import { revalidatePath } from 'next/cache';
+import { formatCloudStorageUrl } from '@/lib/videoParser';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,8 @@ export async function GET(req: NextRequest) {
       if (row?.data) {
         const data = row.data;
         const videoUrl = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumbnail = data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster || '';
+        const rawThumb = data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster || '';
+        const thumbnail = formatCloudStorageUrl(rawThumb);
         const title = data?.title || 'ስለ ፀሐይ ካምፓስ';
         if (videoUrl || thumbnail) {
           return NextResponse.json({ success: true, videoUrl, url: videoUrl, thumbnail, title, data });
@@ -71,7 +73,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'የቪዲዮ ሊንክ አልተገለጸም (Video URL is required)' }, { status: 400 });
     }
 
-    const thumbnail = (
+    const rawThumb = (
       body.thumbnail || 
       body.thumbnailUrl || 
       body.thumbUrl || 
@@ -80,6 +82,7 @@ export async function POST(req: NextRequest) {
       body.data?.thumbnailUrl || 
       ''
     ).trim();
+    const thumbnail = formatCloudStorageUrl(rawThumb);
 
     const title = (body.title || body.data?.title || 'ስለ ፀሐይ ካምፓስ').trim();
 

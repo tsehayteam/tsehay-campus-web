@@ -399,7 +399,7 @@ export function getEventCountdown(event: TsehayEvent | any, now: Date = new Date
 }
 
 /**
- * Automatically determines whether an event has passed by comparing eventDate & eventTime with new Date().
+ * Automatically determines whether an event has passed by comparing its end date/time (or eventDate & eventTime) with current time.
  */
 export function isEventPassed(eventOrDate: any, rawTime?: string): boolean {
   if (!eventOrDate) return false;
@@ -408,6 +408,16 @@ export function isEventPassed(eventOrDate: any, rawTime?: string): boolean {
     const st = (eventOrDate.status || '').toLowerCase().trim();
     if (st === 'passed' || st === 'completed' || st === 'expired') {
       return true;
+    }
+
+    // 1. Check explicit end date/time fields if present
+    const endDateStr = eventOrDate.endDate || eventOrDate.end_date || eventOrDate.expiresAt || eventOrDate.expires_at || '';
+    const endTimeStr = eventOrDate.endTime || eventOrDate.end_time || rawTime || eventOrDate.time || eventOrDate.eventTime || eventOrDate.event_time || '';
+    if (endDateStr && typeof endDateStr === 'string' && endDateStr.trim()) {
+      const endObj = parseEventDate(endDateStr, endTimeStr);
+      if (endObj) {
+        return endObj.getTime() < Date.now();
+      }
     }
   }
 
@@ -425,6 +435,33 @@ export function isEventPassed(eventOrDate: any, rawTime?: string): boolean {
   if (!eventDateObj) return false;
 
   return eventDateObj.getTime() < Date.now();
+}
+
+/**
+ * Returns all upcoming (non-passed, active/upcoming) events sorted chronologically ascending.
+ */
+export function getUpcomingEvents(events: (TsehayEvent | any)[]): TsehayEvent[] {
+  if (!Array.isArray(events)) return [];
+  return (events as any[])
+    .filter((ev): ev is TsehayEvent => {
+      if (!ev) return false;
+      const st = String(ev.status || '').toLowerCase().trim();
+      if (st === 'inactive' || st === 'passed' || st === 'expired' || st === 'completed') return false;
+      return !isEventPassed(ev);
+    })
+    .sort((a, b) => {
+      const aDate = parseEventDate(a.date || (a as any).eventDate || (a as any).event_date, a.time || (a as any).eventTime || (a as any).event_time)?.getTime() || 0;
+      const bDate = parseEventDate(b.date || (b as any).eventDate || (b as any).event_date, b.time || (b as any).eventTime || (b as any).event_time)?.getTime() || 0;
+      return aDate - bDate;
+    });
+}
+
+/**
+ * Returns the next upcoming event from a list of events, or null if all are expired.
+ */
+export function getNextUpcomingEvent(events: (TsehayEvent | any)[]): TsehayEvent | null {
+  const upcoming = getUpcomingEvents(events);
+  return upcoming.length > 0 ? upcoming[0] : null;
 }
 
 /**

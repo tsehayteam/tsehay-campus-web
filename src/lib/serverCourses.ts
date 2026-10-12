@@ -1,7 +1,7 @@
 import { supabaseServer, supabaseAdmin } from '@/lib/supabase/server';
 import { DEFAULT_COURSES, formatCourseDesc, deduplicateCourses } from '@/lib/courseCache';
 import { loadPersistedCourses, sharedSiteSettingsCache } from '@/lib/memoryStore';
-import { CommunityMediaItem, normalizeCommunityMediaItems } from '@/lib/videoParser';
+import { CommunityMediaItem, normalizeCommunityMediaItems, formatCloudStorageUrl } from '@/lib/videoParser';
 
 const COURSE_COLUMNS_PROJECTION = [
   'id',
@@ -303,14 +303,14 @@ export async function getLiveAboutVideoDataServer(): Promise<LiveAboutVideoData>
       const url = data.url || data.videoUrl || data.youtubeUrl;
       const thumb = data.thumbnail || data.thumbnailUrl || data.thumbUrl || data.poster;
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
-      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
+      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = formatCloudStorageUrl(thumb.trim());
       if (data.title && typeof data.title === 'string' && data.title.trim()) result.title = data.title.trim();
     } else if (sharedSiteSettingsCache.has('about_video')) {
       const cached = sharedSiteSettingsCache.get('about_video');
       const url = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
       const thumb = cached?.thumbnail || cached?.thumbnailUrl || cached?.thumbUrl || cached?.poster;
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
-      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
+      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = formatCloudStorageUrl(thumb.trim());
       if (cached?.title && typeof cached.title === 'string' && cached.title.trim()) result.title = cached.title.trim();
     }
 
@@ -322,7 +322,7 @@ export async function getLiveAboutVideoDataServer(): Promise<LiveAboutVideoData>
       const url = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
       const thumb = cached?.thumbnail || cached?.thumbnailUrl || cached?.thumbUrl || cached?.poster;
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
-      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
+      if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = formatCloudStorageUrl(thumb.trim());
       if (cached?.title && typeof cached.title === 'string' && cached.title.trim()) result.title = cached.title.trim();
     }
   }
