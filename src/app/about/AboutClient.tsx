@@ -320,7 +320,7 @@ export default function AboutClient({
                   </div>
                 </div>
 
-                {/* Ribka Teshome */}
+                {/* Biriktawit Aboneh */}
                 <div className="group relative w-full sm:w-[380px] rounded-[24px] overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
                   <div 
                     className="relative rounded-[24px] p-8 sm:p-10 text-center flex flex-col items-center transition-all duration-500 h-full"
@@ -341,17 +341,17 @@ export default function AboutClient({
                     <div className="relative mb-6">
                       <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-[#f9b03c]/50 group-hover:border-[#f9b03c] group-hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] transition-all duration-500 bg-slate-900">
                         <img 
-                          src="/assets/ribka2.jpg" 
-                          alt="Ribka Teshome" 
+                          src="/assets/biriktawit.webp" 
+                          alt="Biriktawit Aboneh - General Manager" 
                           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" 
-                          onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Ribka+Teshome&background=000000&color=fff&size=160'; }} 
+                          onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Biriktawit+Aboneh&background=000000&color=fff&size=160'; }} 
                         />
                       </div>
                     </div>
                     
                     {/* Crisp Typography */}
-                    <h3 className="font-bold text-white text-xl sm:text-2xl mb-2 notranslate whitespace-nowrap tracking-tight">
-                      ርብቃ ተሾመ (Ribka Teshome)
+                    <h3 className="font-bold text-white text-xl sm:text-2xl mb-2 notranslate sm:whitespace-nowrap tracking-tight">
+                      ብርክታዊት አቦነህ (Biriktawit Aboneh)
                     </h3>
                     <p className="text-sm font-bold text-[#f9b03c] tracking-wide mb-1">
                       ዋና ስራ አስኪያጅ
