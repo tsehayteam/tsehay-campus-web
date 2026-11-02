@@ -101,11 +101,11 @@ export default function ExitIntentSlideIn() {
     <aside
       role="complementary"
       aria-label="የኦሬንቴሽን መረጃ ማግኘት"
-      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9950] max-w-sm w-[calc(100%-2rem)] rounded-3xl border border-amber-500/35 bg-neutral-900/95 backdrop-blur-2xl p-5 sm:p-6 text-white shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(249,176,60,0.2)] animate-in fade-in slide-in-from-bottom-5 duration-300 transition-all select-none"
+      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9950] max-w-sm w-[calc(100%-2rem)] rounded-3xl border border-[#262626] bg-[#0a0a0a]/95 backdrop-blur-2xl p-5 sm:p-6 text-white shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(249,176,60,0.15)] animate-in fade-in slide-in-from-bottom-5 duration-300 transition-all select-none"
     >
       {/* Decorative ambient lighting flairs */}
-      <div className="pointer-events-none absolute -top-14 -left-14 h-32 w-32 rounded-full bg-[#f9b03c]/15 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-14 -right-14 h-32 w-32 rounded-full bg-[#24A1DE]/20 blur-2xl" />
+      <div className="pointer-events-none absolute -top-14 -left-14 h-32 w-32 rounded-full bg-[#f9b03c]/10 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-14 -right-14 h-32 w-32 rounded-full bg-[#24A1DE]/15 blur-2xl" />
 
       {/* Prominent Tap Target Close (X) Button */}
       <button

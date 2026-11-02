@@ -46,17 +46,17 @@ export default function ContextualOfferCard({
       role="region"
       aria-label="የTsehay Ecosystem ጥቅል ጉርሻ"
       style={{ padding: '16px' }}
-      className="my-6 rounded-2xl border border-amber-500/35 bg-neutral-900/90 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.6),0_0_20px_rgba(249,176,60,0.12)] relative overflow-hidden transition-all duration-300 hover:border-amber-500/60"
+      className="my-6 rounded-2xl border border-[#262626] bg-[#0d0d0d] backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.6),0_0_20px_rgba(249,176,60,0.08)] relative overflow-hidden transition-all duration-300 hover:border-amber-500/40"
     >
       {/* Ambient background flairs */}
-      <div className="pointer-events-none absolute -top-16 -right-16 h-36 w-36 rounded-full bg-[#f9b03c]/15 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-16 -left-16 h-36 w-36 rounded-full bg-[#3268ba]/15 blur-2xl" />
+      <div className="pointer-events-none absolute -top-16 -right-16 h-36 w-36 rounded-full bg-[#f9b03c]/10 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-16 -left-16 h-36 w-36 rounded-full bg-[#3268ba]/10 blur-2xl" />
 
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left Column: Headline, Body & Bonus Inclusions */}
         <div className="space-y-2.5 flex-1">
           {/* Bonus Pill Badge */}
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-0.5 text-[11px] font-black text-[#f9b03c] tracking-wide">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-[#262626] bg-amber-500/10 px-3 py-0.5 text-[11px] font-black text-[#f9b03c] tracking-wide">
             <Gift className="w-3.5 h-3.5 stroke-[2.2] text-[#f9b03c]" />
             <span>ልዩ ስጦታ • INCLUDED FREE BONUS</span>
           </div>
