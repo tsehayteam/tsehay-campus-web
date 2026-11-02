@@ -326,7 +326,8 @@ export default function Navbar() {
       {!isCurtainOpen && (
         <div 
           id="tsehay-navbar-capsule"
-          className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-[9990] animate-in fade-in"
+          style={{ top: 'calc(0.75rem + var(--top-announcement-height, 0px))' }}
+          className="fixed flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-[9990] animate-in fade-in"
           title={lang === 'en' ? 'Main Menu / Open' : 'ዋና ማውጫ / ክፈት'}
         >
           {/* Main Menu Capsule Button - Strictly Contained Within Header */}

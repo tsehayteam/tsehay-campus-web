@@ -8,7 +8,7 @@ const TermsModal = dynamic(() => import('@/components/TermsModal'), { ssr: false
 const PWAInstallBanner = dynamic(() => import('@/components/PWAInstallBanner'), { ssr: false });
 const FloatingAIButton = dynamic(() => import('@/components/FloatingAIButton'), { ssr: false });
 const StudentFeedbackModal = dynamic(() => import('@/components/StudentFeedbackModal'), { ssr: false });
-const SheinCouponPopup = dynamic(() => import('@/components/SheinCouponPopup'), { ssr: false });
+const ExitIntentSlideIn = dynamic(() => import('@/components/ExitIntentSlideIn'), { ssr: false });
 
 export default function GlobalModals() {
   return (
@@ -18,7 +18,7 @@ export default function GlobalModals() {
       <PWAInstallBanner />
       <FloatingAIButton />
       <StudentFeedbackModal />
-      <SheinCouponPopup />
+      <ExitIntentSlideIn />
     </>
   );
 }

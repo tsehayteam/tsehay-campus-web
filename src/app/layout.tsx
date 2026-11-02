@@ -12,6 +12,7 @@ import SmoothScrollAndScrollyProvider from "@/components/scrollytelling/SmoothSc
 import PageTransitionWrapper from "@/components/scrollytelling/PageTransitionWrapper";
 import TsehayExperienceProvider from "@/components/experience/TsehayExperienceProvider";
 
+import TopAnnouncementBar from "@/components/TopAnnouncementBar";
 import GlobalModals from "@/components/GlobalModals";
 
 // 1. Primary Amharic Font
@@ -281,6 +282,7 @@ export default function RootLayout({
               <TsehayExperienceProvider />
               
               <div id="tsehay-page-wrapper" className="w-full min-h-screen">
+                <TopAnnouncementBar />
                 <ContentProtection />
                 <Navbar />
                 

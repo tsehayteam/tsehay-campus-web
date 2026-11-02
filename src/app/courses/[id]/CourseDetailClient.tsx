@@ -12,6 +12,7 @@ import PaywallModal from '@/components/PaywallModal';
 import Footer from '@/components/Footer';
 import TypingCourseTitle from '@/components/TypingCourseTitle';
 import FormattedAiText from '@/components/FormattedAiText';
+import ContextualOfferCard from '@/components/ContextualOfferCard';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCleanInstructorImage, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses, formatCleanCategory, fetchLiveCoursesClient } from '@/lib/courseCache';
 import { parseVideoEmbedUrl } from '@/lib/videoParser';
 import { supabase } from '@/lib/supabase/client';
@@ -688,82 +689,102 @@ function CoursePreviewContent() {
               )}
 
               {modules.length === 0 ? (
-                <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-6 text-center text-gray-400 text-sm">
-                  የኮርሱ ክፍሎች በቅርቡ ሙሉ በሙሉ ይዘረዘራሉ።
-                </div>
+                <>
+                  <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-6 text-center text-gray-400 text-sm">
+                    የኮርሱ ክፍሎች በቅርቡ ሙሉ በሙሉ ይዘረዘራሉ።
+                  </div>
+                  <ContextualOfferCard 
+                    onRegister={handleBuyClick} 
+                    course={course} 
+                    checkoutElementId="course-checkout-card" 
+                  />
+                </>
               ) : (
                 modules.map((mod, modIdx) => {
                   const isExpanded = expandedModules[mod.id] ?? true;
+                  const isMidway = modIdx === Math.max(0, Math.floor(modules.length / 2) - 1);
+
                   return (
-                    <div key={mod.id || modIdx} className="bg-slate-900/85 border border-white/10 rounded-2xl overflow-hidden shadow-lg transition">
-                      <button
-                        type="button"
-                        onClick={() => setExpandedModules(prev => ({ ...prev, [mod.id]: !prev[mod.id] }))}
-                        className="w-full p-4 sm:p-5 flex items-center justify-between text-left font-bold text-sm sm:text-base hover:bg-white/[0.04] transition cursor-pointer"
-                      >
-                        <span className="text-white flex items-center gap-3 font-heading">
-                          <span className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#3268ba] to-[#1e4585] text-white text-xs font-black flex items-center justify-center shadow-md">
-                            {modIdx + 1}
+                    <React.Fragment key={mod.id || modIdx}>
+                      <div className="bg-slate-900/85 border border-white/10 rounded-2xl overflow-hidden shadow-lg transition">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedModules(prev => ({ ...prev, [mod.id]: !prev[mod.id] }))}
+                          className="w-full p-4 sm:p-5 flex items-center justify-between text-left font-bold text-sm sm:text-base hover:bg-white/[0.04] transition cursor-pointer"
+                        >
+                          <span className="text-white flex items-center gap-3 font-heading">
+                            <span className="w-7 h-7 rounded-xl bg-gradient-to-tr from-[#3268ba] to-[#1e4585] text-white text-xs font-black flex items-center justify-center shadow-md">
+                              {modIdx + 1}
+                            </span>
+                            <span className="text-sm sm:text-base">{mod.title || `Module ${modIdx + 1}`}</span>
                           </span>
-                          <span className="text-sm sm:text-base">{mod.title || `Module ${modIdx + 1}`}</span>
-                        </span>
-                        <i className={`fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[#f9b03c]' : ''}`}></i>
-                      </button>
+                          <i className={`fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[#f9b03c]' : ''}`}></i>
+                        </button>
 
-                      {isExpanded && mod.lessons && mod.lessons.length > 0 && (
-                        <div className="border-t border-white/10 divide-y divide-white/5 bg-black/30">
-                          {mod.lessons.map((lesson: any, lesIdx: number) => {
-                            const locked = isLessonLocked(lesson);
-                            const isFreePreview = !isEnrolled && isPaidCourse && Boolean(lesson.is_free_preview || lesson.isFreePreview || lesson.free_preview || lesson.freePreview);
+                        {isExpanded && mod.lessons && mod.lessons.length > 0 && (
+                          <div className="border-t border-white/10 divide-y divide-white/5 bg-black/30">
+                            {mod.lessons.map((lesson: any, lesIdx: number) => {
+                              const locked = isLessonLocked(lesson);
+                              const isFreePreview = !isEnrolled && isPaidCourse && Boolean(lesson.is_free_preview || lesson.isFreePreview || lesson.free_preview || lesson.freePreview);
 
-                            return (
-                              <div 
-                                key={lesIdx}
-                                onClick={() => handleLessonClick(lesson)}
-                                className={`p-3.5 sm:p-4 sm:pl-14 flex items-center justify-between transition cursor-pointer group text-xs sm:text-sm ${
-                                  locked
-                                    ? 'hover:bg-amber-400/[0.04] bg-white/[0.01]'
-                                    : 'hover:bg-white/[0.04]'
-                                }`}
-                              >
-                                <div className="flex items-center gap-3 text-gray-300 group-hover:text-white min-w-0 pr-3">
-                                  {locked ? (
-                                    <div className="w-6 h-6 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                      <i className="fa-solid fa-lock text-xs"></i>
-                                    </div>
-                                  ) : isFreePreview ? (
-                                    <div className="w-6 h-6 rounded-lg bg-[#f9b03c]/20 border border-[#f9b03c]/40 text-[#f9b03c] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform animate-pulse">
-                                      <i className="fa-solid fa-play text-xs pl-0.5"></i>
-                                    </div>
-                                  ) : (
-                                    <i className="fa-solid fa-circle-play text-[#3268ba] group-hover:text-[#f9b03c] text-sm group-hover:scale-110 transition-transform duration-300 shrink-0"></i>
-                                  )}
-                                  <span className={`font-medium font-body truncate ${locked ? 'text-gray-400 group-hover:text-gray-200' : 'text-gray-200 group-hover:text-white'}`}>
-                                    {lesson.title}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  {locked ? (
-                                    <span className="text-[10px] sm:text-[11px] bg-amber-400/10 border border-amber-400/30 text-amber-300 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                                      <i className="fa-solid fa-lock text-[9px]"></i>
-                                      <span>ተቆልፏል</span>
+                              return (
+                                <div 
+                                  key={lesIdx}
+                                  onClick={() => handleLessonClick(lesson)}
+                                  className={`p-3.5 sm:p-4 sm:pl-14 flex items-center justify-between transition cursor-pointer group text-xs sm:text-sm ${
+                                    locked
+                                      ? 'hover:bg-amber-400/[0.04] bg-white/[0.01]'
+                                      : 'hover:bg-white/[0.04]'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3 text-gray-300 group-hover:text-white min-w-0 pr-3">
+                                    {locked ? (
+                                      <div className="w-6 h-6 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                        <i className="fa-solid fa-lock text-xs"></i>
+                                      </div>
+                                    ) : isFreePreview ? (
+                                      <div className="w-6 h-6 rounded-lg bg-[#f9b03c]/20 border border-[#f9b03c]/40 text-[#f9b03c] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform animate-pulse">
+                                        <i className="fa-solid fa-play text-xs pl-0.5"></i>
+                                      </div>
+                                    ) : (
+                                      <i className="fa-solid fa-circle-play text-[#3268ba] group-hover:text-[#f9b03c] text-sm group-hover:scale-110 transition-transform duration-300 shrink-0"></i>
+                                    )}
+                                    <span className={`font-medium font-body truncate ${locked ? 'text-gray-400 group-hover:text-gray-200' : 'text-gray-200 group-hover:text-white'}`}>
+                                      {lesson.title}
                                     </span>
-                                  ) : isFreePreview ? (
-                                    <span className="text-[10px] sm:text-[11px] bg-gradient-to-r from-[#f9b03c]/20 to-amber-500/20 border border-[#f9b03c]/40 text-[#f9b03c] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-[0_0_12px_rgba(249,176,60,0.25)]">
-                                      <i className="fa-solid fa-sparkles text-[9px]"></i>
-                                      <span>ነፃ ቅምሻ</span>
-                                    </span>
-                                  ) : null}
-                                  {lesson.duration && (
-                                    <span className="text-xs text-gray-400 font-mono bg-white/5 px-2.5 py-0.5 rounded-md">{lesson.duration}</span>
-                                  )}
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {locked ? (
+                                      <span className="text-[10px] sm:text-[11px] bg-amber-400/10 border border-amber-400/30 text-amber-300 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                                        <i className="fa-solid fa-lock text-[9px]"></i>
+                                        <span>ተቆልፏል</span>
+                                      </span>
+                                    ) : isFreePreview ? (
+                                      <span className="text-[10px] sm:text-[11px] bg-gradient-to-r from-[#f9b03c]/20 to-amber-500/20 border border-[#f9b03c]/40 text-[#f9b03c] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-[0_0_12px_rgba(249,176,60,0.25)]">
+                                        <i className="fa-solid fa-sparkles text-[9px]"></i>
+                                        <span>ነፃ ቅምሻ</span>
+                                      </span>
+                                    ) : null}
+                                    {lesson.duration && (
+                                      <span className="text-xs text-gray-400 font-mono bg-white/5 px-2.5 py-0.5 rounded-md">{lesson.duration}</span>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* STEP 3: Contextual Bonus Offer Card midway through curriculum */}
+                      {isMidway && (
+                        <ContextualOfferCard 
+                          onRegister={handleBuyClick} 
+                          course={course} 
+                          checkoutElementId="course-checkout-card" 
+                        />
                       )}
-                    </div>
+                    </React.Fragment>
                   );
                 })
               )}
@@ -775,7 +796,7 @@ function CoursePreviewContent() {
           {/* RIGHT COLUMN: Sticky Video Preview & Checkout Card       */}
           {/* ======================================================== */}
           <div className="lg:col-span-5 lg:sticky lg:top-28 space-y-6">
-            <div className="bg-slate-900/90 border border-white/15 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-2xl p-6 sm:p-7 space-y-6">
+            <div id="course-checkout-card" className="bg-slate-900/90 border border-white/15 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-2xl p-6 sm:p-7 space-y-6">
               
               {/* Video Player / Thumbnail Preview */}
               <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-white/10 shadow-lg group">

@@ -396,6 +396,71 @@ export default function HeroSection({
           <p className="mx-auto mt-2 sm:mt-3 max-w-xl text-xs sm:text-sm md:text-base font-normal tracking-wide text-neutral-400">
             The right skills. The right guidance. A career that sets you apart.
           </p>
+
+          {/* Primary Hero CTA & Guarantee Conversion Touchpoint */}
+          <div className="mt-5 sm:mt-6 flex flex-col items-center justify-center">
+            <a
+              href="/courses/shein-import-business?checkout=1"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  const defaultCourse = {
+                    id: 'shein-import-business',
+                    slug: 'shein-import-business',
+                    title: 'የሼን ኢምፖርት ቢዝነስ ስልጠና (Shein Import Business Course)',
+                    price: 4500,
+                    oldPrice: 6000,
+                    isFree: false
+                  };
+                  window.dispatchEvent(
+                    new CustomEvent('open-payment-modal', { detail: { course: defaultCourse } })
+                  );
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 sm:px-8 sm:py-4 rounded-2xl bg-[#f9b03c] hover:bg-[#ffb947] text-neutral-950 font-black text-sm sm:text-base tracking-wide shadow-[0_10px_30px_rgba(249,176,60,0.4)] hover:shadow-[0_14px_40px_rgba(249,176,60,0.6)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer group"
+            >
+              <span>በLakiPay አሁኑኑ ይመዝገቡ</span>
+              <svg 
+                className="w-4 h-4 text-neutral-950 transition-transform duration-200 group-hover:translate-x-1" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </a>
+
+            {/* STEP 2: Hero Section Guarantee Badge */}
+            <div
+              className="flex items-center justify-center gap-1.5 sm:gap-2 text-center"
+              style={{
+                marginTop: '8px',
+                fontSize: '14px',
+                fontFamily: 'Montserrat, Roboto, sans-serif',
+                color: '#9ca3af',
+              }}
+            >
+              <svg
+                className="w-4 h-4 shrink-0 text-emerald-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="leading-snug">
+                በመጀመሪያው የአካል ኦሬንቴሽን ካልረኩ ሙሉ ክፍያዎ ያለምንም ቅድመ-ሁኔታ ተመላሽ ይደረጋል።
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* 2. የቀደመው የቪዲዮ አኒሜሽን (Restored Smooth Float/Pulse Animation) */}
