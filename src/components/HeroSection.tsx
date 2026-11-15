@@ -398,59 +398,6 @@ export default function HeroSection({
             The right skills. The right guidance. A career that sets you apart.
           </p>
 
-          {/* Primary Hero CTA & Guarantee Conversion Touchpoint */}
-          <div className="mt-5 sm:mt-6 flex flex-col items-center justify-center">
-            <a
-              href="/courses/shein-import-business?checkout=1"
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  const defaultCourse = {
-                    id: 'shein-import-business',
-                    slug: 'shein-import-business',
-                    title: 'የሼን ኢምፖርት ቢዝነስ ስልጠና (Shein Import Business Course)',
-                    price: 4500,
-                    oldPrice: 6000,
-                    isFree: false
-                  };
-                  window.dispatchEvent(
-                    new CustomEvent('open-payment-modal', { detail: { course: defaultCourse } })
-                  );
-                }
-              }}
-              className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 sm:px-8 sm:py-4 rounded-2xl bg-[#f9b03c] hover:bg-[#ffb947] text-neutral-950 font-black text-sm sm:text-base tracking-wide shadow-[0_10px_30px_rgba(249,176,60,0.4)] hover:shadow-[0_14px_40px_rgba(249,176,60,0.6)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer group"
-            >
-              <span>በLakiPay አሁኑኑ ይመዝገቡ</span>
-              <svg 
-                className="w-4 h-4 text-neutral-950 transition-transform duration-200 group-hover:translate-x-1" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M5 12h14" />
-                <path d="m12 5 7 7-7 7" />
-              </svg>
-            </a>
-
-            {/* STEP 2: Hero Section Guarantee Badge */}
-            <div
-              className="flex items-center justify-center gap-1.5 sm:gap-2 text-center"
-              style={{
-                marginTop: '8px',
-                fontSize: '14px',
-                fontFamily: 'Montserrat, Roboto, sans-serif',
-                color: '#9ca3af',
-              }}
-            >
-              <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400 stroke-[2.2]" />
-              <span className="leading-snug">
-                በመጀመሪያው የአካል ኦሬንቴሽን ካልረኩ ሙሉ ክፍያዎ ያለምንም ቅድመ-ሁኔታ ተመላሽ ይደረጋል።
-              </span>
-            </div>
-          </div>
         </div>
 
         {/* 2. የቀደመው የቪዲዮ አኒሜሽን (Restored Smooth Float/Pulse Animation) */}
@@ -540,6 +487,61 @@ export default function HeroSection({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Primary Hero CTA & Guarantee Conversion Touchpoint (Directly below Hero Video) */}
+        <div className="mt-6 sm:mt-8 flex flex-col items-center justify-center">
+          <a
+            href="/register?returnUrl=%2Fcourses%2Fshein-import-business%3Fcheckout%3D1&courseId=shein-import-business"
+            onClick={(e) => {
+              if (typeof window !== 'undefined') {
+                e.preventDefault();
+                const defaultCourse = {
+                  id: 'shein-import-business',
+                  slug: 'shein-import-business',
+                  title: 'የሼን ኢምፖርት ቢዝነስ ስልጠና (Shein Import Business Course)',
+                  price: 4500,
+                  oldPrice: 6000,
+                  isFree: false
+                };
+                window.dispatchEvent(
+                  new CustomEvent('open-payment-modal', { detail: { course: defaultCourse } })
+                );
+              }
+            }}
+            className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 sm:px-8 sm:py-4 rounded-2xl bg-[#f9b03c] hover:bg-[#ffb947] text-neutral-950 font-black text-sm sm:text-base tracking-wide shadow-[0_10px_30px_rgba(249,176,60,0.4)] hover:shadow-[0_14px_40px_rgba(249,176,60,0.6)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer group"
+          >
+            <span>ምዝገባና ክፍያዎን በ45 ሰከንድ ያጠናቅቁ</span>
+            <svg 
+              className="w-4 h-4 text-neutral-950 transition-transform duration-200 group-hover:translate-x-1" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
+          </a>
+
+          {/* Hero Guarantee Line */}
+          <div
+            className="flex items-center justify-center gap-1.5 sm:gap-2 text-center"
+            style={{
+              marginTop: '10px',
+              fontSize: '14px',
+              fontFamily: 'Montserrat, Roboto, sans-serif',
+              color: '#9ca3af',
+            }}
+          >
+            <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400 stroke-[2.2]" />
+            <span className="leading-snug">
+              በመጀመሪያው የአካል ኦሬንቴሽን ካልረኩ ሙሉ ክፍያዎ ያለምንም ቅድመ-ሁኔታ ተመላሽ ይደረጋል።
+            </span>
           </div>
         </div>
       </div>

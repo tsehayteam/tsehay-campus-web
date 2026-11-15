@@ -66,8 +66,8 @@ export const DEFAULT_COURSES = [
     title: "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)",
     description: "የራስዎን የዩቲዩብ ቻናል ከዜሮ በመጀመር በወር በሺዎች የሚቆጠሩ ዶላሮችን የሚያስገኝ የተሳካ ቻናል ለመገንባት የሚያስችል አጠቃላይ ስልጠና።",
     desc: "የራስዎን የዩቲዩብ ቻናል ከዜሮ በመጀመር በወር በሺዎች የሚቆጠሩ ዶላሮችን የሚያስገኝ የተሳካ ቻናል ለመገንባት የሚያስችል አጠቃላይ ስልጠና።",
-    price: 3500,
-    oldPrice: 5000,
+    price: 900,
+    oldPrice: 1500,
     status: "Active",
     isFree: false,
     category: "YouTube & Content Creation",
@@ -439,7 +439,7 @@ export function mergeCoursesLists(...lists: any[][]): any[] {
 /**
  * Reads verified live course data previously synced from Firestore or LocalStorage cache.
  */
-export const COURSE_CACHE_VERSION = 'v6_2026_dropbox_direct_cdn';
+export const COURSE_CACHE_VERSION = 'v7_2026_live_pricing_sync';
 
 export function getCachedCourses(): any[] {
   if (typeof window === 'undefined') return DEFAULT_COURSES;

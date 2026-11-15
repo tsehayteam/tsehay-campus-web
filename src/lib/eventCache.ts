@@ -314,8 +314,8 @@ export function getEventCountdown(event: TsehayEvent | any, now: Date = new Date
       minutes: 0,
       seconds: 0,
       diffMs: 0,
-      countdownText: 'ክስተቱ አልፏል',
-      badgeText: 'ኩነት አልፏል (EVENT PASSED)',
+      countdownText: 'ክስተቱ አልቋል',
+      badgeText: 'ክስተቱ አልቋል / Event Closed',
       badgeType: 'passed',
       buttonText: 'ምዝገባ ተዘግቷል / Registration Closed',
       canBook: false
@@ -336,8 +336,8 @@ export function getEventCountdown(event: TsehayEvent | any, now: Date = new Date
       minutes: 0,
       seconds: 0,
       diffMs: 0,
-      countdownText: 'ክስተቱ አልፏል',
-      badgeText: 'ኩነት አልፏል (EVENT PASSED)',
+      countdownText: 'ክስተቱ አልቋል',
+      badgeText: 'ክስተቱ አልቋል / Event Closed',
       badgeType: 'passed',
       buttonText: 'ምዝገባ ተዘግቷል / Registration Closed',
       canBook: false

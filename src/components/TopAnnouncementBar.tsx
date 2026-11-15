@@ -2,18 +2,20 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { X, Flame, Clock } from 'lucide-react';
+import { X, Clock } from 'lucide-react';
 
-const STORAGE_KEY = 'tsehay_top_announcement_dismissed';
 const DEADLINE_STORAGE_KEY = 'tsehay_batch_target_deadline';
 
-// Default cycle duration: 2 days, 18 hours, 45 minutes
-const CYCLE_DURATION_MS = (2 * 24 * 60 * 60 + 18 * 60 * 60 + 45 * 60) * 1000;
+// Default cycle duration: 2 days, 14 hours, 35 minutes, 12 seconds
+const CYCLE_DURATION_MS = (2 * 24 * 60 * 60 + 14 * 60 * 60 + 35 * 60 + 12) * 1000;
+const INITIAL_DELAY_MS = 16000; // Slide down smoothly after 16s of browsing
+const REAPPEAR_DELAY_MS = 90000; // Reappear periodically per session if dismissed
 
 export default function TopAnnouncementBar() {
-  const [isDismissed, setIsDismissed] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
   const barRef = useRef<HTMLDivElement | null>(null);
+  const reappearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Live Countdown State
   const [timeLeft, setTimeLeft] = useState<{
@@ -30,22 +32,21 @@ export default function TopAnnouncementBar() {
 
   useEffect(() => {
     setMounted(true);
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved === 'true') {
-        setIsDismissed(true);
-        document.documentElement.style.setProperty('--top-announcement-height', '0px');
-      } else {
-        setIsDismissed(false);
-      }
-    } catch {
-      setIsDismissed(false);
-    }
+    document.documentElement.style.setProperty('--top-announcement-height', '0px');
+
+    const initialTimer = setTimeout(() => {
+      setIsVisible(true);
+    }, INITIAL_DELAY_MS);
+
+    return () => {
+      clearTimeout(initialTimer);
+      if (reappearTimerRef.current) clearTimeout(reappearTimerRef.current);
+    };
   }, []);
 
   // Live Dynamic Countdown with Automatic Batch Renewal
   useEffect(() => {
-    if (!mounted || isDismissed) return;
+    if (!mounted || !isVisible) return;
 
     const getOrInitDeadline = (): number => {
       try {
@@ -97,13 +98,13 @@ export default function TopAnnouncementBar() {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [mounted, isDismissed]);
+  }, [mounted, isVisible]);
 
   // Keep navbar capsule offset in sync with announcement bar height
   useEffect(() => {
     if (!mounted) return;
 
-    if (isDismissed) {
+    if (!isVisible) {
       document.documentElement.style.setProperty('--top-announcement-height', '0px');
       return;
     }
@@ -118,16 +119,15 @@ export default function TopAnnouncementBar() {
     updateHeight();
     window.addEventListener('resize', updateHeight);
     return () => window.removeEventListener('resize', updateHeight);
-  }, [isDismissed, mounted]);
+  }, [isVisible, mounted]);
 
   const handleDismiss = () => {
-    setIsDismissed(true);
+    setIsVisible(false);
     document.documentElement.style.setProperty('--top-announcement-height', '0px');
-    try {
-      localStorage.setItem(STORAGE_KEY, 'true');
-    } catch (e) {
-      console.warn('Could not save announcement dismissal state:', e);
-    }
+    if (reappearTimerRef.current) clearTimeout(reappearTimerRef.current);
+    reappearTimerRef.current = setTimeout(() => {
+      setIsVisible(true);
+    }, REAPPEAR_DELAY_MS);
   };
 
   const handleCtaClick = () => {
@@ -146,7 +146,7 @@ export default function TopAnnouncementBar() {
     }
   };
 
-  if (!mounted || isDismissed) {
+  if (!mounted || !isVisible) {
     return null;
   }
 
@@ -157,7 +157,7 @@ export default function TopAnnouncementBar() {
         id="tsehay-top-announcement-bar"
         role="banner"
         aria-label="Cohort Registration Announcement"
-        className="sticky top-0 left-0 right-0 z-[9998] w-full bg-[#0a0a0a] border-b border-[#262626] text-white shadow-lg select-none transition-all duration-300"
+        className="sticky top-0 left-0 right-0 z-[9998] w-full bg-[#0a0a0a] border-b border-[#262626] text-white shadow-lg select-none transition-all duration-500 animate-in slide-in-from-top-full fade-in"
       >
         <div className="max-w-[1500px] mx-auto px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4 text-xs sm:text-[13px]">
           {/* Left spacing placeholder for centered visual alignment */}
@@ -166,13 +166,13 @@ export default function TopAnnouncementBar() {
           {/* Center Content Row: Status Icon -> Shimmer Text -> Live Monospaced Countdown -> Solid CTA */}
           <div className="flex flex-wrap md:flex-nowrap items-center justify-center gap-2 sm:gap-3.5 flex-1 text-center font-normal leading-snug">
             
-            {/* Live Status Indicator: Radar Pulse dot + Crisp SVG Flame */}
+            {/* Live Status Indicator: Radar Pulse dot + Lucide Clock SVG */}
             <div className="inline-flex items-center gap-1.5 shrink-0">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-80" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#f9b03c] shadow-[0_0_8px_#f9b03c]" />
               </span>
-              <Flame className="w-3.5 h-3.5 text-[#f9b03c] fill-[#f9b03c]/20 shrink-0" />
+              <Clock className="w-3.5 h-3.5 text-[#f9b03c] shrink-0" />
             </div>
 
             {/* Highlight Text with Animated Linear-Gradient Shimmer */}

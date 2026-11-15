@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { validateReferralCode, recordReferralUsage } from '@/lib/referralService';
 import { getCleanCourseImage } from '@/lib/courseCache';
+import { normalizeEthiopianMobileInput, isValidNineDigitEthPhone, formatPhoneForLakiPay } from '@/lib/phoneAuthHelper';
 
 export default function PaymentModal({ course: propCourse, onClose: propOnClose }: any) {
   const router = useRouter();
@@ -59,7 +60,10 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
       } catch (e) {}
     }
     if (resolvedPhone) {
-      setPhone(prev => prev || resolvedPhone);
+      const normalized = normalizeEthiopianMobileInput(resolvedPhone);
+      if (normalized) {
+        setPhone(prev => prev || normalized);
+      }
     }
   }, [user, isOpen, propCourse]);
 
@@ -177,9 +181,9 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
     ? 0 
     : Math.max(0, Math.round(originalPrice * (1 - discountPercent / 100)));
 
-  // Clean & Validate Ethiopian 10-digit phone number (e.g. 09... or 07...)
-  const cleanPhone = phone.replace(/[\s\-()]/g, '').replace(/^(\+?251)/, '0');
-  const isPhoneValid = /^(09|07)\d{8}$/.test(cleanPhone);
+  // Clean & Validate Ethiopian 9-digit mobile number starting with 9 (e.g. 912345678)
+  const cleanPhone = normalizeEthiopianMobileInput(phone);
+  const isPhoneValid = isValidNineDigitEthPhone(cleanPhone);
 
   // Validate and Apply Promo Code
   const validateAndApplyCode = async (codeToTest?: string) => {
@@ -224,9 +228,11 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
     setIsPaying(true);
     setError(null);
 
-    // 1. Authentication Check
+    // 1. Authentication Check — Zero-Deadlock Registration Redirect
     if (!user) {
       setIsPaying(false);
+      const targetSlug = course?.slug || course?.id || 'shein-import-business';
+      const returnDest = `/courses/${encodeURIComponent(targetSlug)}?checkout=1`;
       try {
         sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
           type: 'buy',
@@ -240,11 +246,11 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           courseTitle: course?.title,
           course: course
         }));
+        sessionStorage.setItem('tsehay_auth_return_url', returnDest);
       } catch (e) {}
 
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignUp: false, isSignupMode: false } }));
-      }
+      handleClose();
+      router.push(`/register?returnUrl=${encodeURIComponent(returnDest)}&courseId=${encodeURIComponent(course?.id || targetSlug)}`);
       return;
     }
 
@@ -313,18 +319,20 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
     // 3. Paid Course Checkout with applied discount
     const targetAmount = finalPrice;
 
-    // Validate phone number for LakiPay
+    // Validate 9-digit phone number for LakiPay (starting with 9, e.g. 912345678)
     if (!isFreeAfterDiscount && paymethod === 'lakipay') {
       if (!isPhoneValid) {
         setIsPaying(false);
         setPhoneTouched(true);
-        setError("እባክዎ ትክክለኛ 10-አሃዝ የስልክ ቁጥር ያስገቡ (ለምሳሌ፡ 0911223344 ወይም 0711223344)።");
+        setError("እባክዎ በ 9 የሚጀምር 9-አሃዝ የስልክ ቁጥር ያስገቡ (ለምሳሌ፡ 912 345 678)።");
         return;
       }
       try {
         localStorage.setItem('tsehay_user_phone', cleanPhone);
       } catch (e) {}
     }
+
+    const lakipayFormattedPhone = formatPhoneForLakiPay(cleanPhone || (user as any)?.phone || (user as any)?.phoneNumber || '');
 
     try {
       const res = await fetch('/api/initiate-payment', {
@@ -339,8 +347,8 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           discountPercent: discountPercent,
           userEmail: user?.email || 'student@example.com',
           userId: user?.uid || 'anonymous',
-          phoneNumber: cleanPhone || (user as any)?.phone || (user as any)?.phoneNumber || '',
-          phone: cleanPhone || (user as any)?.phone || (user as any)?.phoneNumber || '',
+          phoneNumber: lakipayFormattedPhone,
+          phone: lakipayFormattedPhone,
           paymethod: paymethod,
         })
       });
@@ -545,39 +553,42 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                     </div>
                   </label>
 
-                  {/* 🌟 LakiPay Editable Phone Input (No disabled, No readOnly, 10-digit validation) */}
+                  {/* 🌟 LakiPay 9-Digit Phone Input (+251 fixed badge, 9XXXXXXXX format) */}
                   {paymethod === 'lakipay' && (
                     <div className="bg-[#121a2d]/90 p-3.5 sm:p-4 rounded-2xl border border-amber-500/30 space-y-2 animate-in fade-in zoom-in-95 duration-200 shadow-inner">
                       <div className="flex items-center justify-between text-xs font-bold text-gray-300">
                         <label htmlFor="lakipay-phone-field" className="flex items-center gap-1.5 cursor-pointer">
                           <i className="fa-solid fa-phone text-[#f9b03c]"></i>
-                          <span>ስልክ ቁጥር ያስገቡ</span>
+                          <span>ስልክ ቁጥር ያስገቡ (9XXXXXXXX)</span>
                           <span className="text-amber-400">*</span>
                         </label>
                         {cleanPhone.length > 0 && (
                           <span className={`text-[11px] font-mono font-bold ${isPhoneValid ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            {isPhoneValid ? '✓ 10 አሃዝ ተሟልቷል' : `${cleanPhone.length}/10 አሃዝ`}
+                            {isPhoneValid ? '✓ 9 አሃዝ ተሟልቷል' : `${cleanPhone.length}/9 አሃዝ`}
                           </span>
                         )}
                       </div>
 
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-amber-400 font-mono text-xs font-bold shrink-0">
-                          🇪🇹 +251
+                      <div className="relative flex items-center">
+                        <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none shrink-0 z-10">
+                          <span className="px-2.5 py-1 rounded-lg bg-[#f9b03c]/15 border border-[#f9b03c]/40 text-[#f9b03c] font-mono text-xs font-black tracking-tight">
+                            +251
+                          </span>
                         </div>
                         <input
                           id="lakipay-phone-field"
                           type="tel"
                           inputMode="numeric"
-                          placeholder="09/07.. (የባንክ፣ ካርድ ወይም ዋሌት ቁጥር)"
-                          value={phone}
+                          placeholder="912 345 678"
+                          value={cleanPhone}
                           disabled={isPaying}
                           onChange={(e) => {
-                            setPhone(e.target.value);
+                            const normalized = normalizeEthiopianMobileInput(e.target.value);
+                            setPhone(normalized);
                             setPhoneTouched(true);
                             if (error) setError(null);
                           }}
-                          className={`w-full bg-[#080d1a] border rounded-xl pl-[4.6rem] pr-9 py-2.5 sm:py-3 text-xs sm:text-sm font-mono text-white placeholder:font-sans placeholder:text-[11px] sm:placeholder:text-xs placeholder:text-gray-400/90 outline-none transition ${
+                          className={`w-full bg-[#080d1a] border rounded-xl pl-[4.5rem] pr-9 py-2.5 sm:py-3 text-xs sm:text-sm font-mono font-bold tracking-wider text-white placeholder:font-mono placeholder:font-normal placeholder:text-xs sm:placeholder:text-sm placeholder:text-gray-500 outline-none transition ${
                             phoneTouched && cleanPhone.length > 0 && !isPhoneValid
                               ? 'border-red-500/80 focus:border-red-500 ring-1 ring-red-500/40'
                               : isPhoneValid

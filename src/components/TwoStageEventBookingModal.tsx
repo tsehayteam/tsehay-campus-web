@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { TsehayEvent, EventTicket, formatEventBannerUrl, DEFAULT_EVENT_BANNER, getCachedUserTickets, saveCachedUserTicket, isEventPassed } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { validateReferralCode, recordReferralUsage } from '@/lib/referralService';
+import { normalizeEthiopianMobileInput, isValidNineDigitEthPhone, formatPhoneForLakiPay } from '@/lib/phoneAuthHelper';
 import { Check, CheckCircle2, Ticket, Mail } from 'lucide-react';
 
 interface TwoStageEventBookingModalProps {
@@ -114,7 +115,7 @@ export default function TwoStageEventBookingModal({
           }
         } catch (e) {}
       }
-      setAttendeePhone(resolvedPhone || '');
+      setAttendeePhone(normalizeEthiopianMobileInput(resolvedPhone || ''));
     }
   }, [isOpen, user, event, initialAttendeeName, initialAttendeeEmail, initialAttendeePhone]);
 
@@ -164,9 +165,9 @@ export default function TwoStageEventBookingModal({
       return;
     }
 
-    const cleanPhone = trimmedPhone.replace(/[\s\-()]/g, '');
-    if (!cleanPhone || cleanPhone.length < 9) {
-      setStep1Error('እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ (ለምሳሌ 0911223344 ወይም +251911223344)።');
+    const cleanPhone = normalizeEthiopianMobileInput(trimmedPhone);
+    if (!isValidNineDigitEthPhone(cleanPhone)) {
+      setStep1Error('እባክዎ በ 9 የሚጀምር 9-አሃዝ ስልክ ቁጥር ያስገቡ (ለምሳሌ፡ 912 345 678)።');
       return;
     }
 
@@ -764,14 +765,22 @@ export default function TwoStageEventBookingModal({
                   <label className="block text-xs font-bold text-slate-300 mb-1">
                     ስልክ ቁጥር (Phone Number) <span className="text-amber-400">*</span>
                   </label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="0911223344 ወይም +251911223344"
-                    value={attendeePhone}
-                    onChange={(e) => setAttendeePhone(e.target.value)}
-                    className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl bg-white/5 border border-white/15 focus:border-[#f9b03c] text-white text-xs sm:text-sm outline-none transition"
-                  />
+                  <div className="relative flex items-center">
+                    <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none shrink-0 z-10">
+                      <span className="px-2.5 py-1 rounded-lg bg-[#f9b03c]/15 border border-[#f9b03c]/40 text-[#f9b03c] font-mono text-xs font-black tracking-tight">
+                        +251
+                      </span>
+                    </div>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      required
+                      placeholder="912 345 678"
+                      value={normalizeEthiopianMobileInput(attendeePhone)}
+                      onChange={(e) => setAttendeePhone(normalizeEthiopianMobileInput(e.target.value))}
+                      className="w-full pl-[4.5rem] pr-3.5 py-2.5 sm:py-3 rounded-xl bg-white/5 border border-white/15 focus:border-[#f9b03c] text-white font-mono font-bold tracking-wider text-xs sm:text-sm outline-none transition"
+                    />
+                  </div>
                   <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1.5">
                     <i className="fa-solid fa-qrcode text-[#f9b03c]"></i>
                     <span>የቲኬቱ ዲጂታል QR ኮድ እና የመግቢያ ማረጋገጫ ወዲያውኑ ይዘጋጅልዎታል</span>

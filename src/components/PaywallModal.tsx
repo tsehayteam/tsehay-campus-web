@@ -2,6 +2,8 @@
 
 import React, { useEffect } from 'react';
 import { Lock, X, Sparkles, CheckCircle2, ShieldCheck, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface PaywallModalProps {
   isOpen: boolean;
@@ -18,6 +20,29 @@ export default function PaywallModal({
   lesson,
   onEnroll,
 }: PaywallModalProps) {
+  const { user, authInitialized, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  // Zero-Deadlock Registration Redirect for unauthenticated users
+  useEffect(() => {
+    if (!isOpen || !course) return;
+    if (authInitialized && !authLoading && !user) {
+      const targetCourseSlug = course.slug || course.id || '';
+      const returnUrl = `/courses/${targetCourseSlug}?checkout=1`;
+      try {
+        sessionStorage.setItem('tsehay_auth_return_url', returnUrl);
+        sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
+          type: 'buy',
+          courseId: course.id,
+          courseTitle: course.title,
+          course,
+          returnUrl,
+        }));
+      } catch (e) {}
+      onClose();
+      router.push(`/register?returnUrl=${encodeURIComponent(returnUrl)}&courseId=${encodeURIComponent(course.id || '')}`);
+    }
+  }, [isOpen, course, user, authInitialized, authLoading, onClose, router]);
   // Prevent body scroll when modal is active
   useEffect(() => {
     if (isOpen) {

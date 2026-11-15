@@ -743,7 +743,6 @@ function AboutHeroPlayer({
                   webkit-playsinline="true"
                   controlsList="nodownload noremoteplayback"
                   disablePictureInPicture
-                  onContextMenu={(e) => e.preventDefault()}
                 />
               ) : (
                 <iframe 

@@ -127,9 +127,14 @@ function StudentDashboardContent() {
 
     if (!user) {
       if (typeof window !== 'undefined') {
-        window.location.href = '/';
+        const currentUrl = window.location.pathname + window.location.search;
+        try {
+          sessionStorage.setItem('tsehay_auth_return_url', currentUrl);
+        } catch (e) {}
+        const regUrl = `/register?returnUrl=${encodeURIComponent(currentUrl)}${urlCourseId ? `&courseId=${encodeURIComponent(urlCourseId)}` : ''}`;
+        window.location.href = regUrl;
       } else {
-        router.replace('/');
+        router.replace(`/register${urlCourseId ? `?courseId=${encodeURIComponent(urlCourseId)}` : ''}`);
       }
       return;
     }

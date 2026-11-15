@@ -9,6 +9,7 @@ import { recordReferralUsage } from "@/lib/referralService";
 import { getStoredReferrerUid, clearStoredReferrerUid } from "@/lib/referralTrackingService";
 import { generateOtpCode, saveOtpForEmail, verifyOtpForEmail } from "@/lib/otpService";
 import { initiateGoogleLogin } from "@/lib/googleAuth";
+import { normalizeEthiopianMobileInput, isValidNineDigitEthPhone } from "@/lib/phoneAuthHelper";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -411,8 +412,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         setError('እባክዎ ሙሉ ስምዎን ያስገቡ።');
         return;
       }
-      if (!phone.trim() || phone.trim().length < 7) {
-        setError('እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ (ቢያንስ 7 አሃዞች)።');
+      if (!isValidNineDigitEthPhone(phone)) {
+        setError('እባክዎ በ 9 የሚጀምር 9-አሃዝ ስልክ ቁጥር ያስገቡ (ለምሳሌ፡ 912 345 678)።');
         return;
       }
       if (!city.trim()) {
@@ -1729,14 +1730,22 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                           <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
                             ስልክ ቁጥር (Phone Number) <span className="text-red-500">*</span>
                           </label>
-                          <input 
-                            type="tel" 
-                            value={phone} 
-                            onChange={(e) => setPhone(e.target.value)} 
-                            required 
-                            placeholder="ለምሳሌ፡ 0911234567 ወይም +251 9..." 
-                            className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-secondary dark:focus:border-[#f9b03c] dark:text-white transition" 
-                          />
+                          <div className="relative flex items-center">
+                            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none shrink-0 z-10">
+                              <span className="px-2.5 py-1 rounded-lg bg-[#f9b03c]/15 border border-[#f9b03c]/40 text-amber-600 dark:text-[#f9b03c] font-mono text-xs font-black tracking-tight">
+                                +251
+                              </span>
+                            </div>
+                            <input 
+                              type="tel" 
+                              inputMode="numeric"
+                              value={phone} 
+                              onChange={(e) => setPhone(normalizeEthiopianMobileInput(e.target.value))} 
+                              required 
+                              placeholder="912 345 678" 
+                              className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 pl-[4.5rem] pr-4 text-sm font-mono font-bold tracking-wider outline-none focus:border-secondary dark:focus:border-[#f9b03c] dark:text-white transition" 
+                            />
+                          </div>
                         </div>
 
                         <div>
@@ -2001,14 +2010,22 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                           <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
                             ስልክ ቁጥር (Phone Number) <span className="text-red-500">*</span>
                           </label>
-                          <input 
-                            type="tel" 
-                            value={phone} 
-                            onChange={(e) => setPhone(e.target.value)} 
-                            required 
-                            placeholder="ለምሳሌ፡ 0911234567" 
-                            className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-[#f9b03c] dark:text-white transition" 
-                          />
+                          <div className="relative flex items-center">
+                            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none shrink-0 z-10">
+                              <span className="px-2.5 py-1 rounded-lg bg-[#f9b03c]/15 border border-[#f9b03c]/40 text-amber-600 dark:text-[#f9b03c] font-mono text-xs font-black tracking-tight">
+                                +251
+                              </span>
+                            </div>
+                            <input 
+                              type="tel" 
+                              inputMode="numeric"
+                              value={phone} 
+                              onChange={(e) => setPhone(normalizeEthiopianMobileInput(e.target.value))} 
+                              required 
+                              placeholder="912 345 678" 
+                              className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 pl-[4.5rem] pr-4 text-sm font-mono font-bold tracking-wider outline-none focus:border-[#f9b03c] dark:text-white transition" 
+                            />
+                          </div>
                         </div>
 
                         <div>

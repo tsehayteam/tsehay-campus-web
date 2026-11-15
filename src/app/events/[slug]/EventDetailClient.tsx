@@ -538,16 +538,26 @@ export default function EventDetailClient() {
             }}
           >
               {/* Top Event Badge & Format */}
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              {(event.isPostponed || event.status === 'postponed') ? (
+            <div className="flex flex-wrap items-start gap-3 mb-6">
+              {isPassed ? (
+                <div className="flex flex-col items-start gap-1.5">
+                  <span
+                    style={{ fontWeight: 800 }}
+                    className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-600/95 border border-red-300/70 text-white text-xs sm:text-sm font-extrabold tracking-wide backdrop-blur-md shadow-[0_8px_25px_rgba(220,38,38,0.5)] scale-105 origin-left"
+                  >
+                    <i className="fa-solid fa-clock-rotate-left text-xs" />
+                    <span>ክስተቱ አልቋል / Event Closed</span>
+                  </span>
+                  {(event.isPostponed || event.status === 'postponed' || Boolean(event.postponedTo)) && (
+                    <span className="inline-flex items-center px-3 py-0.5 rounded-full bg-amber-500/90 text-slate-950 border border-amber-300 text-[11px] font-bold shadow-sm">
+                      Postponed
+                    </span>
+                  )}
+                </div>
+              ) : (event.isPostponed || event.status === 'postponed') ? (
                 <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 text-xs font-black tracking-wider uppercase backdrop-blur-md shadow-[0_0_20px_rgba(249,176,60,0.6)] border border-amber-300 animate-pulse">
                   <i className="fa-solid fa-calendar-days text-xs" />
                   <span>Postponed to: {event.postponedTo || event.date}</span>
-                </span>
-              ) : isPassed ? (
-                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-black tracking-wider uppercase backdrop-blur-md shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-                  <i className="fa-solid fa-clock-rotate-left text-xs" />
-                  <span>ክስተቱ አልፏል • EVENT PASSED</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] text-xs font-black">

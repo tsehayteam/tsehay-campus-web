@@ -24,7 +24,7 @@ function CoursePreviewContent() {
   const id = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : '';
 
   const { t } = useLanguage();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, authInitialized, loading: authLoading } = useAuth();
   const router = useRouter();
 
   const [allCourses, setAllCourses] = useState<any[]>([]);
@@ -342,25 +342,49 @@ function CoursePreviewContent() {
     return () => window.removeEventListener('open-payment-modal', handleOpenPayment);
   }, []);
 
-  const handleBuyClick = () => {
+  // Zero-Deadlock Registration Redirect:
+  // If an unregistered or unauthenticated visitor lands directly on any course page,
+  // automatically detect their unregistered state and immediately redirect them directly
+  // to the Registration / Sign-Up page, preserving the target course URL in query params.
+  useEffect(() => {
+    if (!authInitialized || authLoading || !id) return;
     if (!user) {
+      const targetCourseUrl = `/courses/${id}?checkout=1`;
       try {
+        sessionStorage.setItem('tsehay_auth_return_url', targetCourseUrl);
         sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
           type: 'buy',
-          courseId: course?.id,
+          courseId: course?.id || id,
+          courseTitle: course?.title || '',
+          course: course || null,
+          returnUrl: targetCourseUrl
+        }));
+      } catch (e) {}
+      router.replace(`/register?returnUrl=${encodeURIComponent(targetCourseUrl)}&courseId=${encodeURIComponent(id)}`);
+    }
+  }, [authInitialized, authLoading, user, id, course, router]);
+
+  const handleBuyClick = () => {
+    if (!user) {
+      const targetCourseUrl = `/courses/${course?.slug || course?.id || id}?checkout=1`;
+      try {
+        sessionStorage.setItem('tsehay_auth_return_url', targetCourseUrl);
+        sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
+          type: 'buy',
+          courseId: course?.id || id,
           courseTitle: course?.title,
           course: course,
-          returnUrl: `/courses/${course?.id}`
+          returnUrl: targetCourseUrl
         }));
         sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
           type: 'buy_course',
-          courseId: course?.id,
+          courseId: course?.id || id,
           courseTitle: course?.title,
           course: course,
-          returnUrl: `/courses/${course?.id}`
+          returnUrl: targetCourseUrl
         }));
       } catch (e) {}
-      setShowRequireAuthModal(true);
+      router.push(`/register?returnUrl=${encodeURIComponent(targetCourseUrl)}&courseId=${encodeURIComponent(course?.id || id)}`);
       return;
     }
     setShowPaymentModal(true);
@@ -368,14 +392,17 @@ function CoursePreviewContent() {
 
   const handleEnrollClick = () => {
     if (!user) {
+      const targetCourseUrl = `/courses/${course?.slug || course?.id || id}`;
       try {
+        sessionStorage.setItem('tsehay_auth_return_url', targetCourseUrl);
         sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
           type: 'enroll_free',
-          courseId: course?.id,
-          courseTitle: course?.title || 'ይህ ኮርስ'
+          courseId: course?.id || id,
+          courseTitle: course?.title || 'ይህ ኮርስ',
+          returnUrl: targetCourseUrl
         }));
       } catch (e) {}
-      setShowRequireAuthModal(true);
+      router.push(`/register?returnUrl=${encodeURIComponent(targetCourseUrl)}&courseId=${encodeURIComponent(course?.id || id)}`);
       return;
     }
     handleEnroll();
@@ -501,6 +528,14 @@ function CoursePreviewContent() {
   };
 
   const handleLessonClick = (lesson: any) => {
+    if (!user) {
+      const targetCourseUrl = `/courses/${course?.slug || course?.id || id}?checkout=1`;
+      try {
+        sessionStorage.setItem('tsehay_auth_return_url', targetCourseUrl);
+      } catch (e) {}
+      router.push(`/register?returnUrl=${encodeURIComponent(targetCourseUrl)}&courseId=${encodeURIComponent(course?.id || id)}`);
+      return;
+    }
     if (isLessonLocked(lesson)) {
       setSelectedLockedLesson(lesson);
       setShowPaywallModal(true);

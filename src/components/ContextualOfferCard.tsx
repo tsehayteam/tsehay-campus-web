@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Gift, FileText, Send, Layout, ArrowRight } from 'lucide-react';
+import { Layers, FileText, Send, Layout, ArrowRight } from 'lucide-react';
 
 interface ContextualOfferCardProps {
   onRegister?: () => void;
@@ -57,7 +57,7 @@ export default function ContextualOfferCard({
         <div className="space-y-2.5 flex-1">
           {/* Bonus Pill Badge */}
           <div className="inline-flex items-center gap-1.5 rounded-full border border-[#262626] bg-amber-500/10 px-3 py-0.5 text-[11px] font-black text-[#f9b03c] tracking-wide">
-            <Gift className="w-3.5 h-3.5 stroke-[2.2] text-[#f9b03c]" />
+            <Layers className="w-3.5 h-3.5 stroke-[2.2] text-[#f9b03c]" />
             <span>ልዩ ስጦታ • INCLUDED FREE BONUS</span>
           </div>
 

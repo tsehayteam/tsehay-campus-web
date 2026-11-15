@@ -67,12 +67,7 @@ export default function ContentProtection() {
     window.addEventListener('keydown', handleKeyDown, true);
     window.addEventListener('keyup', handleKeyUp, true);
 
-    // 2. Disable Right-Click Context Menu Globally
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-      return false;
-    };
-    document.addEventListener('contextmenu', handleContextMenu);
+    // 2. Native Browser Right-Click Context Menu is enabled so visitors can freely Reload / Refresh
 
     // 3. Disable Dragging of Images & Media
     const handleDragStart = (e: DragEvent) => {
@@ -112,7 +107,6 @@ export default function ContentProtection() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener('keyup', handleKeyUp, true);
-      document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('dragstart', handleDragStart);
       document.removeEventListener('copy', handleCopyCut);
       document.removeEventListener('cut', handleCopyCut);

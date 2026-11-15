@@ -546,16 +546,26 @@ export default function EventsClient() {
                       </div>
 
                       {/* Badges */}
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20 pointer-events-none">
-                        {(evt.isPostponed || evt.status === 'postponed') ? (
+                      <div className="absolute top-3 right-3 flex items-start gap-1.5 z-20 pointer-events-none">
+                        {isPassed ? (
+                          <div className="flex flex-col items-end gap-1">
+                            <div
+                              style={{ fontWeight: 800 }}
+                              className="px-3 py-1 rounded-full bg-red-600/95 text-white font-extrabold text-[10.5px] tracking-wide shadow-[0_8px_22px_rgba(220,38,38,0.55)] border border-red-300/70 backdrop-blur-md scale-105 origin-right flex items-center gap-1"
+                            >
+                              <i className="fa-solid fa-clock-rotate-left text-[9px]" />
+                              <span>ክስተቱ አልቋል / Event Closed</span>
+                            </div>
+                            {(evt.isPostponed || evt.status === 'postponed' || Boolean(evt.postponedTo)) && (
+                              <div className="px-2 py-0.5 rounded-full bg-amber-500/90 text-slate-950 font-bold text-[9.5px] border border-amber-300 shadow-sm">
+                                Postponed
+                              </div>
+                            )}
+                          </div>
+                        ) : (evt.isPostponed || evt.status === 'postponed') ? (
                           <div className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 font-black text-[10px] tracking-wider uppercase shadow-[0_0_15px_rgba(249,176,60,0.6)] border border-amber-300 backdrop-blur-md flex items-center gap-1.5 animate-pulse">
                             <i className="fa-solid fa-calendar-days text-[9px]" />
                             <span>Postponed to: {evt.postponedTo || evt.date}</span>
-                          </div>
-                        ) : isPassed ? (
-                          <div className="px-3 py-1 rounded-full bg-red-600/90 text-white font-black text-[10px] tracking-wider uppercase shadow-[0_0_15px_rgba(239,68,68,0.5)] border border-red-400/40 backdrop-blur-md flex items-center gap-1">
-                            <i className="fa-solid fa-clock-rotate-left text-[9px]" />
-                            <span>ኩነት አልፏል</span>
                           </div>
                         ) : isSoldOut ? (
                           <div className="px-3 py-1 rounded-full bg-red-600/90 text-white font-black text-[10px] tracking-wider uppercase shadow-[0_0_15px_rgba(239,68,68,0.5)] border border-red-400/40 backdrop-blur-md flex items-center gap-1">

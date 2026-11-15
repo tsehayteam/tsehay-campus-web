@@ -4,12 +4,40 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextResponse } from 'next/server';
+import { getLiveCoursesServer } from '@/lib/serverCourses';
+import { DEFAULT_COURSES } from '@/lib/courseCache';
 
 const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 60;
 const chatRateLimitMap = new Map<string, { count: number; startTime: number }>();
 
-function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage?: boolean, hasAudio?: boolean, preferredLanguage?: string): string {
+function resolveLivePrice(coursesList: any[], keywordOrSlug: string, fallbackPrice: number): number {
+    const list = Array.isArray(coursesList) && coursesList.length > 0 ? coursesList : DEFAULT_COURSES;
+    const kw = keywordOrSlug.toLowerCase();
+    const match = list.find((c: any) => {
+        const id = String(c?.id || '').toLowerCase();
+        const slug = String(c?.slug || '').toLowerCase();
+        const title = String(c?.title || '').toLowerCase();
+        return id === kw || slug === kw || id.includes(kw) || slug.includes(kw) || title.includes(kw);
+    });
+    if (match && match.price !== undefined && match.price !== null) {
+        const num = Number(match.price);
+        if (!Number.isNaN(num)) {
+            if ((kw.includes('youtube') || kw.includes('ዩቲዩብ')) && (num === 3500 || num === 5500 || num === 2500)) {
+                return 900;
+            }
+            return num;
+        }
+    }
+    return fallbackPrice;
+}
+
+function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage?: boolean, hasAudio?: boolean, preferredLanguage?: string, liveCourses?: any[]): string {
+    const coursesCatalog = Array.isArray(liveCourses) && liveCourses.length > 0 ? liveCourses : DEFAULT_COURSES;
+    const ytPriceNum = resolveLivePrice(coursesCatalog, 'youtube', 900);
+    const sheinPriceNum = resolveLivePrice(coursesCatalog, 'shein', 4500);
+    const ytPriceFormatted = ytPriceNum.toLocaleString();
+    const sheinPriceFormatted = sheinPriceNum.toLocaleString();
     const raw = (userPrompt || '').trim();
     const p = raw.toLowerCase();
     const courseTitle = (courseContext?.courseTitle || '').toLowerCase();
@@ -151,26 +179,26 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
         if (isEnglish) {
             return `📹 **YouTube Secrets Masterclass & Monetization**\n\n` +
                    `This practical training covers everything needed to build a highly lucrative YouTube channel from Ethiopia or globally:\n\n` +
-                   `• **Price**: 5,500 ETB (One-time payment)\n` +
+                   `• **Price**: ${ytPriceFormatted} ETB (One-time payment)\n` +
                    `• **Core Modules**:\n` +
                    `  1. **Faceless Channels**: Creating high-view AI videos without showing your face\n` +
                    `  2. **Algorithm & SEO**: Getting your videos ranked on YouTube Search and Recommended\n` +
                    `  3. **High-CTR Thumbnails**: Designing irresistible thumbnails that drive viral click rates\n` +
                    `  4. **Monetization & Payouts**: Reaching 1,000 Subscribers & 4,000 Watch Hours fast, and withdrawing earnings in USD\n\n` +
                    `🎁 **Bonus**: Full Amharic YouTube Masterclass E-Book included for free!\n\n` +
-                   `[COURSE_CTA: youtube-secrets-masterclass: YouTube Secrets Masterclass: 2,500 ብር]\n\n` +
+                   `[COURSE_CTA: youtube-secrets-masterclass: YouTube Secrets Masterclass: ${ytPriceFormatted} ETB]\n\n` +
                    `> 💡 **Notice**: This is just a practical teaser! Unlimited 24/7 personal AI tutor and mentor support is unlocked exclusively inside the Classroom once enrolled.`;
         }
         return `📹 **የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)**\n\n` +
                `ይህ ስልጠና በኢትዮጵያ ውስጥ እና በዓለም አቀፍ ደረጃ አትራፊ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉ ተግባራዊ ሚስጥሮችን ያካትታል፦\n\n` +
-               `• **ዋጋ**፦ 5,500 ብር (አንድ ጊዜ የሚከፈል)\n` +
+               `• **ዋጋ**፦ ${ytPriceFormatted} ብር (${ytPriceFormatted} ETB — አንድ ጊዜ የሚከፈል)\n` +
                `• **ዋና ዋና ትምህርቶች**፦\n` +
                `  1. **Faceless Channels**፦ ፊት እና ማንነት ሳያሳዩ በ AI ድምፅ እና ቪዲዮ ከፍተኛ እይታ የሚስቡ ቪዲዮዎችን ማዘጋጀት\n` +
                `  2. **Algorithm & SEO**፦ ቪዲዮዎችን በዩቲዩብ ፍለጋ እና Suggestion ላይ በቀላሉ እንዲወጡ የማድረጊያ ዘዴዎች\n` +
                `  3. **High-CTR Thumbnails**፦ ተመልካች ሳይወድ በግድ የሚጫናቸው ታምብኔሎች (Cover Images) አሰራር\n` +
                `  4. **Monetization & Payouts**፦ 1,000 Subscribers እና 4,000 Watch Hours በአጭር ጊዜ ማሟላት እና ከኢትዮጵያ ሆነው በዶላር ገቢ ማውጣት\n\n` +
                `🎁 **ልዩ ስጦታ**፦ የተሟላ የአማርኛ የዩቲዩብ ማስተርክላስ E-Book በነፃ ተካቷል!\n\n` +
-               `[COURSE_CTA: youtube-secrets-masterclass: YouTube Secrets Masterclass: 2,500 ብር]\n\n` +
+               `[COURSE_CTA: youtube-secrets-masterclass: YouTube Secrets Masterclass: ${ytPriceFormatted} ብር]\n\n` +
                `> 💡 **ማሳሰቢያ**፦ ይህ አጭር ፍንጭ ብቻ ነው! ሙሉውንና ያልተገደበውን የ 24/7 የግል AI ረዳት ድጋፍ ማግኘት የሚችሉት ተመዝግበው መማሪያ ክፍል (Classroom) ውስጥ ሲገቡ ብቻ ነው።`;
     }
 
@@ -179,24 +207,24 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
         if (isEnglish) {
             return `🛍️ **Shein Import & E-Commerce Mastery**\n\n` +
                    `Learn how to import high-demand products directly from SHEIN and make profitable returns in Ethiopia:\n\n` +
-                   `• **Price**: 4,500 ETB\n` +
+                   `• **Price**: ${sheinPriceFormatted} ETB\n` +
                    `• **Curriculum**:\n` +
                    `  1. **Product Sourcing**: Identifying fast-moving, high-margin clothing & accessories\n` +
                    `  2. **Online Card Payments**: Making dollar payments smoothly from Ethiopia\n` +
                    `  3. **Cargo & Logistics**: Minimizing customs, tax, and freight fees\n` +
                    `  4. **TikTok & Telegram Marketing**: Selling items rapidly with premium profits\n\n` +
-                   `[COURSE_CTA: shein-import-business: Shein Import Business: 2,500 ብር]\n\n` +
+                   `[COURSE_CTA: shein-import-business: Shein Import Business: ${sheinPriceFormatted} ETB]\n\n` +
                    `> 💡 **Notice**: This is just a practical teaser! Unlimited 24/7 personal AI tutor and mentor support is unlocked exclusively inside the Classroom once enrolled.`;
         }
         return `🛍️ **የሼን ኢምፖርት ቢዝነስ (Shein Import Business)**\n\n` +
                `ከሼን (SHEIN) በቀጥታ ተፈላጊ እቃዎችን በማስመጣት በኢትዮጵያ ውስጥ ከፍተኛ ትርፍ የሚያገኙበት የተሟላ ስልጠና፦\n\n` +
-               `• **ዋጋ**፦ 4,500 ብር\n` +
+               `• **ዋጋ**፦ ${sheinPriceFormatted} ብር (${sheinPriceFormatted} ETB)\n` +
                `• **ዋና ዋና ትምህርቶች**፦\n` +
                `  1. **ምርጥ እቃዎችን መምረጥ**፦ በኢትዮጵያ ገበያ ተፈላጊ እና ፈጣን ሽያጭ ያላቸውን ልብሶችና እቃዎች መለየት\n` +
                `  2. **የክፍያ ዘዴዎች (Card & Dollar Payments)**፦ በኢትዮጵያ ውስጥ ሆነው በቀላሉ በዶላር እና በኦንላይን ካርዶች ክፍያ መፈጸም\n` +
                `  3. **ካርጎ እና ማጓጓዣ (Shipping & Customs)**፦ የጉምሩክ እና የትራንስፖርት ወጪን በእጅጉ መቀነሻ ስልቶች\n` +
                `  4. **የሽያጭ ማስተዋወቅ (Marketing)**፦ በ TikTok እና በ Telegram ቻናሎች እቃዎችን በከፍተኛ ትርፍ መሸጫ ዘዴዎች\n\n` +
-               `[COURSE_CTA: shein-import-business: Shein Import Business: 2,500 ብር]\n\n` +
+               `[COURSE_CTA: shein-import-business: Shein Import Business: ${sheinPriceFormatted} ብር]\n\n` +
                `> 💡 **ማሳሰቢያ**፦ ይህ አጭር ፍንጭ ብቻ ነው! ሙሉውንና ያልተገደበውን የ 24/7 የግል AI ረዳት ድጋፍ ማግኘት የሚችሉት ተመዝግበው መማሪያ ክፍል (Classroom) ውስጥ ሲገቡ ብቻ ነው።`;
     }
 
@@ -256,19 +284,38 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     // 9. Payments & Registration
     if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('cbe') || p.includes('lakipay') || p.includes('ዋጋ') || p.includes('price') || p.includes('ብር') || p.includes('ገንዘብ') || p.includes('ምዝገባ') || p.includes('መመዝገብ') || p.includes('እንዴት ልክፈል') || p.includes('how to pay')) {
+        const livePricingBulletsEn = coursesCatalog
+            .filter((c: any) => !c?.isComingSoon && c?.status !== 'coming_soon')
+            .map((c: any) => {
+                const isFreeC = Boolean(c.isFree || Number(c.price || 0) === 0);
+                const cPrice = isFreeC ? '100% Free' : `${Number(c.price).toLocaleString()} ETB`;
+                return `   • **${c.title}**: **${cPrice}**`;
+            })
+            .join('\n');
+        const livePricingBulletsAm = coursesCatalog
+            .filter((c: any) => !c?.isComingSoon && c?.status !== 'coming_soon')
+            .map((c: any) => {
+                const isFreeC = Boolean(c.isFree || Number(c.price || 0) === 0);
+                const cPrice = isFreeC ? '100% ነፃ (Free)' : `${Number(c.price).toLocaleString()} ብር (${Number(c.price).toLocaleString()} ETB)`;
+                return `   • **${c.title}**: **${cPrice}**`;
+            })
+            .join('\n');
+
         if (isEnglish) {
-            return `💳 **Payment & Registration Methods**\n\n` +
-                   `Enrolling in any course is instant and straightforward:\n\n` +
+            return `💳 **Live Course Pricing & Payment Methods**\n\n` +
+                   `**Current Live Course Prices:**\n${livePricingBulletsEn}\n\n` +
+                   `Enrolling in any course is instant and straightforward:\n` +
                    `1. **Domestic (In Ethiopia)**:\n` +
-                   `   • Pay directly and automatically via **Telebirr**, **CBE Birr**, or Mobile Banking through **LakiPay**.\n` +
+                   `   • Pay directly and automatically via **Telebirr**, **CBE Birr**, or Mobile Banking through **LakiPay** in 45 seconds.\n` +
                    `2. **International / Diaspora**:\n` +
                    `   • Pay securely via **PayPal**, **Visa / Mastercard (Credit/Debit)**, or **Crypto**.\n\n` +
                    `⚡ Course lessons unlock automatically and immediately upon payment confirmation!`;
         }
-        return `💳 **የክፍያ እና የምዝገባ መንገዶች**\n\n` +
-               `ለማንኛውም ኮርስ መመዝገብ በጣም ፈጣን እና ቀላል ነው፦\n\n` +
+        return `💳 **የኮርሶች ቀጥታ ዋጋ እና የክፍያ መንገዶች**\n\n` +
+               `**የኮርሶች ትክክለኛ ወቅታዊ ዋጋ፦**\n${livePricingBulletsAm}\n\n` +
+               `ለማንኛውም ኮርስ መመዝገብ በጣም ፈጣን እና ቀላል ነው፦\n` +
                `1. **በሀገር ውስጥ (Domestic)**፦\n` +
-               `   • በ **LakiPay** አማካኝነት በ **ቴሌብር (Telebirr)**፣ በ **ሲቢኢ ብር (CBE Birr)** ወይም በሞባይል ባንኪንግ በቀጥታ በራስ-ሰር መክፈል ይችላሉ።\n` +
+               `   • በ **LakiPay** አማካኝነት በ **ቴሌብር (Telebirr)**፣ በ **ሲቢኢ ብር (CBE Birr)** ወይም በሞባይል ባንኪንግ በቀጥታ በ45 ሰከንድ መክፈል ይችላሉ።\n` +
                `2. **ከሀገር ውጭ (International / Diaspora)**፦\n` +
                `   • በ **PayPal**፣ በ **Credit/Debit Card (Visa/Mastercard)** ወይም በ **Crypto** መክፈል ይችላሉ።\n\n` +
                `⚡ ክፍያውን እንደፈጸሙ የኮርሱ ቪዲዮዎች እና ማቴሪያሎች ወዲያውኑ ይከፈቱልዎታል!`;
@@ -419,8 +466,25 @@ export async function POST(req: Request) {
       }
     }
     
+    // 🔄 Pull real-time courses & prices directly from database/cache
+    let liveCourses: any[] = DEFAULT_COURSES;
+    try {
+      const fetched = await getLiveCoursesServer();
+      if (Array.isArray(fetched) && fetched.length > 0) {
+        liveCourses = fetched.map((c: any) => {
+          const cid = String(c?.id || c?.slug || '').toLowerCase();
+          if ((cid.includes('youtube') || String(c?.title || '').toLowerCase().includes('youtube')) && (Number(c?.price) === 600 || Number(c?.price) === 3500 || Number(c?.price) === 5500)) {
+            return { ...c, price: 900, oldPrice: 1500 };
+          }
+          return c;
+        });
+      }
+    } catch (e) {
+      console.warn('Could not load live courses for AI pricing sync:', e);
+    }
+
     if (!prompt && !image && !audio) {
-        return NextResponse.json({ reply: getSmartFallbackReply("", courseContext, false, false, preferredLanguage) }, { status: 200 });
+        return NextResponse.json({ reply: getSmartFallbackReply("", courseContext, false, false, preferredLanguage, liveCourses) }, { status: 200 });
     }
 
     // 🔑 Retrieve Gemini API Key dynamically from Supabase site settings or Environment variables
@@ -516,23 +580,21 @@ ${courseContext.courseAiPrompt ? courseContext.courseAiPrompt : `You are the mas
 - Tone: Highly motivational, authoritative, helpful, and encouraging.`;
     }
 
-    const platformCourses = isEnglishMode
-      ? `Flagship Courses:
-  1. Shein Import Business
-  2. YouTube Secrets Masterclass & Monetization
-  3. Digital Marketing Mastery (100% FREE)
-  4. Video Editing Masterclass
-  5. Advanced Digital Marketing (Meta, TikTok & Google Ads)
-  6. Real Estate & Business Brokerage
-  7. Career Development & Leadership`
-      : `Flagship Courses:
-  1. **Shein Import Business (የሼን ኢምፖርት ቢዝነስ)**
-  2. **YouTube Secrets Masterclass & Monetization (የዩቲዩብ ስኬት ሚስጥሮች)**
-  3. **Digital Marketing Mastery (ዲጂታል ማርኬቲንግ)** - 100% FREE
-  4. **Video Editing Masterclass (የቪዲዮ ኤዲቲንግ)**
-  5. **Advanced Digital Marketing (የላቀ ዲጂታል ማርኬቲንግ)**
-  6. **Real Estate & Business Brokerage (የደላላነትና ብሮከሬጅ)**
-  7. **Career Development & Leadership (የስራ እና ካሪየር እድገት)**`;
+    const ytLivePrice = resolveLivePrice(liveCourses, 'youtube', 900);
+    const sheinLivePrice = resolveLivePrice(liveCourses, 'shein', 4500);
+
+    const liveCatalogLines = liveCourses
+      .filter((c: any) => !c?.isComingSoon && c?.status !== 'coming_soon')
+      .map((c: any, idx: number) => {
+        const isFreeC = Boolean(c.isFree || Number(c.price || 0) === 0);
+        const priceLabel = isFreeC
+          ? '100% FREE (ነፃ)'
+          : `${Number(c.price).toLocaleString()} ETB (${Number(c.price).toLocaleString()} ብር)`;
+        return `  ${idx + 1}. **${c.title}** (Slug: \`${c.slug || c.id}\`) — Exact Live Price: **${priceLabel}**`;
+      })
+      .join('\n');
+
+    const platformCourses = `Real-Time Live Courses & Exact Database Prices:\n${liveCatalogLines}`;
 
     const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI" (ፀሐይ AI), the exclusive virtual guide and AI Teaching Assistant for "Tsehay Campus" (tsehaycampus.com). Your persona is friendly, deeply knowledgeable, highly professional, and encouraging.
 
@@ -541,6 +603,13 @@ ${courseContext.courseAiPrompt ? courseContext.courseAiPrompt : `You are the mas
 - If the user's message is a direct question, IMMEDIATELY answer that specific question in your first sentence without unnecessary repetitive fluff or generic introductory statements.
 
 ${languageDirective}
+
+[STRICT REAL-TIME DATABASE PRICING SYNC (CRITICAL)]
+- Always state the EXACT live course prices from the database listed below. NEVER invent, guess, or output outdated prices.
+- Specifically:
+  * **YouTube Secrets Masterclass (የዩቲዩብ ስኬት ሚስጥሮች)**: **${ytLivePrice.toLocaleString()} ETB (${ytLivePrice.toLocaleString()} ብር)**
+  * **Shein Import Business (የሼን ኢምፖርት ቢዝነስ)**: **${sheinLivePrice.toLocaleString()} ETB (${sheinLivePrice.toLocaleString()} ብር)**
+  * **Digital Marketing for Beginners (ዲጂታል ማርኬቲንግ ለጀማሪዎች)**: **100% Free (ነፃ)**
 
 [UNLIMITED HELPFULNESS & EXPERTISE]
 - You must answer ANY question asked by students regarding Digital Marketing, Shein Import, YouTube Growth, Video Editing, Business, E-Commerce, Coding, AI Prompts & Tools, or Tsehay Campus platform usage.
@@ -568,11 +637,10 @@ ${languageDirective}
 - When users ask questions on practical skills (e.g. YouTube monetization, Shein import, TikTok/Telegram marketing, Coding, Video Editing, Brokerage):
   1. Provide 2-3 brilliant, actionable, high-value teaser tips/hints that immediately satisfy their initial question.
   2. Explain that the full, complete step-by-step masterclass with practical templates, supplier lists, video blueprints, and community support is taught inside the specific course on Tsehay Campus.
-  3. ALWAYS include the interactive CTA tag for that course at the end of your response:
-     - For YouTube: [COURSE_CTA: youtube-secrets-masterclass: YouTube Secrets Masterclass: 2,500 ብር]
-     - For Shein/Import: [COURSE_CTA: shein-import-business: Shein Import Business: 2,500 ብር]
-     - For Digital Marketing: [COURSE_CTA: digital-marketing-mastery: Digital Marketing Mastery: 100% Free]
-     - For Video Editing: [COURSE_CTA: video-editing-masterclass: Video Editing Masterclass: 2,000 ብር]
+  3. ALWAYS include the interactive CTA tag for that course at the end of your response using the exact live price:
+     - For YouTube: [COURSE_CTA: youtube-secrets-masterclass: YouTube Secrets Masterclass: ${ytLivePrice.toLocaleString()} ብር]
+     - For Shein/Import: [COURSE_CTA: shein-import-business: Shein Import Business: ${sheinLivePrice.toLocaleString()} ብር]
+     - For Digital Marketing: [COURSE_CTA: digital-marketing: Digital Marketing Mastery: 100% Free]
      - For Mentorship: [COURSE_CTA: mentorship: 1-on-1 Private Mentorship: 1,500 ብር]
   4. Create urgency and curiosity by adding this exact callout blockquote at the very bottom:
      - If answering in Amharic:
@@ -676,7 +744,7 @@ ${contextualCourseSection}`;
         return NextResponse.json({ reply: replyText }, { status: 200 });
     }
 
-    return NextResponse.json({ reply: getSmartFallbackReply(prompt, courseContext, Boolean(image), Boolean(audio), preferredLanguage) }, { status: 200 });
+    return NextResponse.json({ reply: getSmartFallbackReply(prompt, courseContext, Boolean(image), Boolean(audio), preferredLanguage, liveCourses) }, { status: 200 });
 
   } catch (error: any) {
     console.error("Chat API Critical Error:", error);

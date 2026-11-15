@@ -295,6 +295,7 @@ export default function FloatingAIButton() {
     const courseContext = selectedCourse ? {
       courseTitle: selectedCourse.title,
       courseId: selectedCourse.id,
+      price: selectedCourse.price,
       category: selectedCourse.category,
       instructor: selectedCourse.instructor || 'Eyoub Sahle (ኢዮብ ሳህሌ)',
       courseAiPrompt: selectedCourse.aiPrompt || '',
@@ -601,9 +602,12 @@ export default function FloatingAIButton() {
         className="hidden"
       />
 
-      {/*  1. EXPANDABLE CHAT MODAL */}
+      {/*  1. EXPANDABLE CHAT MODAL — Compact Sizing (max-w-[380px] max-h-[520px]) */}
       {isOpen && (
-        <div className="mb-4 w-[94vw] sm:w-[460px] md:w-[500px] bg-[#070b14]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden transition-all duration-300 relative h-[640px] sm:h-[700px] max-h-[90vh] animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div
+          style={{ maxWidth: 'min(380px, calc(100vw - 24px))', maxHeight: 'min(520px, calc(100dvh - 100px))' }}
+          className="mb-3 w-[calc(100vw-24px)] sm:w-[380px] max-w-[380px] h-[min(520px,calc(100dvh-100px))] max-h-[520px] bg-[#070b14]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden transition-all duration-300 relative animate-in fade-in slide-in-from-bottom-4 duration-200"
+        >
           
           {/* Subtle Glowing Background Mesh */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.12),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.15),transparent_50%)] pointer-events-none" />
@@ -668,8 +672,8 @@ export default function FloatingAIButton() {
                     <i className="fa-solid fa-grip-lines-vertical"></i>
                   </span>
                 </div>
-                <p className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5 truncate max-w-[170px] sm:max-w-[200px]">
-                  <span>{selectedCourse ? `selectedCourse.title${selectedCourse.title}` : (aiLang === 'am' ? 'የፀሐይ ካምፓስ AI ረዳት' : 'Tsehay Campus AI Assistant')}</span>
+                <p className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5 truncate max-w-[155px] sm:max-w-[180px]">
+                  <span>{selectedCourse ? `${selectedCourse.title}` : (aiLang === 'am' ? 'የፀሐይ ካምፓስ AI ረዳት' : 'Tsehay Campus AI Assistant')}</span>
                 </p>
               </div>
             </div>
@@ -688,10 +692,11 @@ export default function FloatingAIButton() {
               <button 
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white flex items-center justify-center text-xs transition cursor-pointer"
-                title="አሳንስ (Minimize)"
+                aria-label="Minimize chat window"
+                className="px-2.5 h-8 rounded-xl bg-[#f9b03c]/15 hover:bg-[#f9b03c] text-[#f9b03c] hover:text-slate-950 border border-[#f9b03c]/40 flex items-center justify-center font-black text-sm leading-none transition cursor-pointer active:scale-95"
+                title="አሳንስ (Minimize —)"
               >
-                <i className="fa-solid fa-minus text-xs"></i>
+                <span>—</span>
               </button>
 
               <button 

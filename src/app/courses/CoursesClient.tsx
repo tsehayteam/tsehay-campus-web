@@ -120,24 +120,25 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
     
     if (isFree) {
       if (!user) {
+        const targetCourseUrl = `/courses/${course.slug || course.id}`;
         try {
+          sessionStorage.setItem('tsehay_auth_return_url', targetCourseUrl);
           sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
             type: 'enroll_free',
             courseId: course.id,
             courseTitle: course.title,
             course: course,
-            returnUrl: '/courses'
+            returnUrl: targetCourseUrl
           }));
           sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
             type: 'enroll_free',
             courseId: course.id,
             courseTitle: course.title,
             course: course,
-            returnUrl: '/courses'
+            returnUrl: targetCourseUrl
           }));
         } catch (e) {}
-        setAuthCourseTarget(course);
-        setShowRequireAuthModal(true);
+        router.push(`/register?returnUrl=${encodeURIComponent(targetCourseUrl)}&courseId=${encodeURIComponent(course.id)}`);
         return;
       }
 
@@ -208,24 +209,25 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
       }
     } else {
       if (!user) {
+        const targetCourseUrl = `/courses/${course.slug || course.id}?checkout=1`;
         try {
+          sessionStorage.setItem('tsehay_auth_return_url', targetCourseUrl);
           sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
             type: 'buy',
             courseId: course.id,
             courseTitle: course.title,
             course: course,
-            returnUrl: '/courses'
+            returnUrl: targetCourseUrl
           }));
           sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
             type: 'buy_course',
             courseId: course.id,
             courseTitle: course.title,
             course: course,
-            returnUrl: '/courses'
+            returnUrl: targetCourseUrl
           }));
         } catch (e) {}
-        setAuthCourseTarget(course);
-        setShowRequireAuthModal(true);
+        router.push(`/register?returnUrl=${encodeURIComponent(targetCourseUrl)}&courseId=${encodeURIComponent(course.id)}`);
         return;
       }
       // Paid course -> Open payment modal directly for instant checkout

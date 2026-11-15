@@ -25,6 +25,7 @@ import TypingCoursesHeadline from '@/components/TypingCoursesHeadline';
 
 import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
 import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
+import ContextualOfferCard from '@/components/ContextualOfferCard';
 
 // Dynamic Code Splitting for heavy non-critical components
 const CoursePreviewModal = dynamic(() => import('@/components/CoursePreviewModal'), { ssr: false });
@@ -314,24 +315,25 @@ export default function HomeClient({
     
     if (isFree) {
       if (!user) {
+        const targetCourseUrl = `/courses/${course.slug || course.id}`;
         try {
+          sessionStorage.setItem('tsehay_auth_return_url', targetCourseUrl);
           sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
             type: 'enroll_free',
             courseId: course.id,
             courseTitle: course.title,
             course: course,
-            returnUrl: '/'
+            returnUrl: targetCourseUrl
           }));
           sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
             type: 'enroll_free',
             courseId: course.id,
             courseTitle: course.title,
             course: course,
-            returnUrl: '/'
+            returnUrl: targetCourseUrl
           }));
         } catch (e) {}
-        setAuthCourseTarget(course);
-        setShowRequireAuthModal(true);
+        router.push(`/register?returnUrl=${encodeURIComponent(targetCourseUrl)}&courseId=${encodeURIComponent(course.id)}`);
         return;
       }
 
@@ -392,24 +394,25 @@ export default function HomeClient({
       }
     } else {
       if (!user) {
+        const targetCourseUrl = `/courses/${course.slug || course.id}?checkout=1`;
         try {
+          sessionStorage.setItem('tsehay_auth_return_url', targetCourseUrl);
           sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
             type: 'buy',
             courseId: course.id,
             courseTitle: course.title,
             course: course,
-            returnUrl: '/'
+            returnUrl: targetCourseUrl
           }));
           sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
             type: 'buy_course',
             courseId: course.id,
             courseTitle: course.title,
             course: course,
-            returnUrl: '/'
+            returnUrl: targetCourseUrl
           }));
         } catch (e) {}
-        setAuthCourseTarget(course);
-        setShowRequireAuthModal(true);
+        router.push(`/register?returnUrl=${encodeURIComponent(targetCourseUrl)}&courseId=${encodeURIComponent(course.id)}`);
         return;
       }
       setSelectedCourse(course);
@@ -970,6 +973,11 @@ export default function HomeClient({
 
         </div>
       </section>
+
+      {/* In-Content Tsehay Ecosystem Bonus Card (~50% Scroll) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scrolly-reveal">
+        <ContextualOfferCard />
+      </div>
 
       {/* =========================================================================
           6. FREE LESSONS VIDEO SLIDER

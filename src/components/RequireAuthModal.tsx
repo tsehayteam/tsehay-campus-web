@@ -28,14 +28,26 @@ export default function RequireAuthModal({
   const { t } = useLanguage();
   const router = useRouter();
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const savedReturn =
+      (typeof window !== 'undefined' && sessionStorage.getItem('tsehay_auth_return_url')) ||
+      (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/courses');
+    onClose();
+    router.push(`/register?returnUrl=${encodeURIComponent(savedReturn)}`);
+  }, [isOpen, onClose, router]);
+
   if (!isOpen) return null;
 
   const handleAuthRedirect = (isSignup: boolean) => {
     onClose();
-    if (typeof onContinueAuth === 'function') {
-      onContinueAuth(isSignup);
+    const savedReturn =
+      (typeof window !== 'undefined' && sessionStorage.getItem('tsehay_auth_return_url')) ||
+      (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/courses');
+    if (isSignup) {
+      router.push(`/register?returnUrl=${encodeURIComponent(savedReturn)}`);
     } else {
-      window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignupMode: isSignup, isSignUp: isSignup } }));
+      router.push(`/login?mode=login&returnUrl=${encodeURIComponent(savedReturn)}`);
     }
   };
 
