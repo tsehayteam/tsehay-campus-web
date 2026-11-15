@@ -170,12 +170,14 @@ export function AuthPageContent({ defaultSignup = false }: { defaultSignup?: boo
           document.cookie = 'tc_session=1; path=/; SameSite=Lax; max-age=604800';
           if (signUpData?.user) {
             const formattedUser = formatSupabaseUser(signUpData.user);
-            localStorage.setItem('tsehay_auth_user_cache', JSON.stringify({
-              ...formattedUser,
-              displayName: name.trim() || formattedUser.displayName,
-              phone: cleanPhone,
-            }));
-            window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: formattedUser }));
+            if (formattedUser) {
+              localStorage.setItem('tsehay_auth_user_cache', JSON.stringify({
+                ...formattedUser,
+                displayName: name.trim() || formattedUser?.displayName,
+                phone: cleanPhone,
+              }));
+              window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: formattedUser }));
+            }
           }
         } catch (_) {}
 
