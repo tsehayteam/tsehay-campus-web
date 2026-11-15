@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Script from "next/script";
-import { Noto_Sans_Ethiopic, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
@@ -14,31 +13,6 @@ import TsehayExperienceProvider from "@/components/experience/TsehayExperiencePr
 
 import TopAnnouncementBar from "@/components/TopAnnouncementBar";
 import GlobalModals from "@/components/GlobalModals";
-
-// 1. Primary Amharic Font
-const notoSansEthiopic = Noto_Sans_Ethiopic({
-  subsets: ["ethiopic"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-primary-amharic",
-  display: "swap",
-  preload: false,
-});
-
-// 2. Secondary Display/Headings Font
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-  variable: "--font-secondary-heading",
-  display: "swap",
-});
-
-// 3. Tertiary Monospace Font (Prices, Metrics, Badges)
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-tertiary-mono",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Tsehay Campus | የቀጣዩ ትውልድ የክህሎት ማዕከል",
@@ -120,7 +94,7 @@ export default function RootLayout({
   return (
     <html
       lang="am"
-      className={`${notoSansEthiopic.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} dark notranslate`}
+      className="dark notranslate"
       translate="no"
       suppressHydrationWarning
     >
@@ -143,7 +117,10 @@ export default function RootLayout({
         <meta name="theme-color" content="#F9B03C" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&display=swap" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+Ethiopic:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+        />
         <link rel="preconnect" href="https://firestore.googleapis.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
@@ -153,7 +130,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       </head>
       <body
-        className={`${notoSansEthiopic.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} font-primary antialiased pt-0 notranslate`}
+        className="font-primary antialiased pt-0 notranslate"
         translate="no"
         suppressHydrationWarning
       >
